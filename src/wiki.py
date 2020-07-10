@@ -1,13 +1,16 @@
 from dataclasses import dataclass
 from src.session import session
+import logging, aiohttp
+from src.exceptions import *
 
+logger = logging.getLogger("rcgcdb.wiki")
 
 @dataclass
 class Wiki:
 	mw_messages: int = None
 	fail_times: int = 0  # corresponding to amount of times connection with wiki failed for client reasons (400-499)
 
-	async def fetch_wiki(self, extended, api_path):
+	async def fetch_wiki(self, extended, api_path) -> aiohttp.ClientResponse:
 		url_path = api_path
 		amount = 20
 		if extended:
@@ -25,4 +28,23 @@ class Wiki:
 			          "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user",
 			          "rclimit": amount, "rctype": "edit|new|log|external", "siprop": "namespaces"}
 		try:
-			await session.get(url_path, params=params)
+			response = await session.get(url_path, params=params)
+		except:
+			raise NotImplemented
+		return response
+
+	async def check_status(self, wiki_id, status, name):
+		if 199 < status < 300:
+			self.fail_times = 0
+			pass
+		elif 400 < status < 500:  # ignore 400 error since this might be our fault
+			self.fail_times += 1
+			logger.warning("Wiki {} responded with HTTP code {}, increased fail_times to {}, skipping...".format(name, status, self.fail_times))
+			if self.fail_times > 3:
+				await self.remove(wiki_id)
+			raise WikiError
+		elif 499 < status < 600:
+			logger.warning("Wiki {} responded with HTTP code {}, skipping...".format(name, status, self.fail_times))
+			raise WikiServerError
+
+	async def remove(self, wiki_id):

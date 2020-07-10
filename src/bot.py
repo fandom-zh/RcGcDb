@@ -33,4 +33,7 @@ async def main_loop():
 		local_wiki = all_wikis[wiki[0]]  # set a reference to a wiki object from memory
 		if all_wikis[wiki[0]].mw_messages is None:
 			extended = True
-		wiki_response = await all_wikis[wiki[0]].fetch_wiki(extended)
+		wiki_response = await local_wiki.fetch_wiki(extended)
+		try:
+			await local_wiki.check_status(wiki[0], wiki_response.status, db_wiki[1])
+		except:
