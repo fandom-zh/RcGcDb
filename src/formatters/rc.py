@@ -1,3 +1,15 @@
+from src.discord import DiscordMessage
+import re
+from src.i18n import ngettext
+
+def create_article_path(article: str) -> str:
+	"""Takes the string and creates an URL with it as the article name"""
+	return WIKI_ARTICLE_PATH.replace("$1", article)
+
+def link_formatter(link) -> str:
+	"""Formats a link to not embed it"""
+	return "<" + re.sub(r"([)])", "\\\\\\1", link).replace(" ", "_") + ">"
+
 def compact_formatter(action, change, parsed_comment, categories):
 	if action != "suppressed":
 		author_url = link_formatter(create_article_path("User:{user}".format(user=change["user"])))

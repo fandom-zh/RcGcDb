@@ -1,7 +1,7 @@
 import logging.config
 from src.config import settings
 import sqlite3
-from src.wiki import Wiki
+from src.wiki import Wiki, process_event, process_mwmsgs
 import asyncio, aiohttp
 from src.exceptions import *
 from src.database import db_cursor
@@ -11,8 +11,8 @@ logger = logging.getLogger("rcgcdb.bot")
 logger.debug("Current settings: {settings}".format(settings=settings))
 
 # Log Fail states with structure wiki_id: number of fail states
-all_wikis = {}
-mw_msgs = {}  # will have the type of id: tuple
+all_wikis: dict = {}
+mw_msgs: dict = {}  # will have the type of id: tuple
 
 # First populate the all_wikis list with every wiki
 # Reasons for this: 1. we require amount of wikis to calculate the cooldown between requests
@@ -23,7 +23,16 @@ for wiki in db_cursor.execute('SELECT ROWID, * FROM wikis'):
 
 # Start queueing logic
 
+def calculate_delay() -> float:
+	min_delay = 60/settings["max_requests_per_minute"]
+	if (len(all_wikis) * min_delay) < settings["minimal_cooldown_per_wiki_in_sec"]:
+		return settings["minimal_cooldown_per_wiki_in_sec"]/len(all_wikis)
+	else:
+		return min_delay
+
 async def main_loop():
+	calc_delay = calculate_delay()
+
 	for db_wiki in db_cursor.execute('SELECT ROWID, * FROM wikis'):
 		extended = False
 		if wiki[0] not in all_wikis:
@@ -37,3 +46,15 @@ async def main_loop():
 			await local_wiki.check_status(wiki[0], wiki_response.status, db_wiki[1])
 		except (WikiServerError, WikiError):
 			continue  # ignore this wikis if it throws errors
+		try:
+			recent_changes_resp = await wiki_response.json(encoding="UTF-8")
+			recent_changes = recent_changes_resp['query']['recentchanges'].reverse()
+		except:
+			logger.exception("On loading json of response.")
+			continue
+		if extended:
+			await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
+		for change in recent_changes:
+			if change["rcid"] < db_wiki[6]:
+				await process_event(change, local_wiki)
+		await asyncio.sleep(delay=calc_delay)

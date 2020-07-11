@@ -1,4 +1,4 @@
 import sqlite3
 
-conn = sqlite3.connect('rcgcdb.db')
-db_cursor = conn.cursor()
+db_connection = sqlite3.connect('rcgcdb.db')
+db_cursor = db_connection.cursor()
