@@ -4,6 +4,8 @@ import re
 import logging, aiohttp
 from src.exceptions import *
 from src.database import db_cursor, db_connection
+from src.formatters.rc import embed_formatter, compact_formatter
+from i18n import langs
 import src.discord
 
 logger = logging.getLogger("rcgcdb.wiki")
@@ -59,8 +61,7 @@ class Wiki:
 		db_connection.commit()
 
 
-async def process_event(event: dict, local_wiki: Wiki, category_msgs: dict):
-	categorize_events = {}
+async def process_cats(event: dict, local_wiki: Wiki, category_msgs: dict, categorize_events: dict):
 	if event["type"] == "categorize":
 		if "commenthidden" not in event:
 			if local_wiki.mw_messages:
@@ -115,3 +116,41 @@ async def process_mwmsgs(wiki_response: dict, local_wiki: Wiki, mw_msgs: dict):
 	key = len(mw_msgs)
 	mw_msgs[key] = msgs  # it may be a little bit messy for sure, however I don't expect any reason to remove mw_msgs entries by one
 	local_wiki.mw_messages = key
+
+def essential_info(change, changed_categories, local_wiki, db_wiki):
+	"""Prepares essential information for both embed and compact message format."""
+	logger.debug(change)
+	lang = langs[db_wiki[1]]
+	appearance_mode = embed_formatter
+	if ("actionhidden" in change or "suppressed" in change):  # if event is hidden using suppression
+		appearance_mode("suppressed", change, "", changed_categories, recent_changes)
+		return
+	if "commenthidden" not in change:
+		LinkParser.feed(change["parsedcomment"])
+		parsed_comment = LinkParser.new_string
+		LinkParser.new_string = ""
+		parsed_comment = re.sub(r"(`|_|\*|~|{|}|\|\|)", "\\\\\\1", parsed_comment, 0)
+	else:
+		parsed_comment = _("~~hidden~~")
+	if not parsed_comment:
+		parsed_comment = None
+	if change["type"] in ["edit", "new"]:
+		logger.debug("List of categories in essential_info: {}".format(changed_categories))
+		if "userhidden" in change:
+			change["user"] = _("hidden")
+		identification_string = change["type"]
+	elif change["type"] == "log":
+		identification_string = "{logtype}/{logaction}".format(logtype=change["logtype"], logaction=change["logaction"])
+		if identification_string not in supported_logs:
+			logger.warning(
+				"This event is not implemented in the script. Please make an issue on the tracker attaching the following info: wiki url, time, and this information: {}".format(
+					change))
+			return
+	elif change["type"] == "categorize":
+		return
+	else:
+		logger.warning("This event is not implemented in the script. Please make an issue on the tracker attaching the following info: wiki url, time, and this information: {}".format(change))
+		return
+	if identification_string in settings["ignored"]:
+		return
+	appearance_mode(identification_string, change, parsed_comment, changed_categories, recent_changes)

@@ -1,16 +1,25 @@
-from src.discord import DiscordMessage
+import ipaddress
+import math
 import re
-from src.i18n import ngettext
+import time
+import logging
+from urllib.parse import quote_plus
 
-def create_article_path(article: str) -> str:
-	"""Takes the string and creates an URL with it as the article name"""
-	return WIKI_ARTICLE_PATH.replace("$1", article)
+from bs4 import BeautifulSoup
 
-def link_formatter(link) -> str:
-	"""Formats a link to not embed it"""
-	return "<" + re.sub(r"([)])", "\\\\\\1", link).replace(" ", "_") + ">"
+#from src.configloader import settings
+#from src.misc import link_formatter, create_article_path, WIKI_SCRIPT_PATH, send_to_discord, DiscordMessage, safe_read, \
+#	WIKI_API_PATH, ContentParser, profile_field_name, LinkParser
+from src.i18n import lang
+#from src.rc import recent_changes, pull_comment
+ngettext = lang.ngettext
 
-def compact_formatter(action, change, parsed_comment, categories):
+logger = logging.getLogger("rcgcdw.rc_formatters")
+#from src.rcgcdw import recent_changes, ngettext, logger, profile_field_name, LinkParser, pull_comment
+
+LinkParser = LinkParser()
+
+def compact_formatter(action, change, parsed_comment, categories, recent_changes):
 	if action != "suppressed":
 		author_url = link_formatter(create_article_path("User:{user}".format(user=change["user"])))
 		author = change["user"]
@@ -25,8 +34,8 @@ def compact_formatter(action, change, parsed_comment, categories):
 			sign = "+"
 		else:
 			sign = ""
-		if change["title"].startswith("MediaWiki:Tag-"):  # Refresh tag list when tag display name is edited
-			recent_changes.init_info()
+		if change["title"].startswith("MediaWiki:Tag-"):
+			pass
 		if action == "edit":
 			content = _("[{author}]({author_url}) edited [{article}]({edit_link}){comment} ({sign}{edit_size})").format(author=author, author_url=author_url, article=change["title"], edit_link=edit_link, comment=parsed_comment, edit_size=edit_size, sign=sign)
 		else:
@@ -298,7 +307,7 @@ def compact_formatter(action, change, parsed_comment, categories):
 	send_to_discord(DiscordMessage("compact", action, settings["webhookURL"], content=content))
 
 
-def embed_formatter(action, change, parsed_comment, categories):
+def embed_formatter(action, change, parsed_comment, categories, recent_changes):
 	embed = DiscordMessage("embed", action, settings["webhookURL"])
 	if parsed_comment is None:
 		parsed_comment = _("No description provided")
@@ -527,21 +536,21 @@ def embed_formatter(action, change, parsed_comment, categories):
 		embed["title"] = _("Unblocked {blocked_user}").format(blocked_user=user)
 	elif action == "curseprofile/comment-created":
 		if settings["appearance"]["embed"]["show_edit_changes"]:
-			parsed_comment = pull_comment(change["logparams"]["4:comment_id"])
+			parsed_comment = recent_changes.pull_comment(change["logparams"]["4:comment_id"])
 		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]))
 		embed["title"] = _("Left a comment on {target}'s profile").format(target=change["title"].split(':')[1]) if change["title"].split(':')[1] != \
 		                                                                                              change["user"] else _(
 			"Left a comment on their own profile")
 	elif action == "curseprofile/comment-replied":
 		if settings["appearance"]["embed"]["show_edit_changes"]:
-			parsed_comment = pull_comment(change["logparams"]["4:comment_id"])
+			parsed_comment = recent_changes.pull_comment(change["logparams"]["4:comment_id"])
 		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]))
 		embed["title"] = _("Replied to a comment on {target}'s profile").format(target=change["title"].split(':')[1]) if change["title"].split(':')[1] != \
 		                                                                                                    change["user"] else _(
 			"Replied to a comment on their own profile")
 	elif action == "curseprofile/comment-edited":
 		if settings["appearance"]["embed"]["show_edit_changes"]:
-			parsed_comment = pull_comment(change["logparams"]["4:comment_id"])
+			parsed_comment = recent_changes.pull_comment(change["logparams"]["4:comment_id"])
 		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]))
 		embed["title"] = _("Edited a comment on {target}'s profile").format(target=change["title"].split(':')[1]) if change["title"].split(':')[1] != \
 		                                                                                                change["user"] else _(

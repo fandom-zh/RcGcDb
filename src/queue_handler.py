@@ -14,3 +14,6 @@ class UpdateDB():
 
 	def update_db(self):
 		for update in self.updated:
+
+
+DBHandler = UpdateDB()

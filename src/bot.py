@@ -1,10 +1,11 @@
 import logging.config
 from src.config import settings
 import sqlite3
-from src.wiki import Wiki, process_event, process_mwmsgs
+from src.wiki import Wiki, process_cats, process_mwmsgs
 import asyncio, aiohttp
 from src.exceptions import *
 from src.database import db_cursor
+from queue_handler import DBHandler
 
 logging.config.dictConfig(settings["logging"])
 logger = logging.getLogger("rcgcdb.bot")
@@ -45,7 +46,7 @@ async def main_loop():
 			wiki_response = await local_wiki.fetch_wiki(extended, db_wiki[3], db_wiki[4])
 			await local_wiki.check_status(wiki[0], wiki_response.status, db_wiki[1])
 		except (WikiServerError, WikiError):
-			continue  # ignore this wikis if it throws errors
+			continue  # ignore this wiki if it throws errors
 		try:
 			recent_changes_resp = await wiki_response.json(encoding="UTF-8")
 			recent_changes = recent_changes_resp['query']['recentchanges'].reverse()
@@ -54,7 +55,19 @@ async def main_loop():
 			continue
 		if extended:
 			await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
+		categorize_events = {}
+		if db_wiki[6] is None:  # new wiki, just get the last rc to not spam the channel
+			if len(recent_changes) > 0:
+				DBHandler.add(db_wiki[0], recent_changes[-1]["rcid"])
+				continue
+			else:
+				DBHandler.add(db_wiki[0], 0)
+				continue
 		for change in recent_changes:
+			await process_cats(change, local_wiki, mw_msgs, categorize_events)
+		for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
 			if change["rcid"] < db_wiki[6]:
-				await process_event(change, local_wiki)
+
+
+
 		await asyncio.sleep(delay=calc_delay)
