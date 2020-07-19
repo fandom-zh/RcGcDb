@@ -5,18 +5,23 @@ import logging, aiohttp
 from src.exceptions import *
 from src.database import db_cursor, db_connection
 from src.formatters.rc import embed_formatter, compact_formatter
+from src.misc import LinkParser, RecentChangesClass
 from i18n import langs
 import src.discord
 
 logger = logging.getLogger("rcgcdb.wiki")
+
+supported_logs = ["protect/protect", "protect/modify", "protect/unprotect", "upload/overwrite", "upload/upload", "delete/delete", "delete/delete_redir", "delete/restore", "delete/revision", "delete/event", "import/upload", "import/interwiki", "merge/merge", "move/move", "move/move_redir", "protect/move_prot", "block/block", "block/unblock", "block/reblock", "rights/rights", "rights/autopromote", "abusefilter/modify", "abusefilter/create", "interwiki/iw_add", "interwiki/iw_edit", "interwiki/iw_delete", "curseprofile/comment-created", "curseprofile/comment-edited", "curseprofile/comment-deleted", "curseprofile/comment-purged", "curseprofile/profile-edited", "curseprofile/comment-replied", "contentmodel/change", "sprite/sprite", "sprite/sheet", "sprite/slice", "managetags/create", "managetags/delete", "managetags/activate", "managetags/deactivate", "tag/update", "cargo/createtable", "cargo/deletetable", "cargo/recreatetable", "cargo/replacetable", "upload/revert"]
+
+		
 
 @dataclass
 class Wiki:
 	mw_messages: int = None
 	fail_times: int = 0  # corresponding to amount of times connection with wiki failed for client reasons (400-499)
 
-	async def fetch_wiki(self, extended, script_path, api_path) -> aiohttp.ClientResponse:
-		url_path = script_path + api_path
+	async def fetch_wiki(self, extended, script_path) -> aiohttp.ClientResponse:
+		url_path = script_path + "api.php"
 		amount = 20
 		if extended:
 			params = {"action": "query", "format": "json", "uselang": "content", "list": "tags|recentchanges",
@@ -117,11 +122,13 @@ async def process_mwmsgs(wiki_response: dict, local_wiki: Wiki, mw_msgs: dict):
 	mw_msgs[key] = msgs  # it may be a little bit messy for sure, however I don't expect any reason to remove mw_msgs entries by one
 	local_wiki.mw_messages = key
 
-def essential_info(change, changed_categories, local_wiki, db_wiki):
+async def essential_info(change, changed_categories, local_wiki, db_wiki):
 	"""Prepares essential information for both embed and compact message format."""
+	recent_changes = RecentChangesClass()
+	LinkParser = LinkParser("domain")
 	logger.debug(change)
 	lang = langs[db_wiki[1]]
-	appearance_mode = embed_formatter
+	appearance_mode = embed_formatter # TODO Add chanding depending on the DB entry
 	if ("actionhidden" in change or "suppressed" in change):  # if event is hidden using suppression
 		appearance_mode("suppressed", change, "", changed_categories, recent_changes)
 		return
@@ -150,7 +157,5 @@ def essential_info(change, changed_categories, local_wiki, db_wiki):
 		return
 	else:
 		logger.warning("This event is not implemented in the script. Please make an issue on the tracker attaching the following info: wiki url, time, and this information: {}".format(change))
-		return
-	if identification_string in settings["ignored"]:
 		return
 	appearance_mode(identification_string, change, parsed_comment, changed_categories, recent_changes)

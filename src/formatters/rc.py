@@ -3,23 +3,25 @@ import math
 import re
 import time
 import logging
+import base64
+from config import settings
+from src.misc import link_formatter, create_article_path, LinkParser, profile_field_name, ContentParser, DiscordMessage
 from urllib.parse import quote_plus
+# from html.parser import HTMLParser
 
 from bs4 import BeautifulSoup
 
 #from src.configloader import settings
 #from src.misc import link_formatter, create_article_path, WIKI_SCRIPT_PATH, send_to_discord, DiscordMessage, safe_read, \
 #	WIKI_API_PATH, ContentParser, profile_field_name, LinkParser
-from src.i18n import lang
+from src.i18n import langs
 #from src.rc import recent_changes, pull_comment
-ngettext = lang.ngettext
 
 logger = logging.getLogger("rcgcdw.rc_formatters")
 #from src.rcgcdw import recent_changes, ngettext, logger, profile_field_name, LinkParser, pull_comment
 
-LinkParser = LinkParser()
-
 def compact_formatter(action, change, parsed_comment, categories, recent_changes):
+	LinkParser = LinkParser("domain")
 	if action != "suppressed":
 		author_url = link_formatter(create_article_path("User:{user}".format(user=change["user"])))
 		author = change["user"]
@@ -308,32 +310,14 @@ def compact_formatter(action, change, parsed_comment, categories, recent_changes
 
 
 def embed_formatter(action, change, parsed_comment, categories, recent_changes):
+	LinkParser = LinkParser()
 	embed = DiscordMessage("embed", action, settings["webhookURL"])
+	WIKI_API_PATH =
 	if parsed_comment is None:
 		parsed_comment = _("No description provided")
 	if action != "suppressed":
 		if "anon" in change:
-			author_url = create_article_path("Special:Contributions/{user}".format(user=change["user"].replace(" ", "_")))  # Replace here needed in case of #75
-			logger.debug("current user: {} with cache of IPs: {}".format(change["user"], recent_changes.map_ips.keys()))
-			if change["user"] not in list(recent_changes.map_ips.keys()):
-				contibs = safe_read(recent_changes.safe_request(
-					"{wiki}?action=query&format=json&list=usercontribs&uclimit=max&ucuser={user}&ucstart={timestamp}&ucprop=".format(
-						wiki=WIKI_API_PATH, user=change["user"], timestamp=change["timestamp"])), "query", "usercontribs")
-				if contibs is None:
-					logger.warning(
-						"WARNING: Something went wrong when checking amount of contributions for given IP address")
-					change["user"] = change["user"] + "(?)"
-				else:
-					recent_changes.map_ips[change["user"]] = len(contibs)
-					logger.debug("Current params user {} and state of map_ips {}".format(change["user"], recent_changes.map_ips))
-					change["user"] = "{author} ({contribs})".format(author=change["user"], contribs=len(contibs))
-			else:
-				logger.debug(
-					"Current params user {} and state of map_ips {}".format(change["user"], recent_changes.map_ips))
-				if action in ("edit", "new"):
-					recent_changes.map_ips[change["user"]] += 1
-				change["user"] = "{author} ({amount})".format(author=change["user"],
-				                                              amount=recent_changes.map_ips[change["user"]])
+			author_url = create_article_path("Special:Contributions/{user}".format(user=change["user"].replace(" ", "_")))
 		else:
 			author_url = create_article_path("User:{}".format(change["user"].replace(" ", "_")))
 		embed.set_author(change["user"], author_url)

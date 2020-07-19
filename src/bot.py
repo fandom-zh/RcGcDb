@@ -1,7 +1,7 @@
 import logging.config
 from src.config import settings
 import sqlite3
-from src.wiki import Wiki, process_cats, process_mwmsgs
+from src.wiki import Wiki, process_cats, process_mwmsgs, essential_info
 import asyncio, aiohttp
 from src.exceptions import *
 from src.database import db_cursor
@@ -19,7 +19,7 @@ mw_msgs: dict = {}  # will have the type of id: tuple
 # Reasons for this: 1. we require amount of wikis to calculate the cooldown between requests
 # 2. Easier to code
 
-for wiki in db_cursor.execute('SELECT ROWID, * FROM wikis'):
+for wiki in db_cursor.execute('SELECT ROWID, * FROM rcgcdw'):
 	all_wikis[wiki[0]] = Wiki()
 
 # Start queueing logic
@@ -31,10 +31,10 @@ def calculate_delay() -> float:
 	else:
 		return min_delay
 
-async def main_loop():
+async def wiki_scanner():
 	calc_delay = calculate_delay()
 
-	for db_wiki in db_cursor.execute('SELECT ROWID, * FROM wikis'):
+	for db_wiki in db_cursor.execute('SELECT ROWID, * FROM rcgcdw'):
 		extended = False
 		if wiki[0] not in all_wikis:
 			logger.debug("New wiki: {}".format(wiki[1]))
@@ -43,7 +43,7 @@ async def main_loop():
 		if local_wiki.mw_messages is None:
 			extended = True
 		try:
-			wiki_response = await local_wiki.fetch_wiki(extended, db_wiki[3], db_wiki[4])
+			wiki_response = await local_wiki.fetch_wiki(extended, db_wiki[4])
 			await local_wiki.check_status(wiki[0], wiki_response.status, db_wiki[1])
 		except (WikiServerError, WikiError):
 			continue  # ignore this wiki if it throws errors
@@ -56,7 +56,7 @@ async def main_loop():
 		if extended:
 			await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
 		categorize_events = {}
-		if db_wiki[6] is None:  # new wiki, just get the last rc to not spam the channel
+		if db_wiki[7] is None:  # new wiki, just get the last rc to not spam the channel
 			if len(recent_changes) > 0:
 				DBHandler.add(db_wiki[0], recent_changes[-1]["rcid"])
 				continue
@@ -66,8 +66,17 @@ async def main_loop():
 		for change in recent_changes:
 			await process_cats(change, local_wiki, mw_msgs, categorize_events)
 		for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
-			if change["rcid"] < db_wiki[6]:
-
+			if change["rcid"] < db_wiki[7]:
+				await essential_info(change, categorize_events, local_wiki, db_wiki)
 
 
 		await asyncio.sleep(delay=calc_delay)
+
+async def message_sender():
+	pass
+
+async def main_loop():
+	task1 = asyncio.create_task(wiki_scanner())
+	task2 = asyncio.create_task(message_sender())
+
+asyncio.run(main_loop())
