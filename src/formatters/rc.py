@@ -20,7 +20,7 @@ from src.i18n import langs
 logger = logging.getLogger("rcgcdw.rc_formatters")
 #from src.rcgcdw import recent_changes, ngettext, logger, profile_field_name, LinkParser, pull_comment
 
-def compact_formatter(action, change, parsed_comment, categories, recent_changes):
+def compact_formatter(action, change, parsed_comment, categories, recent_changes, _):
 	LinkParser = LinkParser("domain")
 	if action != "suppressed":
 		author_url = link_formatter(create_article_path("User:{user}".format(user=change["user"])))
@@ -309,7 +309,7 @@ def compact_formatter(action, change, parsed_comment, categories, recent_changes
 	send_to_discord(DiscordMessage("compact", action, settings["webhookURL"], content=content))
 
 
-def embed_formatter(action, change, parsed_comment, categories, recent_changes):
+def embed_formatter(action, change, parsed_comment, categories, recent_changes, _):
 	LinkParser = LinkParser()
 	embed = DiscordMessage("embed", action, settings["webhookURL"])
 	WIKI_API_PATH =

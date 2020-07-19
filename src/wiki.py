@@ -44,25 +44,25 @@ class Wiki:
 			raise WikiServerError
 		return response
 
-	async def check_status(self, wiki_id, status, name):
+	async def check_status(self, wiki_url, status):
 		if 199 < status < 300:
 			self.fail_times = 0
 			pass
 		elif 400 < status < 500:  # ignore 400 error since this might be our fault
 			self.fail_times += 1
-			logger.warning("Wiki {} responded with HTTP code {}, increased fail_times to {}, skipping...".format(name, status, self.fail_times))
+			logger.warning("Wiki {} responded with HTTP code {}, increased fail_times to {}, skipping...".format(wiki_url, status, self.fail_times))
 			if self.fail_times > 3:
-				await self.remove(wiki_id, status)
+				await self.remove(wiki_url, status)
 			raise WikiError
 		elif 499 < status < 600:
-			logger.warning("Wiki {} responded with HTTP code {}, skipping...".format(name, status, self.fail_times))
+			logger.warning("Wiki {} responded with HTTP code {}, skipping...".format(wiki_url, status, self.fail_times))
 			raise WikiServerError
 
 	async def remove(self, wiki_id, reason):
 		src.discord.wiki_removal(wiki_id, reason)
 		src.discord.wiki_removal_monitor(wiki_id, reason)
-		db_cursor.execute("DELETE FROM observers WHERE wiki_id = ?", wiki_id)
-		db_cursor.execute("DELETE FROM wikis WHERE ROWID = ?", wiki_id)
+		db_cursor.execute("DELETE FROM rcgcdw WHERE wiki = ?", wiki_id)
+		logger.warning("{} rows affected by DELETE FROM rcgcdw WHERE wiki = {}".format(db_cursor.rowcount, wiki_id))
 		db_connection.commit()
 
 
@@ -118,20 +118,24 @@ async def process_mwmsgs(wiki_response: dict, local_wiki: Wiki, mw_msgs: dict):
 		if msgs == set:
 			local_wiki.mw_messages = key
 			return
+	# if same entry is not in mw_msgs
 	key = len(mw_msgs)
 	mw_msgs[key] = msgs  # it may be a little bit messy for sure, however I don't expect any reason to remove mw_msgs entries by one
 	local_wiki.mw_messages = key
 
-async def essential_info(change, changed_categories, local_wiki, db_wiki):
+async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_wiki: tuple, target: tuple):
 	"""Prepares essential information for both embed and compact message format."""
-	recent_changes = RecentChangesClass()
+	def _(string: str) -> str:
+		"""Our own translation string to make it compatible with async"""
+		return lang.gettext(string)
+	recent_changes = RecentChangesClass()  # TODO Look into replacing RecentChangesClass with local_wiki
 	LinkParser = LinkParser("domain")
 	logger.debug(change)
-	lang = langs[db_wiki[1]]
-	appearance_mode = embed_formatter # TODO Add chanding depending on the DB entry
+	appearance_mode = embed_formatter if target[0][1] > 0 else compact_formatter
 	if ("actionhidden" in change or "suppressed" in change):  # if event is hidden using suppression
-		appearance_mode("suppressed", change, "", changed_categories, recent_changes)
+		appearance_mode("suppressed", change, "", changed_categories, recent_changes, target, _)
 		return
+	lang = langs[target[0][0]]
 	if "commenthidden" not in change:
 		LinkParser.feed(change["parsedcomment"])
 		parsed_comment = LinkParser.new_string
@@ -158,4 +162,4 @@ async def essential_info(change, changed_categories, local_wiki, db_wiki):
 	else:
 		logger.warning("This event is not implemented in the script. Please make an issue on the tracker attaching the following info: wiki url, time, and this information: {}".format(change))
 		return
-	appearance_mode(identification_string, change, parsed_comment, changed_categories, recent_changes)
+	appearance_mode(identification_string, change, parsed_comment, changed_categories, recent_changes, target, _)
