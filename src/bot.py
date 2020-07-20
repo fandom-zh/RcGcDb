@@ -3,6 +3,7 @@ from src.config import settings
 import sqlite3
 from src.wiki import Wiki, process_cats, process_mwmsgs, essential_info
 import asyncio, aiohttp
+from src.misc import get_paths
 from src.exceptions import *
 from src.database import db_cursor
 from collections import defaultdict
@@ -69,19 +70,20 @@ async def wiki_scanner():
 			await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
 		if db_wiki[6] is None:  # new wiki, just get the last rc to not spam the channel
 			if len(recent_changes) > 0:
-				DBHandler.add(db_wiki[0], recent_changes[-1]["rcid"])
+				DBHandler.add(db_wiki[3], recent_changes[-1]["rcid"])
 				continue
 			else:
-				DBHandler.add(db_wiki[0], 0)
+				DBHandler.add(db_wiki[3], 0)
 				continue
 		categorize_events = {}
-		targets = generate_targets(db_wiki[0])
+		targets = generate_targets(db_wiki[3])
+		paths = get_paths(db_wiki[3], recent_changes_resp)
 		for change in recent_changes:
 			await process_cats(change, local_wiki, mw_msgs, categorize_events)
 		for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
 			if change["rcid"] < db_wiki[6]:
 				for target in targets.items():
-					await essential_info(change, categorize_events, local_wiki, db_wiki, target)
+					await essential_info(change, categorize_events, local_wiki, db_wiki, target, paths)
 
 
 		await asyncio.sleep(delay=calc_delay)

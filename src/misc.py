@@ -1,3 +1,4 @@
+from abc import ABC
 from html.parser import HTMLParser
 import base64, re
 from src.config import settings
@@ -5,6 +6,7 @@ import json
 import logging
 from collections import defaultdict
 import random
+from urllib.parse import urlparse, urlunparse
 import math
 profile_fields = {"profile-location": _("Location"), "profile-aboutme": _("About me"), "profile-link-google": _("Google link"), "profile-link-facebook":_("Facebook link"), "profile-link-twitter": _("Twitter link"), "profile-link-reddit": _("Reddit link"), "profile-link-twitch": _("Twitch link"), "profile-link-psn": _("PSN link"), "profile-link-vk": _("VK link"), "profile-link-xbl": _("XBL link"), "profile-link-steam": _("Steam link"), "profile-link-discord": _("Discord handle"), "profile-link-battlenet": _("Battle.net handle")}
 logger = logging.getLogger("rcgcdw.misc")
@@ -73,8 +75,19 @@ class DiscordMessage():
 	def set_name(self, name):
 		self.webhook_object["username"] = name
 
+def get_paths(wiki: str, request) -> tuple:
+	parsed_url = urlparse(wiki)
+	WIKI_API_PATH = wiki + request["query"]["general"]["scriptpath"] + "/api.php"
+	WIKI_SCRIPT_PATH = wiki
+	WIKI_ARTICLE_PATH = urlunparse((*parsed_url[0:2], "", "", "", "")) + request["query"]["general"]["articlepath"]
+	WIKI_JUST_DOMAIN = urlunparse((*parsed_url[0:2], "", "", "", ""))
+	return WIKI_API_PATH, WIKI_SCRIPT_PATH, WIKI_ARTICLE_PATH, WIKI_JUST_DOMAIN
+
 
 class LinkParser(HTMLParser):
+	def error(self, message):
+		pass
+
 	new_string = ""
 	recent_href = ""
 

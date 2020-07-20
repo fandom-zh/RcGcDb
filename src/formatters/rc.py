@@ -20,10 +20,14 @@ from src.i18n import langs
 logger = logging.getLogger("rcgcdw.rc_formatters")
 #from src.rcgcdw import recent_changes, ngettext, logger, profile_field_name, LinkParser, pull_comment
 
-def compact_formatter(action, change, parsed_comment, categories, recent_changes, _):
+async def compact_formatter(action, change, parsed_comment, categories, recent_changes, _, ngettext, paths):
+	WIKI_API_PATH = paths[0]
+	WIKI_SCRIPT_PATH = paths[1]
+	WIKI_ARTICLE_PATH = paths[2]
+	WIKI_JUST_DOMAIN = paths[3]
 	LinkParser = LinkParser("domain")
 	if action != "suppressed":
-		author_url = link_formatter(create_article_path("User:{user}".format(user=change["user"])))
+		author_url = link_formatter(create_article_path("User:{user}".format(user=change["user"]), WIKI_ARTICLE_PATH))
 		author = change["user"]
 	parsed_comment = "" if parsed_comment is None else " *("+parsed_comment+")*"
 	parsed_comment = re.sub(r"([^<]|\A)(http(s)://.*?)( |\Z)", "\\1<\\2>\\4", parsed_comment)  # see #97
@@ -43,40 +47,40 @@ def compact_formatter(action, change, parsed_comment, categories, recent_changes
 		else:
 			content = _("[{author}]({author_url}) created [{article}]({edit_link}){comment} ({sign}{edit_size})").format(author=author, author_url=author_url, article=change["title"], edit_link=edit_link, comment=parsed_comment, edit_size=edit_size, sign=sign)
 	elif action =="upload/upload":
-		file_link = link_formatter(create_article_path(change["title"]))
+		file_link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) uploaded [{file}]({file_link}){comment}").format(author=author,
 		                                                                                    author_url=author_url,
 		                                                                                    file=change["title"],
 		                                                                                    file_link=file_link,
 		                                                                                    comment=parsed_comment)
 	elif action == "upload/revert":
-		file_link = link_formatter(create_article_path(change["title"]))
+		file_link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) reverted a version of [{file}]({file_link}){comment}").format(
 			author=author, author_url=author_url, file=change["title"], file_link=file_link, comment=parsed_comment)
 	elif action == "upload/overwrite":
-		file_link = link_formatter(create_article_path(change["title"]))
+		file_link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) uploaded a new version of [{file}]({file_link}){comment}").format(author=author, author_url=author_url, file=change["title"], file_link=file_link, comment=parsed_comment)
 	elif action == "delete/delete":
-		page_link = link_formatter(create_article_path(change["title"]))
+		page_link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) deleted [{page}]({page_link}){comment}").format(author=author, author_url=author_url, page=change["title"], page_link=page_link,
 		                                                  comment=parsed_comment)
 	elif action == "delete/delete_redir":
-		page_link = link_formatter(create_article_path(change["title"]))
+		page_link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) deleted redirect by overwriting [{page}]({page_link}){comment}").format(author=author, author_url=author_url, page=change["title"], page_link=page_link,
 		                                                   comment=parsed_comment)
 	elif action == "move/move":
-		link = link_formatter(create_article_path(change["logparams"]['target_title']))
+		link = link_formatter(create_article_path(change["logparams"]['target_title'], WIKI_ARTICLE_PATH))
 		redirect_status = _("without making a redirect") if "suppressredirect" in change["logparams"] else _("with a redirect")
 		content = _("[{author}]({author_url}) moved {redirect}*{article}* to [{target}]({target_url}) {made_a_redirect}{comment}").format(author=author, author_url=author_url, redirect="⤷ " if "redirect" in change else "", article=change["title"],
 			target=change["logparams"]['target_title'], target_url=link, comment=parsed_comment, made_a_redirect=redirect_status)
 	elif action == "move/move_redir":
-		link = link_formatter(create_article_path(change["logparams"]["target_title"]))
+		link = link_formatter(create_article_path(change["logparams"]["target_title"], WIKI_ARTICLE_PATH))
 		redirect_status = _("without making a redirect") if "suppressredirect" in change["logparams"] else _(
 			"with a redirect")
 		content = _("[{author}]({author_url}) moved {redirect}*{article}* over redirect to [{target}]({target_url}) {made_a_redirect}{comment}").format(author=author, author_url=author_url, redirect="⤷ " if "redirect" in change else "", article=change["title"],
 			target=change["logparams"]['target_title'], target_url=link, comment=parsed_comment, made_a_redirect=redirect_status)
 	elif action == "protect/move_prot":
-		link = link_formatter(create_article_path(change["logparams"]["oldtitle_title"]))
+		link = link_formatter(create_article_path(change["logparams"]["oldtitle_title"], WIKI_ARTICLE_PATH))
 		content = _(
 			"[{author}]({author_url}) moved protection settings from {redirect}*{article}* to [{target}]({target_url}){comment}").format(author=author, author_url=author_url, redirect="⤷ " if "redirect" in change else "", article=change["logparams"]["oldtitle_title"],
 			target=change["title"], target_url=link, comment=parsed_comment)
@@ -85,9 +89,9 @@ def compact_formatter(action, change, parsed_comment, categories, recent_changes
 		restriction_description = ""
 		try:
 			ipaddress.ip_address(user)
-			link = link_formatter(create_article_path("Special:Contributions/{user}".format(user=user)))
+			link = link_formatter(create_article_path("Special:Contributions/{user}".format(user=user), WIKI_ARTICLE_PATH))
 		except ValueError:
-			link = link_formatter(create_article_path(change["title"]))
+			link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		if change["logparams"]["duration"] == "infinite":
 			block_time = _("infinity and beyond")
 		else:
@@ -129,30 +133,30 @@ def compact_formatter(action, change, parsed_comment, categories, recent_changes
 		content = _(
 			"[{author}]({author_url}) blocked [{user}]({user_url}) for {time}{restriction_desc}{comment}").format(author=author, author_url=author_url, user=user, time=block_time, user_url=link, restriction_desc=restriction_description, comment=parsed_comment)
 	elif action == "block/reblock":
-		link = link_formatter(create_article_path(change["title"]))
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		user = change["title"].split(':')[1]
 		content = _("[{author}]({author_url}) changed block settings for [{blocked_user}]({user_url}){comment}").format(author=author, author_url=author_url, blocked_user=user, user_url=link, comment=parsed_comment)
 	elif action == "block/unblock":
-		link = link_formatter(create_article_path(change["title"]))
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		user = change["title"].split(':')[1]
 		content = _("[{author}]({author_url}) unblocked [{blocked_user}]({user_url}){comment}").format(author=author, author_url=author_url, blocked_user=user, user_url=link, comment=parsed_comment)
 	elif action == "curseprofile/comment-created":
-		link = link_formatter(create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"])))
+		link = link_formatter(create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]), WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) left a [comment]({comment}) on {target} profile").format(author=author, author_url=author_url, comment=link, target=change["title"].split(':')[1]+"'s" if change["title"].split(':')[1] != change["user"] else _("their own profile"))
 	elif action == "curseprofile/comment-replied":
-		link = link_formatter(create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"])))
+		link = link_formatter(create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]), WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) replied to a [comment]({comment}) on {target} profile").format(author=author,
 		                                                                                               author_url=author_url,
 		                                                                                               comment=link,
 		                                                                                               target=change["title"].split(':')[1] if change["title"].split(':')[1] !=change["user"] else _("their own"))
 	elif action == "curseprofile/comment-edited":
-		link = link_formatter(create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"])))
+		link = link_formatter(create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]), WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) edited a [comment]({comment}) on {target} profile").format(author=author,
 		                                                                                               author_url=author_url,
 		                                                                                               comment=link,
 		                                                                                               target=change["title"].split(':')[1] if change["title"].split(':')[1] !=change["user"] else _("their own"))
 	elif action == "curseprofile/comment-purged":
-		link = link_formatter(create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"])))
+		link = link_formatter(create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]), WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) purged a comment on {target} profile").format(author=author,
 		                                                                                     author_url=author_url,
 		                                                                                     target=
@@ -168,7 +172,7 @@ def compact_formatter(action, change, parsed_comment, categories, recent_changes
 		                                                                                     target=change["title"].split(':')[1] if change["title"].split(':')[1] !=change["user"] else _("their own"))
 
 	elif action == "curseprofile/profile-edited":
-		link = link_formatter(create_article_path("UserProfile:{user}".format(user=change["title"].split(":")[1])))
+		link = link_formatter(create_article_path("UserProfile:{user}".format(user=change["title"].split(":")[1]), WIKI_ARTICLE_PATH))
 		target = _("[{target}]({target_url})'s").format(target=change["title"].split(':')[1], target_url=link) if change["title"].split(':')[1] != author else _("[their own]({target_url})").format(target_url=link)
 		content = _("[{author}]({author_url}) edited the {field} on {target} profile. *({desc})*").format(author=author,
 		                                                                        author_url=author_url,
@@ -176,7 +180,7 @@ def compact_formatter(action, change, parsed_comment, categories, recent_changes
 		                                                                        field=profile_field_name(change["logparams"]['4:section'], False),
 		                                                                        desc=BeautifulSoup(change["parsedcomment"], "lxml").get_text())
 	elif action in ("rights/rights", "rights/autopromote"):
-		link = link_formatter(create_article_path("User:{user}".format(user=change["title"].split(":")[1])))
+		link = link_formatter(create_article_path("User:{user}".format(user=change["title"].split(":")[1]), WIKI_ARTICLE_PATH))
 		old_groups = []
 		new_groups = []
 		for name in change["logparams"]["oldgroups"]:
@@ -196,13 +200,13 @@ def compact_formatter(action, change, parsed_comment, categories, recent_changes
 				old_groups=", ".join(old_groups), new_groups=', '.join(new_groups),
 				comment=parsed_comment)
 	elif action == "protect/protect":
-		link = link_formatter(create_article_path(change["title"]))
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) protected [{article}]({article_url}) with the following settings: {settings}{comment}").format(author=author, author_url=author_url,
 		                                                                                                                                     article=change["title"], article_url=link,
 		                                                                                                                                     settings=change["logparams"]["description"]+_(" [cascading]") if "cascade" in change["logparams"] else "",
 		                                                                                                                                     comment=parsed_comment)
 	elif action == "protect/modify":
-		link = link_formatter(create_article_path(change["title"]))
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _(
 			"[{author}]({author_url}) modified protection settings of [{article}]({article_url}) to: {settings}{comment}").format(
 			author=author, author_url=author_url,
@@ -210,65 +214,65 @@ def compact_formatter(action, change, parsed_comment, categories, recent_changes
 			settings=change["logparams"]["description"] + _(" [cascading]") if "cascade" in change["logparams"] else "",
 			comment=parsed_comment)
 	elif action == "protect/unprotect":
-		link = link_formatter(create_article_path(change["title"]))
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) removed protection from [{article}]({article_url}){comment}").format(author=author, author_url=author_url, article=change["title"], article_url=link, comment=parsed_comment)
 	elif action == "delete/revision":
 		amount = len(change["logparams"]["ids"])
-		link = link_formatter(create_article_path(change["title"]))
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = ngettext("[{author}]({author_url}) changed visibility of revision on page [{article}]({article_url}){comment}",
 		                          "[{author}]({author_url}) changed visibility of {amount} revisions on page [{article}]({article_url}){comment}", amount).format(author=author, author_url=author_url,
 			article=change["title"], article_url=link, amount=amount, comment=parsed_comment)
 	elif action == "import/upload":
-		link = link_formatter(create_article_path(change["title"]))
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = ngettext("[{author}]({author_url}) imported [{article}]({article_url}) with {count} revision{comment}",
 		                          "[{author}]({author_url}) imported [{article}]({article_url}) with {count} revisions{comment}", change["logparams"]["count"]).format(
 			author=author, author_url=author_url, article=change["title"], article_url=link, count=change["logparams"]["count"], comment=parsed_comment)
 	elif action == "delete/restore":
-		link = link_formatter(create_article_path(change["title"]))
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) restored [{article}]({article_url}){comment}").format(author=author, author_url=author_url, article=change["title"], article_url=link, comment=parsed_comment)
 	elif action == "delete/event":
 		content = _("[{author}]({author_url}) changed visibility of log events{comment}").format(author=author, author_url=author_url, comment=parsed_comment)
 	elif action == "import/interwiki":
 		content = _("[{author}]({author_url}) imported interwiki{comment}").format(author=author, author_url=author_url, comment=parsed_comment)
 	elif action == "abusefilter/modify":
-		link = link_formatter(create_article_path("Special:AbuseFilter/history/{number}/diff/prev/{historyid}".format(number=change["logparams"]['newId'], historyid=change["logparams"]["historyId"])))
+		link = link_formatter(create_article_path("Special:AbuseFilter/history/{number}/diff/prev/{historyid}".format(number=change["logparams"]['newId'], historyid=change["logparams"]["historyId"]), WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) edited abuse filter [number {number}]({filter_url})").format(author=author, author_url=author_url, number=change["logparams"]['newId'], filter_url=link)
 	elif action == "abusefilter/create":
 		link = link_formatter(
-			create_article_path("Special:AbuseFilter/{number}".format(number=change["logparams"]['newId'])))
+			create_article_path("Special:AbuseFilter/{number}".format(number=change["logparams"]['newId']), WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) created abuse filter [number {number}]({filter_url})").format(author=author, author_url=author_url, number=change["logparams"]['newId'], filter_url=link)
 	elif action == "merge/merge":
-		link = link_formatter(create_article_path(change["title"]))
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		link_dest = link_formatter(create_article_path(change["logparams"]["dest_title"]))
 		content = _("[{author}]({author_url}) merged revision histories of [{article}]({article_url}) into [{dest}]({dest_url}){comment}").format(author=author, author_url=author_url, article=change["title"], article_url=link, dest_url=link_dest,
 		                                                                                dest=change["logparams"]["dest_title"], comment=parsed_comment)
 	elif action == "interwiki/iw_add":
-		link = link_formatter(create_article_path("Special:Interwiki"))
+		link = link_formatter(create_article_path("Special:Interwiki", WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) added an entry to the [interwiki table]({table_url}) pointing to {website} with {prefix} prefix").format(author=author, author_url=author_url, desc=parsed_comment,
 		                                                                           prefix=change["logparams"]['0'],
 		                                                                           website=change["logparams"]['1'],
 		                                                                            table_url=link)
 	elif action == "interwiki/iw_edit":
-		link = link_formatter(create_article_path("Special:Interwiki"))
+		link = link_formatter(create_article_path("Special:Interwiki", WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) edited an entry in [interwiki table]({table_url}) pointing to {website} with {prefix} prefix").format(author=author, author_url=author_url, desc=parsed_comment,
 		                                                                           prefix=change["logparams"]['0'],
 		                                                                           website=change["logparams"]['1'],
 		                                                                            table_url=link)
 	elif action == "interwiki/iw_delete":
-		link = link_formatter(create_article_path("Special:Interwiki"))
+		link = link_formatter(create_article_path("Special:Interwiki", WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) deleted an entry in [interwiki table]({table_url})").format(author=author, author_url=author_url, table_url=link)
 	elif action == "contentmodel/change":
-		link = link_formatter(create_article_path(change["title"]))
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) changed the content model of the page [{article}]({article_url}) from {old} to {new}{comment}").format(author=author, author_url=author_url, article=change["title"], article_url=link, old=change["logparams"]["oldmodel"],
 		                                                                         new=change["logparams"]["newmodel"], comment=parsed_comment)
 	elif action == "sprite/sprite":
-		link = link_formatter(create_article_path(change["title"]))
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) edited the sprite for [{article}]({article_url})").format(author=author, author_url=author_url, article=change["title"], article_url=link)
 	elif action == "sprite/sheet":
-		link = link_formatter(create_article_path(change["title"]))
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) created the sprite sheet for [{article}]({article_url})").format(author=author, author_url=author_url, article=change["title"], article_url=link)
 	elif action == "sprite/slice":
-		link = link_formatter(create_article_path(change["title"]))
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) edited the slice for [{article}]({article_url})").format(author=author, author_url=author_url, article=change["title"], article_url=link)
 	elif action == "cargo/createtable":
 		LinkParser.feed(change["logparams"]["0"])
@@ -288,18 +292,18 @@ def compact_formatter(action, change, parsed_comment, categories, recent_changes
 		LinkParser.new_string = ""
 		content = _("[{author}]({author_url}) replaced the Cargo table \"{table}\"").format(author=author, author_url=author_url, table=table)
 	elif action == "managetags/create":
-		link = link_formatter(create_article_path("Special:Tags"))
+		link = link_formatter(create_article_path("Special:Tags", WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) created a [tag]({tag_url}) \"{tag}\"").format(author=author, author_url=author_url, tag=change["logparams"]["tag"], tag_url=link)
 		recent_changes.init_info()
 	elif action == "managetags/delete":
-		link = link_formatter(create_article_path("Special:Tags"))
+		link = link_formatter(create_article_path("Special:Tags", WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) deleted a [tag]({tag_url}) \"{tag}\"").format(author=author, author_url=author_url, tag=change["logparams"]["tag"], tag_url=link)
 		recent_changes.init_info()
 	elif action == "managetags/activate":
-		link = link_formatter(create_article_path("Special:Tags"))
+		link = link_formatter(create_article_path("Special:Tags", WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) activated a [tag]({tag_url}) \"{tag}\"").format(author=author, author_url=author_url, tag=change["logparams"]["tag"], tag_url=link)
 	elif action == "managetags/deactivate":
-		link = link_formatter(create_article_path("Special:Tags"))
+		link = link_formatter(create_article_path("Special:Tags", WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) deactivated a [tag]({tag_url}) \"{tag}\"").format(author=author, author_url=author_url, tag=change["logparams"]["tag"], tag_url=link)
 	elif action == "suppressed":
 		content = _("An action has been hidden by administration.")
@@ -309,17 +313,20 @@ def compact_formatter(action, change, parsed_comment, categories, recent_changes
 	send_to_discord(DiscordMessage("compact", action, settings["webhookURL"], content=content))
 
 
-def embed_formatter(action, change, parsed_comment, categories, recent_changes, _):
+async def embed_formatter(action, change, parsed_comment, categories, recent_changes, _, ngettext, paths):
+	WIKI_API_PATH = paths[0]
+	WIKI_SCRIPT_PATH = paths[1]
+	WIKI_ARTICLE_PATH = paths[2]
+	WIKI_JUST_DOMAIN = paths[3]
 	LinkParser = LinkParser()
 	embed = DiscordMessage("embed", action, settings["webhookURL"])
-	WIKI_API_PATH =
 	if parsed_comment is None:
 		parsed_comment = _("No description provided")
 	if action != "suppressed":
 		if "anon" in change:
-			author_url = create_article_path("Special:Contributions/{user}".format(user=change["user"].replace(" ", "_")))
+			author_url = create_article_path("Special:Contributions/{user}".format(user=change["user"].replace(" ", "_")), WIKI_ARTICLE_PATH)
 		else:
-			author_url = create_article_path("User:{}".format(change["user"].replace(" ", "_")))
+			author_url = create_article_path("User:{}".format(change["user"].replace(" ", "_")), WIKI_ARTICLE_PATH)
 		embed.set_author(change["user"], author_url)
 	if action in ("edit", "new"):  # edit or new page
 		editsize = change["newlen"] - change["oldlen"]
@@ -379,7 +386,7 @@ def embed_formatter(action, change, parsed_comment, categories, recent_changes, 
 		urls = safe_read(recent_changes.safe_request(
 			"{wiki}?action=query&format=json&prop=imageinfo&list=&meta=&titles={filename}&iiprop=timestamp%7Curl%7Carchivename&iilimit=5".format(
 				wiki=WIKI_API_PATH, filename=change["title"])), "query", "pages")
-		link = create_article_path(change["title"].replace(" ", "_"))
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		additional_info_retrieved = False
 		if urls is not None:
 			logger.debug(urls)
@@ -448,32 +455,32 @@ def embed_formatter(action, change, parsed_comment, categories, recent_changes, 
 				if settings["appearance"]["embed"]["embed_images"]:
 					embed["image"]["url"] = image_direct_url
 	elif action == "delete/delete":
-		link = create_article_path(change["title"].replace(" ", "_"))
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Deleted page {article}").format(article=change["title"])
 	elif action == "delete/delete_redir":
-		link = create_article_path(change["title"].replace(" ", "_"))
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Deleted redirect {article} by overwriting").format(article=change["title"])
 	elif action == "move/move":
-		link = create_article_path(change["logparams"]['target_title'].replace(" ", "_"))
+		link = create_article_path(change["logparams"]['target_title'].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		parsed_comment = "{supress}. {desc}".format(desc=parsed_comment,
 		                                            supress=_("No redirect has been made") if "suppressredirect" in change["logparams"] else _(
 			                                            "A redirect has been made"))
 		embed["title"] = _("Moved {redirect}{article} to {target}").format(redirect="⤷ " if "redirect" in change else "", article=change["title"], target=change["logparams"]['target_title'])
 	elif action == "move/move_redir":
-		link = create_article_path(change["logparams"]["target_title"].replace(" ", "_"))
+		link = create_article_path(change["logparams"]["target_title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Moved {redirect}{article} to {title} over redirect").format(redirect="⤷ " if "redirect" in change else "", article=change["title"],
 		                                                                      title=change["logparams"]["target_title"])
 	elif action == "protect/move_prot":
-		link = create_article_path(change["logparams"]["oldtitle_title"].replace(" ", "_"))
+		link = create_article_path(change["logparams"]["oldtitle_title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Moved protection settings from {redirect}{article} to {title}").format(redirect="⤷ " if "redirect" in change else "", article=change["logparams"]["oldtitle_title"],
 		                                                                                 title=change["title"])
 	elif action == "block/block":
 		user = change["title"].split(':')[1]
 		try:
 			ipaddress.ip_address(user)
-			link = create_article_path("Special:Contributions/{user}".format(user=user))
+			link = create_article_path("Special:Contributions/{user}".format(user=user), WIKI_ARTICLE_PATH)
 		except ValueError:
-			link = create_article_path(change["title"].replace(" ", "_").replace(')', '\)'))
+			link = create_article_path(change["title"].replace(" ", "_").replace(')', '\)'), WIKI_ARTICLE_PATH)
 		if change["logparams"]["duration"] == "infinite":
 			block_time = _("infinity and beyond")
 		else:
@@ -511,52 +518,52 @@ def embed_formatter(action, change, parsed_comment, categories, recent_changes, 
 			embed.add_field(_("Partial block details"), restriction_description, inline=True)
 		embed["title"] = _("Blocked {blocked_user} for {time}").format(blocked_user=user, time=block_time)
 	elif action == "block/reblock":
-		link = create_article_path(change["title"].replace(" ", "_").replace(')', '\)'))
+		link = create_article_path(change["title"].replace(" ", "_").replace(')', '\)'), WIKI_ARTICLE_PATH)
 		user = change["title"].split(':')[1]
 		embed["title"] = _("Changed block settings for {blocked_user}").format(blocked_user=user)
 	elif action == "block/unblock":
-		link = create_article_path(change["title"].replace(" ", "_").replace(')', '\)'))
+		link = create_article_path(change["title"].replace(" ", "_").replace(')', '\)'), WIKI_ARTICLE_PATH)
 		user = change["title"].split(':')[1]
 		embed["title"] = _("Unblocked {blocked_user}").format(blocked_user=user)
 	elif action == "curseprofile/comment-created":
 		if settings["appearance"]["embed"]["show_edit_changes"]:
-			parsed_comment = recent_changes.pull_comment(change["logparams"]["4:comment_id"])
+			parsed_comment = recent_changes.pull_comment(change["logparams"]["4:comment_id"], WIKI_ARTICLE_PATH)
 		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]))
 		embed["title"] = _("Left a comment on {target}'s profile").format(target=change["title"].split(':')[1]) if change["title"].split(':')[1] != \
 		                                                                                              change["user"] else _(
 			"Left a comment on their own profile")
 	elif action == "curseprofile/comment-replied":
 		if settings["appearance"]["embed"]["show_edit_changes"]:
-			parsed_comment = recent_changes.pull_comment(change["logparams"]["4:comment_id"])
+			parsed_comment = recent_changes.pull_comment(change["logparams"]["4:comment_id"], WIKI_ARTICLE_PATH)
 		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]))
 		embed["title"] = _("Replied to a comment on {target}'s profile").format(target=change["title"].split(':')[1]) if change["title"].split(':')[1] != \
 		                                                                                                    change["user"] else _(
 			"Replied to a comment on their own profile")
 	elif action == "curseprofile/comment-edited":
 		if settings["appearance"]["embed"]["show_edit_changes"]:
-			parsed_comment = recent_changes.pull_comment(change["logparams"]["4:comment_id"])
+			parsed_comment = recent_changes.pull_comment(change["logparams"]["4:comment_id"], WIKI_ARTICLE_PATH)
 		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]))
 		embed["title"] = _("Edited a comment on {target}'s profile").format(target=change["title"].split(':')[1]) if change["title"].split(':')[1] != \
 		                                                                                                change["user"] else _(
 			"Edited a comment on their own profile")
 	elif action == "curseprofile/profile-edited":
-		link = create_article_path("UserProfile:{target}".format(target=change["title"].split(':')[1].replace(" ", "_").replace(')', '\)')))
+		link = create_article_path("UserProfile:{target}".format(target=change["title"].split(':')[1].replace(" ", "_").replace(')', '\)')), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Edited {target}'s profile").format(target=change["title"].split(':')[1]) if change["user"] != change["title"].split(':')[1] else _("Edited their own profile")
 		if not change["parsedcomment"]:  # If the field is empty
 			parsed_comment = _("Cleared the {field} field").format(field=profile_field_name(change["logparams"]['4:section'], True))
 		else:
 			parsed_comment = _("{field} field changed to: {desc}").format(field=profile_field_name(change["logparams"]['4:section'], True), desc=BeautifulSoup(change["parsedcomment"], "lxml").get_text())
 	elif action == "curseprofile/comment-purged":
-		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]))
+		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Purged a comment on {target}'s profile").format(target=change["title"].split(':')[1])
 	elif action == "curseprofile/comment-deleted":
 		if "4:comment_id" in change["logparams"]:
-			link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]))
+			link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]), WIKI_ARTICLE_PATH)
 		else:
-			link = create_article_path(change["title"])
+			link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		embed["title"] = _("Deleted a comment on {target}'s profile").format(target=change["title"].split(':')[1])
 	elif action in ("rights/rights", "rights/autopromote"):
-		link = create_article_path("User:{}".format(change["title"].split(":")[1].replace(" ", "_")))
+		link = create_article_path("User:{}".format(change["title"].split(":")[1].replace(" ", "_")), WIKI_ARTICLE_PATH)
 		if action == "rights/rights":
 			embed["title"] = _("Changed group membership for {target}").format(target=change["title"].split(":")[1])
 		else:
@@ -580,80 +587,80 @@ def embed_formatter(action, change, parsed_comment, categories, recent_changes, 
 		parsed_comment = _("Groups changed from {old_groups} to {new_groups}{reason}").format(
 			old_groups=", ".join(old_groups), new_groups=', '.join(new_groups), reason=reason)
 	elif action == "protect/protect":
-		link = create_article_path(change["title"].replace(" ", "_"))
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Protected {target}").format(target=change["title"])
 		parsed_comment = "{settings}{cascade} | {reason}".format(settings=change["logparams"]["description"],
 		                                                         cascade=_(" [cascading]") if "cascade" in change["logparams"] else "",
 		                                                         reason=parsed_comment)
 	elif action == "protect/modify":
-		link = create_article_path(change["title"].replace(" ", "_"))
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Changed protection level for {article}").format(article=change["title"])
 		parsed_comment = "{settings}{cascade} | {reason}".format(settings=change["logparams"]["description"],
 		                                                         cascade=_(" [cascading]") if "cascade" in change["logparams"] else "",
 		                                                         reason=parsed_comment)
 	elif action == "protect/unprotect":
-		link = create_article_path(change["title"].replace(" ", "_"))
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Removed protection from {article}").format(article=change["title"])
 	elif action == "delete/revision":
 		amount = len(change["logparams"]["ids"])
-		link = create_article_path(change["title"].replace(" ", "_"))
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = ngettext("Changed visibility of revision on page {article} ",
 		                          "Changed visibility of {amount} revisions on page {article} ", amount).format(
 			article=change["title"], amount=amount)
 	elif action == "import/upload":
-		link = create_article_path(change["title"].replace(" ", "_"))
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = ngettext("Imported {article} with {count} revision",
 		                          "Imported {article} with {count} revisions", change["logparams"]["count"]).format(
 			article=change["title"], count=change["logparams"]["count"])
 	elif action == "delete/restore":
-		link = create_article_path(change["title"].replace(" ", "_"))
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Restored {article}").format(article=change["title"])
 	elif action == "delete/event":
-		link = create_article_path("Special:RecentChanges")
+		link = create_article_path("Special:RecentChanges", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Changed visibility of log events")
 	elif action == "import/interwiki":
-		link = create_article_path("Special:RecentChanges")
+		link = create_article_path("Special:RecentChanges", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Imported interwiki")
 	elif action == "abusefilter/modify":
-		link = create_article_path("Special:AbuseFilter/history/{number}/diff/prev/{historyid}".format(number=change["logparams"]['newId'], historyid=change["logparams"]["historyId"]))
+		link = create_article_path("Special:AbuseFilter/history/{number}/diff/prev/{historyid}".format(number=change["logparams"]['newId'], historyid=change["logparams"]["historyId"]), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Edited abuse filter number {number}").format(number=change["logparams"]['newId'])
 	elif action == "abusefilter/create":
-		link = create_article_path("Special:AbuseFilter/{number}".format(number=change["logparams"]['newId']))
+		link = create_article_path("Special:AbuseFilter/{number}".format(number=change["logparams"]['newId']), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Created abuse filter number {number}").format(number=change["logparams"]['newId'])
 	elif action == "merge/merge":
-		link = create_article_path(change["title"].replace(" ", "_"))
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Merged revision histories of {article} into {dest}").format(article=change["title"],
 		                                                                                dest=change["logparams"]["dest_title"])
 	elif action == "interwiki/iw_add":
-		link = create_article_path("Special:Interwiki")
+		link = create_article_path("Special:Interwiki", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Added an entry to the interwiki table")
 		parsed_comment = _("Prefix: {prefix}, website: {website} | {desc}").format(desc=parsed_comment,
 		                                                                           prefix=change["logparams"]['0'],
 		                                                                           website=change["logparams"]['1'])
 	elif action == "interwiki/iw_edit":
-		link = create_article_path("Special:Interwiki")
+		link = create_article_path("Special:Interwiki", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Edited an entry in interwiki table")
 		parsed_comment = _("Prefix: {prefix}, website: {website} | {desc}").format(desc=parsed_comment,
 		                                                                           prefix=change["logparams"]['0'],
 		                                                                           website=change["logparams"]['1'])
 	elif action == "interwiki/iw_delete":
-		link = create_article_path("Special:Interwiki")
+		link = create_article_path("Special:Interwiki", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Deleted an entry in interwiki table")
 		parsed_comment = _("Prefix: {prefix} | {desc}").format(desc=parsed_comment, prefix=change["logparams"]['0'])
 	elif action == "contentmodel/change":
-		link = create_article_path(change["title"].replace(" ", "_"))
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Changed the content model of the page {article}").format(article=change["title"])
 		parsed_comment = _("Model changed from {old} to {new}: {reason}").format(old=change["logparams"]["oldmodel"],
 		                                                                         new=change["logparams"]["newmodel"],
 		                                                                         reason=parsed_comment)
 	elif action == "sprite/sprite":
-		link = create_article_path(change["title"].replace(" ", "_"))
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Edited the sprite for {article}").format(article=change["title"])
 	elif action == "sprite/sheet":
-		link = create_article_path(change["title"].replace(" ", "_"))
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Created the sprite sheet for {article}").format(article=change["title"])
 	elif action == "sprite/slice":
-		link = create_article_path(change["title"].replace(" ", "_"))
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Edited the slice for {article}").format(article=change["title"])
 	elif action == "cargo/createtable":
 		LinkParser.feed(change["logparams"]["0"])
@@ -663,7 +670,7 @@ def embed_formatter(action, change, parsed_comment, categories, recent_changes, 
 		embed["title"] = _("Created the Cargo table \"{table}\"").format(table=table.group(1))
 		parsed_comment = None
 	elif action == "cargo/deletetable":
-		link = create_article_path("Special:CargoTables")
+		link = create_article_path("Special:CargoTables", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Deleted the Cargo table \"{table}\"").format(table=change["logparams"]["0"])
 		parsed_comment = None
 	elif action == "cargo/recreatetable":
@@ -681,21 +688,21 @@ def embed_formatter(action, change, parsed_comment, categories, recent_changes, 
 		embed["title"] = _("Replaced the Cargo table \"{table}\"").format(table=table.group(1))
 		parsed_comment = None
 	elif action == "managetags/create":
-		link = create_article_path("Special:Tags")
+		link = create_article_path("Special:Tags", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Created a tag \"{tag}\"").format(tag=change["logparams"]["tag"])
 		recent_changes.init_info()
 	elif action == "managetags/delete":
-		link = create_article_path("Special:Tags")
+		link = create_article_path("Special:Tags", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Deleted a tag \"{tag}\"").format(tag=change["logparams"]["tag"])
 		recent_changes.init_info()
 	elif action == "managetags/activate":
-		link = create_article_path("Special:Tags")
+		link = create_article_path("Special:Tags", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Activated a tag \"{tag}\"").format(tag=change["logparams"]["tag"])
 	elif action == "managetags/deactivate":
-		link = create_article_path("Special:Tags")
+		link = create_article_path("Special:Tags", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Deactivated a tag \"{tag}\"").format(tag=change["logparams"]["tag"])
 	elif action == "suppressed":
-		link = create_article_path("")
+		link = create_article_path("", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Action has been hidden by administration.")
 		embed["author"]["name"] = _("Unknown")
 	else:
