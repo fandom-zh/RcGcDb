@@ -13,7 +13,7 @@ logger = logging.getLogger("rcgcdb.wiki")
 
 supported_logs = ["protect/protect", "protect/modify", "protect/unprotect", "upload/overwrite", "upload/upload", "delete/delete", "delete/delete_redir", "delete/restore", "delete/revision", "delete/event", "import/upload", "import/interwiki", "merge/merge", "move/move", "move/move_redir", "protect/move_prot", "block/block", "block/unblock", "block/reblock", "rights/rights", "rights/autopromote", "abusefilter/modify", "abusefilter/create", "interwiki/iw_add", "interwiki/iw_edit", "interwiki/iw_delete", "curseprofile/comment-created", "curseprofile/comment-edited", "curseprofile/comment-deleted", "curseprofile/comment-purged", "curseprofile/profile-edited", "curseprofile/comment-replied", "contentmodel/change", "sprite/sprite", "sprite/sheet", "sprite/slice", "managetags/create", "managetags/delete", "managetags/activate", "managetags/deactivate", "tag/update", "cargo/createtable", "cargo/deletetable", "cargo/recreatetable", "cargo/replacetable", "upload/revert"]
 
-		
+
 
 @dataclass
 class Wiki:
@@ -43,6 +43,17 @@ class Wiki:
 			logger.exception("A connection error occurred while requesting {}".format(url_path))
 			raise WikiServerError
 		return response
+
+	@staticmethod
+	async def safe_request(url):
+		try:
+			request = await session.get(url, timeout=5, allow_redirects=False)
+			request.raise_for_status()
+		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError):
+			logger.exception("Reached connection error for request on link {url}".format(url=url))
+			return None
+		else:
+			return request
 
 	async def check_status(self, wiki_url, status):
 		if 199 < status < 300:
@@ -131,12 +142,12 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 
 	lang = langs[target[0][0]]
 	ngettext = lang.ngettext
-	recent_changes = RecentChangesClass()  # TODO Look into replacing RecentChangesClass with local_wiki
+	# recent_changes = RecentChangesClass()  # TODO Look into replacing RecentChangesClass with local_wiki
 	LinkParser = LinkParser("domain")
 	logger.debug(change)
 	appearance_mode = embed_formatter if target[0][1] > 0 else compact_formatter
 	if ("actionhidden" in change or "suppressed" in change):  # if event is hidden using suppression
-		await appearance_mode("suppressed", change, "", changed_categories, recent_changes, target, _, ngettext, paths)
+		await appearance_mode("suppressed", change, "", changed_categories, local_wiki, target, _, ngettext, paths)
 		return
 	if "commenthidden" not in change:
 		LinkParser.feed(change["parsedcomment"])
@@ -164,4 +175,4 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 	else:
 		logger.warning("This event is not implemented in the script. Please make an issue on the tracker attaching the following info: wiki url, time, and this information: {}".format(change))
 		return
-	await appearance_mode(identification_string, change, parsed_comment, changed_categories, recent_changes, target, _, ngettext, paths)
+	await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, _, ngettext, paths)

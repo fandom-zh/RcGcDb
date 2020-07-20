@@ -47,3 +47,7 @@ class MessageQueue:
 
 
 messagequeue = MessageQueue()
+
+
+async def send_to_discord(msg):
+	messagequeue.add_message(msg)

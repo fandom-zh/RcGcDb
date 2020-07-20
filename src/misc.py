@@ -8,12 +8,13 @@ from collections import defaultdict
 import random
 from urllib.parse import urlparse, urlunparse
 import math
+import aiohttp
 profile_fields = {"profile-location": _("Location"), "profile-aboutme": _("About me"), "profile-link-google": _("Google link"), "profile-link-facebook":_("Facebook link"), "profile-link-twitter": _("Twitter link"), "profile-link-reddit": _("Reddit link"), "profile-link-twitch": _("Twitch link"), "profile-link-psn": _("PSN link"), "profile-link-vk": _("VK link"), "profile-link-xbl": _("XBL link"), "profile-link-steam": _("Steam link"), "profile-link-discord": _("Discord handle"), "profile-link-battlenet": _("Battle.net handle")}
 logger = logging.getLogger("rcgcdw.misc")
 
 class DiscordMessage():
 	"""A class defining a typical Discord JSON representation of webhook payload."""
-	def __init__(self, message_type: str, event_type: str, webhook_url: str, content=None):
+	def __init__(self, message_type: str, event_type: str, webhook_url: list, content=None):
 		self.webhook_object = dict(allowed_mentions={"parse": []}, avatar_url=settings["avatars"].get(message_type, ""))
 		self.webhook_url = webhook_url
 
@@ -217,6 +218,22 @@ class ContentParser(HTMLParser):
 		else:
 			self.current_tag = ""
 
+
+async def safe_read(request: aiohttp.ClientResponse, *keys):
+	if request is None:
+		return None
+	try:
+		request = await request.json(encoding="UTF-8")
+		for item in keys:
+			request = request[item]
+	except KeyError:
+		logger.warning(
+			"Failure while extracting data from request on key {key} in {change}".format(key=item, change=request))
+		return None
+	except aiohttp.ClientResponseError:
+		logger.warning("Failure while extracting data from request in {change}".format(change=request))
+		return None
+	return request
 
 # class RecentChangesClass():
 # 	"""Store verious data and functions related to wiki and fetching of Recent Changes"""

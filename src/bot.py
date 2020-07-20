@@ -84,12 +84,12 @@ async def wiki_scanner():
 			if change["rcid"] < db_wiki[6]:
 				for target in targets.items():
 					await essential_info(change, categorize_events, local_wiki, db_wiki, target, paths)
-
-
 		await asyncio.sleep(delay=calc_delay)
+
 
 async def message_sender():
 	pass
+
 
 async def main_loop():
 	task1 = asyncio.create_task(wiki_scanner())

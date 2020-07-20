@@ -5,7 +5,7 @@ import time
 import logging
 import base64
 from config import settings
-from src.misc import link_formatter, create_article_path, LinkParser, profile_field_name, ContentParser, DiscordMessage
+from src.misc import link_formatter, create_article_path, LinkParser, profile_field_name, ContentParser, DiscordMessage, safe_read
 from urllib.parse import quote_plus
 # from html.parser import HTMLParser
 
@@ -20,7 +20,7 @@ from src.i18n import langs
 logger = logging.getLogger("rcgcdw.rc_formatters")
 #from src.rcgcdw import recent_changes, ngettext, logger, profile_field_name, LinkParser, pull_comment
 
-async def compact_formatter(action, change, parsed_comment, categories, recent_changes, _, ngettext, paths):
+async def compact_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths):
 	WIKI_API_PATH = paths[0]
 	WIKI_SCRIPT_PATH = paths[1]
 	WIKI_ARTICLE_PATH = paths[2]
@@ -310,16 +310,16 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 	else:
 		logger.warning("No entry for {event} with params: {params}".format(event=action, params=change))
 		return
-	send_to_discord(DiscordMessage("compact", action, settings["webhookURL"], content=content))
+	send_to_discord(DiscordMessage("compact", action, target[1], content=content))
 
 
-async def embed_formatter(action, change, parsed_comment, categories, recent_changes, _, ngettext, paths):
+async def embed_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths):
 	WIKI_API_PATH = paths[0]
 	WIKI_SCRIPT_PATH = paths[1]
 	WIKI_ARTICLE_PATH = paths[2]
 	WIKI_JUST_DOMAIN = paths[3]
 	LinkParser = LinkParser()
-	embed = DiscordMessage("embed", action, settings["webhookURL"])
+	embed = DiscordMessage("embed", action, target[1])
 	if parsed_comment is None:
 		parsed_comment = _("No description provided")
 	if action != "suppressed":
@@ -352,12 +352,12 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		                                                             minor=_("m") if action == "edit" and "minor" in change else "", bot=_('b') if "bot" in change else "", space=" " if "bot" in change or (action == "edit" and "minor" in change) or action == "new" else "")
 		if settings["appearance"]["embed"]["show_edit_changes"]:
 			if action == "new":
-				changed_content = safe_read(recent_changes.safe_request(
+				changed_content = await safe_read(await recent_changes.safe_request(
 				"{wiki}?action=compare&format=json&fromtext=&torev={diff}&topst=1&prop=diff".format(
 					wiki=WIKI_API_PATH, diff=change["revid"]
 				)), "compare", "*")
 			else:
-				changed_content = safe_read(recent_changes.safe_request(
+				changed_content = await safe_read(await recent_changes.safe_request(
 					"{wiki}?action=compare&format=json&fromrev={oldrev}&torev={diff}&topst=1&prop=diff".format(
 						wiki=WIKI_API_PATH, diff=change["revid"],oldrev=change["old_revid"]
 					)), "compare", "*")
@@ -383,7 +383,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 				logger.warning("Unable to download data on the edit content!")
 	elif action in ("upload/overwrite", "upload/upload", "upload/revert"):  # sending files
 		license = None
-		urls = safe_read(recent_changes.safe_request(
+		urls = await safe_read(await recent_changes.safe_request(
 			"{wiki}?action=query&format=json&prop=imageinfo&list=&meta=&titles={filename}&iiprop=timestamp%7Curl%7Carchivename&iilimit=5".format(
 				wiki=WIKI_API_PATH, filename=change["title"])), "query", "pages")
 		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
@@ -423,7 +423,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		else:
 			embed["title"] = _("Uploaded {name}").format(name=change["title"])
 			if settings["license_detection"]:
-				article_content = safe_read(recent_changes.safe_request(
+				article_content = await safe_read(await recent_changes.safe_request(
 					"{wiki}?action=query&format=json&prop=revisions&titles={article}&rvprop=content".format(
 						wiki=WIKI_API_PATH, article=quote_plus(change["title"], safe=''))), "query", "pages")
 				if article_content is None:
