@@ -7,7 +7,7 @@ from src.misc import get_paths
 from src.exceptions import *
 from src.database import db_cursor
 from collections import defaultdict
-from queue_handler import DBHandler
+from src.queue_handler import DBHandler
 
 logging.config.dictConfig(settings["logging"])
 logger = logging.getLogger("rcgcdb.bot")
@@ -35,7 +35,7 @@ def calculate_delay() -> float:
 		return min_delay
 
 
-def generate_targets(wiki_url: str) -> defaultdict[list]:
+def generate_targets(wiki_url: str) -> defaultdict:
 	combinations = defaultdict(list)
 	for webhook in db_cursor.execute('SELECT ROWID, * FROM rcgcdw WHERE wiki = ?', wiki_url):
 		# rowid, guild, configid, webhook, wiki, lang, display, rcid, wikiid, postid
@@ -50,13 +50,14 @@ async def wiki_scanner():
 	for db_wiki in db_cursor.execute('SELECT * FROM rcgcdw GROUP BY wiki'):
 		extended = False
 		if db_wiki[3] not in all_wikis:
-			logger.debug("New wiki: {}".format(wiki[1]))
+			logger.debug("New wiki: {}".format(db_wiki[3]))
 			all_wikis[db_wiki[3]] = Wiki()
 		local_wiki = all_wikis[db_wiki[3]]  # set a reference to a wiki object from memory
 		if local_wiki.mw_messages is None:
 			extended = True
+		logger.debug("test")
 		try:
-			wiki_response = await local_wiki.fetch_wiki(extended, db_wiki[0])
+			wiki_response = await local_wiki.fetch_wiki(extended, db_wiki[3])
 			await local_wiki.check_status(wiki[3], wiki_response.status)
 		except (WikiServerError, WikiError):
 			continue  # ignore this wiki if it throws errors
@@ -83,8 +84,12 @@ async def wiki_scanner():
 		for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
 			if change["rcid"] < db_wiki[6]:
 				for target in targets.items():
-					await essential_info(change, categorize_events, local_wiki, db_wiki, target, paths)
+					await essential_info(change, categorize_events, local_wiki, db_wiki, target, paths, recent_changes_resp)
+		if recent_changes:
+			DBHandler.add(db_wiki[3], change["rcid"])
 		await asyncio.sleep(delay=calc_delay)
+
+	DBHandler.update_db()
 
 
 async def message_sender():
@@ -94,5 +99,6 @@ async def message_sender():
 async def main_loop():
 	task1 = asyncio.create_task(wiki_scanner())
 	task2 = asyncio.create_task(message_sender())
+
 
 asyncio.run(main_loop())

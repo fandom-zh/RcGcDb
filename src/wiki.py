@@ -1,26 +1,32 @@
 from dataclasses import dataclass
-from src.session import session
 import re
 import logging, aiohttp
 from src.exceptions import *
 from src.database import db_cursor, db_connection
 from src.formatters.rc import embed_formatter, compact_formatter
-from src.misc import LinkParser, RecentChangesClass
-from i18n import langs
+from src.misc import LinkParser
+from src.i18n import langs
 import src.discord
+from src.config import settings
+from bs4 import BeautifulSoup
 
 logger = logging.getLogger("rcgcdb.wiki")
 
 supported_logs = ["protect/protect", "protect/modify", "protect/unprotect", "upload/overwrite", "upload/upload", "delete/delete", "delete/delete_redir", "delete/restore", "delete/revision", "delete/event", "import/upload", "import/interwiki", "merge/merge", "move/move", "move/move_redir", "protect/move_prot", "block/block", "block/unblock", "block/reblock", "rights/rights", "rights/autopromote", "abusefilter/modify", "abusefilter/create", "interwiki/iw_add", "interwiki/iw_edit", "interwiki/iw_delete", "curseprofile/comment-created", "curseprofile/comment-edited", "curseprofile/comment-deleted", "curseprofile/comment-purged", "curseprofile/profile-edited", "curseprofile/comment-replied", "contentmodel/change", "sprite/sprite", "sprite/sheet", "sprite/slice", "managetags/create", "managetags/delete", "managetags/activate", "managetags/deactivate", "tag/update", "cargo/createtable", "cargo/deletetable", "cargo/recreatetable", "cargo/replacetable", "upload/revert"]
 
 
-
 @dataclass
 class Wiki:
 	mw_messages: int = None
 	fail_times: int = 0  # corresponding to amount of times connection with wiki failed for client reasons (400-499)
+	session: aiohttp.ClientSession = None
+
+	async def create_session(self):
+		self.session = aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(5.0))
 
 	async def fetch_wiki(self, extended, script_path) -> aiohttp.ClientResponse:
+		if self.session is None:
+			await self.create_session()
 		url_path = script_path + "api.php"
 		amount = 20
 		if extended:
@@ -38,16 +44,15 @@ class Wiki:
 			          "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user",
 			          "rclimit": amount, "rctype": "edit|new|log|external", "siprop": "namespaces|general"}
 		try:
-			response = await session.get(url_path, params=params)
+			response = await self.session.get(url_path, params=params)
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError):
 			logger.exception("A connection error occurred while requesting {}".format(url_path))
 			raise WikiServerError
 		return response
 
-	@staticmethod
-	async def safe_request(url):
+	async def safe_request(self, url):
 		try:
-			request = await session.get(url, timeout=5, allow_redirects=False)
+			request = await self.session.get(url, timeout=5, allow_redirects=False)
 			request.raise_for_status()
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError):
 			logger.exception("Reached connection error for request on link {url}".format(url=url))
@@ -75,6 +80,23 @@ class Wiki:
 		db_cursor.execute("DELETE FROM rcgcdw WHERE wiki = ?", wiki_id)
 		logger.warning("{} rows affected by DELETE FROM rcgcdw WHERE wiki = {}".format(db_cursor.rowcount, wiki_id))
 		db_connection.commit()
+
+	async def pull_comment(self, comment_id, WIKI_API_PATH):
+		try:
+			comment = await self.safe_request(
+				"{wiki}?action=comment&do=getRaw&comment_id={comment}&format=json".format(wiki=WIKI_API_PATH,
+				                                                                          comment=comment_id)).json()[
+				"text"]
+			logger.debug("Got the following comment from the API: {}".format(comment))
+		except (TypeError, AttributeError):
+			logger.exception("Could not resolve the comment text.")
+		except KeyError:
+			logger.exception("CurseProfile extension API did not respond with a valid comment content.")
+		else:
+			if len(comment) > 1000:
+				comment = comment[0:1000] + "…"
+			return comment
+		return ""
 
 
 async def process_cats(event: dict, local_wiki: Wiki, category_msgs: dict, categorize_events: dict):
@@ -134,7 +156,7 @@ async def process_mwmsgs(wiki_response: dict, local_wiki: Wiki, mw_msgs: dict):
 	mw_msgs[key] = msgs  # it may be a little bit messy for sure, however I don't expect any reason to remove mw_msgs entries by one
 	local_wiki.mw_messages = key
 
-async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_wiki: tuple, target: tuple, paths: tuple):
+async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_wiki: tuple, target: tuple, paths: tuple, request: dict):
 	"""Prepares essential information for both embed and compact message format."""
 	def _(string: str) -> str:
 		"""Our own translation string to make it compatible with async"""
@@ -175,4 +197,10 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 	else:
 		logger.warning("This event is not implemented in the script. Please make an issue on the tracker attaching the following info: wiki url, time, and this information: {}".format(change))
 		return
-	await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, _, ngettext, paths)
+	additional_data = {"namespaces": request["query"]["namespaces"], "tags": {}}
+	for tag in request["query"]["tags"]:
+		try:
+			additional_data["tags"][tag["name"]] = (BeautifulSoup(tag["displayname"], "lxml")).get_text()
+		except KeyError:
+			additional_data["tags"][tag["name"]] = None  # Tags with no displ
+	await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, _, ngettext, paths, additional_data=additional_data)

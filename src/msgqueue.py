@@ -1,10 +1,13 @@
-import asyncio, logging
+import asyncio, logging, aiohttp
+from src.misc import send_to_discord_webhook
+from src.config import settings
 logger = logging.getLogger("rcgcdw.msgqueue")
 
 class MessageQueue:
 	"""Message queue class for undelivered messages"""
 	def __init__(self):
 		self._queue = []
+		self.session = None
 
 	def __repr__(self):
 		return self._queue
@@ -24,7 +27,12 @@ class MessageQueue:
 	def cut_messages(self, item_num):
 		self._queue = self._queue[item_num:]
 
+	async def create_session(self):
+		self.session = aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(5.0))
+
 	async def resend_msgs(self):
+		if self.session is None:
+			await self.create_session()
 		if self._queue:
 			logger.info(
 				"{} messages waiting to be delivered to Discord due to Discord throwing errors/no connection to Discord servers.".format(
@@ -33,9 +41,9 @@ class MessageQueue:
 				logger.debug(
 					"Trying to send a message to Discord from the queue with id of {} and content {}".format(str(num),
 					                                                                                         str(item)))
-				if send_to_discord_webhook(item) < 2:
+				if await send_to_discord_webhook(item, self.session) < 2:
 					logger.debug("Sending message succeeded")
-					await asyncio.sleep(2.5)
+					await asyncio.sleep(1.5)
 				else:
 					logger.debug("Sending message failed")
 					break

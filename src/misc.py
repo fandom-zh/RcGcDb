@@ -9,14 +9,14 @@ import random
 from urllib.parse import urlparse, urlunparse
 import math
 import aiohttp
-profile_fields = {"profile-location": _("Location"), "profile-aboutme": _("About me"), "profile-link-google": _("Google link"), "profile-link-facebook":_("Facebook link"), "profile-link-twitter": _("Twitter link"), "profile-link-reddit": _("Reddit link"), "profile-link-twitch": _("Twitch link"), "profile-link-psn": _("PSN link"), "profile-link-vk": _("VK link"), "profile-link-xbl": _("XBL link"), "profile-link-steam": _("Steam link"), "profile-link-discord": _("Discord handle"), "profile-link-battlenet": _("Battle.net handle")}
 logger = logging.getLogger("rcgcdw.misc")
 
 class DiscordMessage():
 	"""A class defining a typical Discord JSON representation of webhook payload."""
-	def __init__(self, message_type: str, event_type: str, webhook_url: list, content=None):
+	def __init__(self, message_type: str, event_type: str, webhook_url: list, wiki, content=None):
 		self.webhook_object = dict(allowed_mentions={"parse": []}, avatar_url=settings["avatars"].get(message_type, ""))
 		self.webhook_url = webhook_url
+		self.wiki = wiki
 
 		if message_type == "embed":
 			self.__setup_embed()
@@ -76,9 +76,46 @@ class DiscordMessage():
 	def set_name(self, name):
 		self.webhook_object["username"] = name
 
+
+async def send_to_discord_webhook(data: DiscordMessage, session: aiohttp.ClientSession):
+	header = settings["header"]
+	header['Content-Type'] = 'application/json'
+	for webhook in data.webhook_url:
+		try:
+			result = await session.post("https://discord.com/api/webhooks/"+webhook, data=repr(data),
+			                       headers=header)
+		except (aiohttp.ClientConnectionError, aiohttp.ServerConnectionError):
+			logger.exception("Could not send the message to Discord")
+			return 3
+		return await handle_discord_http(result.status, repr(data), await result.text())
+
+
+async def handle_discord_http(code, formatted_embed, result):
+	if 300 > code > 199:  # message went through
+		return 0
+	elif code == 400:  # HTTP BAD REQUEST result.status_code, data, result, header
+		logger.error(
+			"Following message has been rejected by Discord, please submit a bug on our bugtracker adding it:")
+		logger.error(formatted_embed)
+		logger.error(result.text)
+		return 1
+	elif code == 401 or code == 404:  # HTTP UNAUTHORIZED AND NOT FOUND
+		logger.error("Webhook URL is invalid or no longer in use, please replace it with proper one.")
+
+		return 1
+	elif code == 429:
+		logger.error("We are sending too many requests to the Discord, slowing down...")
+		return 2
+	elif 499 < code < 600:
+		logger.error(
+			"Discord have trouble processing the event, and because the HTTP code returned is {} it means we blame them.".format(
+				code))
+		return 3
+
+
 def get_paths(wiki: str, request) -> tuple:
 	parsed_url = urlparse(wiki)
-	WIKI_API_PATH = wiki + request["query"]["general"]["scriptpath"] + "/api.php"
+	WIKI_API_PATH = wiki + request["query"]["general"]["scriptpath"] + "api.php"
 	WIKI_SCRIPT_PATH = wiki
 	WIKI_ARTICLE_PATH = urlunparse((*parsed_url[0:2], "", "", "", "")) + request["query"]["general"]["articlepath"]
 	WIKI_JUST_DOMAIN = urlunparse((*parsed_url[0:2], "", "", "", ""))
@@ -140,7 +177,15 @@ def create_article_path(article: str, WIKI_ARTICLE_PATH: str) -> str:
 	return WIKI_ARTICLE_PATH.replace("$1", article)
 
 
-def profile_field_name(name, embed):
+def profile_field_name(name, embed, _):
+	profile_fields = {"profile-location": _("Location"), "profile-aboutme": _("About me"),
+	                  "profile-link-google": _("Google link"), "profile-link-facebook": _("Facebook link"),
+	                  "profile-link-twitter": _("Twitter link"), "profile-link-reddit": _("Reddit link"),
+	                  "profile-link-twitch": _("Twitch link"), "profile-link-psn": _("PSN link"),
+	                  "profile-link-vk": _("VK link"), "profile-link-xbl": _("XBL link"),
+	                  "profile-link-steam": _("Steam link"), "profile-link-discord": _("Discord handle"),
+	                  "profile-link-battlenet": _("Battle.net handle")}
+
 	try:
 		return profile_fields[name]
 	except KeyError:
@@ -151,13 +196,16 @@ def profile_field_name(name, embed):
 
 
 class ContentParser(HTMLParser):
-	more = _("\n__And more__")
 	current_tag = ""
 	small_prev_ins = ""
 	small_prev_del = ""
-	ins_length = len(more)
-	del_length = len(more)
 	added = False
+
+	def __init__(self, _):
+		super().__init__()
+		self.more = _("\n__And more__")
+		self.ins_length = len(self.more)
+		self.del_length = len(self.more)
 
 	def handle_starttag(self, tagname, attribs):
 		if tagname == "ins" or tagname == "del":

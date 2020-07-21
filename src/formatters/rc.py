@@ -4,9 +4,10 @@ import re
 import time
 import logging
 import base64
-from config import settings
+from src.config import settings
 from src.misc import link_formatter, create_article_path, LinkParser, profile_field_name, ContentParser, DiscordMessage, safe_read
 from urllib.parse import quote_plus
+from src.msgqueue import send_to_discord
 # from html.parser import HTMLParser
 
 from bs4 import BeautifulSoup
@@ -20,7 +21,10 @@ from src.i18n import langs
 logger = logging.getLogger("rcgcdw.rc_formatters")
 #from src.rcgcdw import recent_changes, ngettext, logger, profile_field_name, LinkParser, pull_comment
 
-async def compact_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths):
+async def compact_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths,
+                            additional_data=None):
+	if additional_data is None:
+		additional_data = {"namespaces": {}, "tags": {}}
 	WIKI_API_PATH = paths[0]
 	WIKI_SCRIPT_PATH = paths[1]
 	WIKI_ARTICLE_PATH = paths[2]
@@ -121,8 +125,8 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 					else:
 						restriction_description = _(" on namespaces: ")
 					for namespace in change["logparams"]["restrictions"]["namespaces"]:
-						if str(namespace) in recent_changes.namespaces:  # if we have cached namespace name for given namespace number, add its name to the list
-							namespaces.append("*{ns}*".format(ns=recent_changes.namespaces[str(namespace)]["*"]))
+						if str(namespace) in additional_data.namespaces:  # if we have cached namespace name for given namespace number, add its name to the list
+							namespaces.append("*{ns}*".format(ns=additional_data.namespaces[str(namespace)]["*"]))
 						else:
 							namespaces.append("*{ns}*".format(ns=namespace))
 					restriction_description = restriction_description + ", ".join(namespaces)
@@ -177,7 +181,7 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		content = _("[{author}]({author_url}) edited the {field} on {target} profile. *({desc})*").format(author=author,
 		                                                                        author_url=author_url,
 		                                                                        target=target,
-		                                                                        field=profile_field_name(change["logparams"]['4:section'], False),
+		                                                                        field=profile_field_name(change["logparams"]['4:section'], False, _),
 		                                                                        desc=BeautifulSoup(change["parsedcomment"], "lxml").get_text())
 	elif action in ("rights/rights", "rights/autopromote"):
 		link = link_formatter(create_article_path("User:{user}".format(user=change["title"].split(":")[1]), WIKI_ARTICLE_PATH))
@@ -310,16 +314,18 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 	else:
 		logger.warning("No entry for {event} with params: {params}".format(event=action, params=change))
 		return
-	send_to_discord(DiscordMessage("compact", action, target[1], content=content))
+	await send_to_discord(DiscordMessage("compact", action, target[1], content=content, wiki=WIKI_SCRIPT_PATH))
 
 
-async def embed_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths):
+async def embed_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths, additional_data=None):
+	if additional_data is None:
+		additional_data = {"namespaces": {}, "tags": {}}
 	WIKI_API_PATH = paths[0]
 	WIKI_SCRIPT_PATH = paths[1]
 	WIKI_ARTICLE_PATH = paths[2]
 	WIKI_JUST_DOMAIN = paths[3]
 	LinkParser = LinkParser()
-	embed = DiscordMessage("embed", action, target[1])
+	embed = DiscordMessage("embed", action, target[1], wiki=WIKI_SCRIPT_PATH)
 	if parsed_comment is None:
 		parsed_comment = _("No description provided")
 	if action != "suppressed":
@@ -350,7 +356,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		embed["title"] = "{redirect}{article} ({new}{minor}{bot}{space}{editsize})".format(redirect="⤷ " if "redirect" in change else "", article=change["title"], editsize="+" + str(
 			editsize) if editsize > 0 else editsize, new=_("(N!) ") if action == "new" else "",
 		                                                             minor=_("m") if action == "edit" and "minor" in change else "", bot=_('b') if "bot" in change else "", space=" " if "bot" in change or (action == "edit" and "minor" in change) or action == "new" else "")
-		if settings["appearance"]["embed"]["show_edit_changes"]:
+		if target[1] == 3:
 			if action == "new":
 				changed_content = await safe_read(await recent_changes.safe_request(
 				"{wiki}?action=compare&format=json&fromtext=&torev={diff}&topst=1&prop=diff".format(
@@ -362,7 +368,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 						wiki=WIKI_API_PATH, diff=change["revid"],oldrev=change["old_revid"]
 					)), "compare", "*")
 			if changed_content:
-				EditDiff = ContentParser()
+				EditDiff = ContentParser(_)
 				EditDiff.feed(changed_content)
 				if EditDiff.small_prev_del:
 					if EditDiff.small_prev_del.replace("~~", "").isspace():
@@ -422,37 +428,9 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 				embed["title"] = _("Reverted a version of {name}").format(name=change["title"])
 		else:
 			embed["title"] = _("Uploaded {name}").format(name=change["title"])
-			if settings["license_detection"]:
-				article_content = await safe_read(await recent_changes.safe_request(
-					"{wiki}?action=query&format=json&prop=revisions&titles={article}&rvprop=content".format(
-						wiki=WIKI_API_PATH, article=quote_plus(change["title"], safe=''))), "query", "pages")
-				if article_content is None:
-					logger.warning("Something went wrong when getting license for the image")
-					return 0
-				if "-1" not in article_content:
-					content = list(article_content.values())[0]['revisions'][0]['*']
-					try:
-						matches = re.search(re.compile(settings["license_regex"], re.IGNORECASE), content)
-						if matches is not None:
-							license = matches.group("license")
-						else:
-							if re.search(re.compile(settings["license_regex_detect"], re.IGNORECASE), content) is None:
-								license = _("**No license!**")
-							else:
-								license = "?"
-					except IndexError:
-						logger.error(
-							"Given regex for the license detection is incorrect. It does not have a capturing group called \"license\" specified. Please fix license_regex value in the config!")
-						license = "?"
-					except re.error:
-						logger.error(
-							"Given regex for the license detection is incorrect. Please fix license_regex or license_regex_detect values in the config!")
-						license = "?"
-			if license is not None:
-				parsed_comment += _("\nLicense: {}").format(license)
 			if additional_info_retrieved:
 				embed.add_field(_("Options"), _("([preview]({link}))").format(link=image_direct_url))
-				if settings["appearance"]["embed"]["embed_images"]:
+				if target[1] > 1:
 					embed["image"]["url"] = image_direct_url
 	elif action == "delete/delete":
 		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
@@ -506,8 +484,8 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 				else:
 					restriction_description = _("Blocked from editing pages on following namespaces: ")
 				for namespace in change["logparams"]["restrictions"]["namespaces"]:
-					if str(namespace) in recent_changes.namespaces:  # if we have cached namespace name for given namespace number, add its name to the list
-						namespaces.append("*{ns}*".format(ns=recent_changes.namespaces[str(namespace)]["*"]))
+					if str(namespace) in additional_data.namespaces:  # if we have cached namespace name for given namespace number, add its name to the list
+						namespaces.append("*{ns}*".format(ns=additional_data.namespaces[str(namespace)]["*"]))
 					else:
 						namespaces.append("*{ns}*".format(ns=namespace))
 				restriction_description = restriction_description + ", ".join(namespaces)
@@ -527,22 +505,22 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		embed["title"] = _("Unblocked {blocked_user}").format(blocked_user=user)
 	elif action == "curseprofile/comment-created":
 		if settings["appearance"]["embed"]["show_edit_changes"]:
-			parsed_comment = recent_changes.pull_comment(change["logparams"]["4:comment_id"], WIKI_ARTICLE_PATH)
-		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]))
+			parsed_comment = await recent_changes.pull_comment(change["logparams"]["4:comment_id"], WIKI_API_PATH)
+		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Left a comment on {target}'s profile").format(target=change["title"].split(':')[1]) if change["title"].split(':')[1] != \
 		                                                                                              change["user"] else _(
 			"Left a comment on their own profile")
 	elif action == "curseprofile/comment-replied":
 		if settings["appearance"]["embed"]["show_edit_changes"]:
-			parsed_comment = recent_changes.pull_comment(change["logparams"]["4:comment_id"], WIKI_ARTICLE_PATH)
-		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]))
+			parsed_comment = await recent_changes.pull_comment(change["logparams"]["4:comment_id"], WIKI_API_PATH)
+		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Replied to a comment on {target}'s profile").format(target=change["title"].split(':')[1]) if change["title"].split(':')[1] != \
 		                                                                                                    change["user"] else _(
 			"Replied to a comment on their own profile")
 	elif action == "curseprofile/comment-edited":
 		if settings["appearance"]["embed"]["show_edit_changes"]:
-			parsed_comment = recent_changes.pull_comment(change["logparams"]["4:comment_id"], WIKI_ARTICLE_PATH)
-		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]))
+			parsed_comment = await recent_changes.pull_comment(change["logparams"]["4:comment_id"], WIKI_API_PATH)
+		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Edited a comment on {target}'s profile").format(target=change["title"].split(':')[1]) if change["title"].split(':')[1] != \
 		                                                                                                change["user"] else _(
 			"Edited a comment on their own profile")
@@ -716,11 +694,11 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 	if "tags" in change and change["tags"]:
 		tag_displayname = []
 		for tag in change["tags"]:
-			if tag in recent_changes.tags:
-				if recent_changes.tags[tag] is None:
+			if tag in additional_data.tags:
+				if additional_data.tags[tag] is None:
 					continue  # Ignore hidden tags
 				else:
-					tag_displayname.append(recent_changes.tags[tag])
+					tag_displayname.append(additional_data.tags[tag])
 			else:
 				tag_displayname.append(tag)
 		embed.add_field(_("Tags"), ", ".join(tag_displayname))
@@ -730,4 +708,4 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		del_cat = (_("**Removed**: ") + ", ".join(list(categories["removed"])[0:16]) + ("" if len(categories["removed"])<=15 else _(" and {} more").format(len(categories["removed"])-15))) if categories["removed"] else ""
 		embed.add_field(_("Changed categories"), new_cat + del_cat)
 	embed.finish_embed()
-	send_to_discord(embed)
+	await send_to_discord(embed)

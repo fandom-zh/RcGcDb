@@ -5,8 +5,6 @@ from src.database import db_cursor
 
 logger = logging.getLogger("rcgcdb.discord")
 
-reasons = {410: _("wiki deletion"), 404: _("wiki deletion"), 401: _("wiki becoming inaccessible"), 402: _("wiki becoming inaccessible"), 403: _("wiki becoming inaccessible")}
-
 # General functions
 class DiscordMessage():
 	"""A class defining a typical Discord JSON representation of webhook payload."""
@@ -71,7 +69,9 @@ class DiscordMessage():
 
 
 # User facing webhook functions
-def wiki_removal(wiki_id, status):
+def wiki_removal(wiki_id, status):  # TODO Add lang selector
+	reasons = {410: _("wiki deletion"), 404: _("wiki deletion"), 401: _("wiki becoming inaccessible"),
+	           402: _("wiki becoming inaccessible"), 403: _("wiki becoming inaccessible")}
 	reason = reasons.get(status, _("unknown error"))
 	for observer in db_cursor.execute('SELECT * FROM observers WHERE wiki_id = ?', wiki_id):
 		DiscordMessage("compact", "webhook/remove", webhook_url=observer[4], content=_("The webhook for {} has been removed due to {}.".format(reason)))  # TODO
