@@ -1,4 +1,3 @@
-from abc import ABC
 from html.parser import HTMLParser
 import base64, re
 from src.config import settings
@@ -14,7 +13,7 @@ logger = logging.getLogger("rcgcdw.misc")
 class DiscordMessage():
 	"""A class defining a typical Discord JSON representation of webhook payload."""
 	def __init__(self, message_type: str, event_type: str, webhook_url: list, wiki, content=None):
-		self.webhook_object = dict(allowed_mentions={"parse": []}, avatar_url=settings["avatars"].get(message_type, ""))
+		self.webhook_object = dict(allowed_mentions={"parse": []})
 		self.webhook_url = webhook_url
 		self.wiki = wiki
 
@@ -123,15 +122,13 @@ def get_paths(wiki: str, request) -> tuple:
 
 
 class LinkParser(HTMLParser):
-	def error(self, message):
-		pass
 
 	new_string = ""
 	recent_href = ""
 
 	def __init__(self, domain):
-		super().__init__()
 		self.WIKI_JUST_DOMAIN = domain
+		super().__init__()
 
 	def handle_starttag(self, tag, attrs):
 		for attr in attrs:

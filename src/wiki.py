@@ -77,7 +77,7 @@ class Wiki:
 	async def remove(self, wiki_id, reason):
 		src.discord.wiki_removal(wiki_id, reason)
 		src.discord.wiki_removal_monitor(wiki_id, reason)
-		db_cursor.execute("DELETE FROM rcgcdw WHERE wiki = ?", wiki_id)
+		db_cursor.execute("DELETE FROM rcgcdw WHERE wiki = ?", (wiki_id,))
 		logger.warning("{} rows affected by DELETE FROM rcgcdw WHERE wiki = {}".format(db_cursor.rowcount, wiki_id))
 		db_connection.commit()
 
@@ -141,7 +141,7 @@ async def process_mwmsgs(wiki_response: dict, local_wiki: Wiki, mw_msgs: dict):
 	:return:
 	"""
 	msgs = []
-	for message in wiki_response["allmessages"]:
+	for message in wiki_response["query"]["allmessages"]:
 		if not "missing" in message:  # ignore missing strings
 			msgs.append((message["name"], re.sub(r'\[\[.*?\]\]', '', message["*"])))
 		else:
@@ -157,6 +157,7 @@ async def process_mwmsgs(wiki_response: dict, local_wiki: Wiki, mw_msgs: dict):
 	local_wiki.mw_messages = key
 
 async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_wiki: tuple, target: tuple, paths: tuple, request: dict):
+	global LinkParser
 	"""Prepares essential information for both embed and compact message format."""
 	def _(string: str) -> str:
 		"""Our own translation string to make it compatible with async"""
@@ -165,7 +166,7 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 	lang = langs[target[0][0]]
 	ngettext = lang.ngettext
 	# recent_changes = RecentChangesClass()  # TODO Look into replacing RecentChangesClass with local_wiki
-	LinkParser = LinkParser("domain")
+	LinkParser = LinkParser(paths[3])
 	logger.debug(change)
 	appearance_mode = embed_formatter if target[0][1] > 0 else compact_formatter
 	if ("actionhidden" in change or "suppressed" in change):  # if event is hidden using suppression

@@ -15,7 +15,7 @@ class UpdateDB():
 
 	def update_db(self):
 		for update in self.updated:
-			db_cursor.execute("UPDATE rcgcdw SET rcid = ? WHERE wiki = ?", update[1], update[0])
+			db_cursor.execute("UPDATE rcgcdw SET rcid = ? WHERE wiki = ?", (update[1], update[0],))
 		db_connection.commit()
 		self.clear_list()
 

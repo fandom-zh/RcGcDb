@@ -23,13 +23,14 @@ logger = logging.getLogger("rcgcdw.rc_formatters")
 
 async def compact_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths,
                             additional_data=None):
+	global LinkParser
 	if additional_data is None:
 		additional_data = {"namespaces": {}, "tags": {}}
 	WIKI_API_PATH = paths[0]
 	WIKI_SCRIPT_PATH = paths[1]
 	WIKI_ARTICLE_PATH = paths[2]
 	WIKI_JUST_DOMAIN = paths[3]
-	LinkParser = LinkParser("domain")
+	LinkParser = LinkParser(paths[3])
 	if action != "suppressed":
 		author_url = link_formatter(create_article_path("User:{user}".format(user=change["user"]), WIKI_ARTICLE_PATH))
 		author = change["user"]
@@ -318,13 +319,14 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 
 
 async def embed_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths, additional_data=None):
+	global LinkParser
 	if additional_data is None:
 		additional_data = {"namespaces": {}, "tags": {}}
 	WIKI_API_PATH = paths[0]
 	WIKI_SCRIPT_PATH = paths[1]
 	WIKI_ARTICLE_PATH = paths[2]
 	WIKI_JUST_DOMAIN = paths[3]
-	LinkParser = LinkParser()
+	LinkParser = LinkParser(paths[3])
 	embed = DiscordMessage("embed", action, target[1], wiki=WIKI_SCRIPT_PATH)
 	if parsed_comment is None:
 		parsed_comment = _("No description provided")
@@ -694,16 +696,16 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 	if "tags" in change and change["tags"]:
 		tag_displayname = []
 		for tag in change["tags"]:
-			if tag in additional_data.tags:
-				if additional_data.tags[tag] is None:
+			if tag in additional_data["tags"]:
+				if additional_data["tags"][tag] is None:
 					continue  # Ignore hidden tags
 				else:
-					tag_displayname.append(additional_data.tags[tag])
+					tag_displayname.append(additional_data["tags"][tag])
 			else:
 				tag_displayname.append(tag)
 		embed.add_field(_("Tags"), ", ".join(tag_displayname))
 	logger.debug("Current params in edit action: {}".format(change))
-	if categories is not None and not (len(categories["new"]) == 0 and len(categories["removed"]) == 0):
+	if categories and not (len(categories["new"]) == 0 and len(categories["removed"]) == 0):
 		new_cat = (_("**Added**: ") + ", ".join(list(categories["new"])[0:16]) + ("\n" if len(categories["new"])<=15 else _(" and {} more\n").format(len(categories["new"])-15))) if categories["new"] else ""
 		del_cat = (_("**Removed**: ") + ", ".join(list(categories["removed"])[0:16]) + ("" if len(categories["removed"])<=15 else _(" and {} more").format(len(categories["removed"])-15))) if categories["removed"] else ""
 		embed.add_field(_("Changed categories"), new_cat + del_cat)

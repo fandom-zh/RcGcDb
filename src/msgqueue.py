@@ -52,6 +52,7 @@ class MessageQueue:
 				logger.debug("Queue emptied, all messages delivered")
 			self.cut_messages(num)
 			logger.debug(self._queue)
+		await asyncio.sleep(4.0)
 
 
 messagequeue = MessageQueue()
