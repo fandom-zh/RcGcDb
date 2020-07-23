@@ -16,7 +16,7 @@ logger = logging.getLogger("rcgcdb.discord")
 
 # User facing webhook functions
 def wiki_removal(wiki_id, status):
-	for observer in db_cursor.execute('SELECT * FROM rcgcdw WHERE wikiid = ?', (wiki_id,)):
+	for observer in db_cursor.execute('SELECT * FROM rcgcdw WHERE wiki = ?', (wiki_id,)):
 		def _(string: str) -> str:
 			"""Our own translation string to make it compatible with async"""
 			return langs[observer[4]].gettext(string)
@@ -30,7 +30,7 @@ async def webhook_removal_monitor(webhook_url: list, reason: int):
 	                                   aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(4.0)))
 
 
-class DiscordMessage():
+class DiscordMessage:
 	"""A class defining a typical Discord JSON representation of webhook payload."""
 	def __init__(self, message_type: str, event_type: str, webhook_url: list, wiki, content=None):
 		self.webhook_object = dict(allowed_mentions={"parse": []})

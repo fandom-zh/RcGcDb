@@ -8,7 +8,9 @@ from src.exceptions import *
 from src.database import db_cursor
 from collections import defaultdict
 from src.queue_handler import DBHandler
+from src.discord import DiscordMessage
 from src.msgqueue import messagequeue
+import requests
 
 logging.config.dictConfig(settings["logging"])
 logger = logging.getLogger("rcgcdb.bot")
@@ -25,13 +27,14 @@ mw_msgs: dict = {}  # will have the type of id: tuple
 for wiki in db_cursor.execute('SELECT DISTINCT wiki FROM rcgcdw'):
 	all_wikis[wiki] = Wiki()
 
+
 # Start queueing logic
 
 
 def calculate_delay() -> float:
-	min_delay = 60/settings["max_requests_per_minute"]
+	min_delay = 60 / settings["max_requests_per_minute"]
 	if (len(all_wikis) * min_delay) < settings["minimal_cooldown_per_wiki_in_sec"]:
-		return settings["minimal_cooldown_per_wiki_in_sec"]/len(all_wikis)
+		return settings["minimal_cooldown_per_wiki_in_sec"] / len(all_wikis)
 	else:
 		return min_delay
 
@@ -67,6 +70,9 @@ async def wiki_scanner():
 				continue  # ignore this wiki if it throws errors
 			try:
 				recent_changes_resp = await wiki_response.json(encoding="UTF-8")
+				if "error" in recent_changes_resp or "errors" in recent_changes_resp:
+					# TODO Remove on some errors (example "code": "readapidenied")
+					raise WikiError
 				recent_changes = recent_changes_resp['query']['recentchanges']
 				recent_changes.reverse()
 			except:
@@ -89,7 +95,8 @@ async def wiki_scanner():
 			for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
 				if change["rcid"] > db_wiki[6]:
 					for target in targets.items():
-						await essential_info(change, categorize_events, local_wiki, db_wiki, target, paths, recent_changes_resp)
+						await essential_info(change, categorize_events, local_wiki, db_wiki, target, paths,
+						                     recent_changes_resp)
 			if recent_changes:
 				DBHandler.add(db_wiki[3], change["rcid"])
 			DBHandler.update_db()
@@ -101,8 +108,18 @@ async def message_sender():
 		await messagequeue.resend_msgs()
 
 
+def global_exception_handler(loop, context):
+	"""Global exception handler for asyncio, lets us know when something crashes"""
+	msg = context.get("exception", context["message"])
+	logger.error(msg)
+	requests.post("https://discord.com/api/webhooks/" + settings["monitoring_webhook"],
+	              data=DiscordMessage("embed", "exception", None, content=
+	              "[RcGcDb] Exception detected, function might have shut down! Exception: {}".format(msg), wiki=None))
+
 
 async def main_loop():
+	loop = asyncio.get_event_loop()
+	loop.set_exception_handler(global_exception_handler)
 	task1 = asyncio.create_task(wiki_scanner())
 	task2 = asyncio.create_task(message_sender())
 	await task1
