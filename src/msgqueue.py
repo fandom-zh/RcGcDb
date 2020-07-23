@@ -1,5 +1,5 @@
 import asyncio, logging, aiohttp
-from src.misc import send_to_discord_webhook
+from src.discord import send_to_discord_webhook
 from src.config import settings
 logger = logging.getLogger("rcgcdw.msgqueue")
 
@@ -35,8 +35,7 @@ class MessageQueue:
 			await self.create_session()
 		if self._queue:
 			logger.info(
-				"{} messages waiting to be delivered to Discord due to Discord throwing errors/no connection to Discord servers.".format(
-					len(self._queue)))
+				"{} messages waiting to be delivered to Discord.".format(len(self._queue)))
 			for num, item in enumerate(self._queue):
 				logger.debug(
 					"Trying to send a message to Discord from the queue with id of {} and content {}".format(str(num),

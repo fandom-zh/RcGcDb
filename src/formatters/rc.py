@@ -5,7 +5,8 @@ import time
 import logging
 import base64
 from src.config import settings
-from src.misc import link_formatter, create_article_path, LinkParser, profile_field_name, ContentParser, DiscordMessage, safe_read
+from src.misc import link_formatter, create_article_path, parse_link, profile_field_name, ContentParser, safe_read
+from src.discord import DiscordMessage
 from urllib.parse import quote_plus
 from src.msgqueue import send_to_discord
 # from html.parser import HTMLParser
@@ -23,14 +24,12 @@ logger = logging.getLogger("rcgcdw.rc_formatters")
 
 async def compact_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths,
                             additional_data=None):
-	global LinkParser
 	if additional_data is None:
 		additional_data = {"namespaces": {}, "tags": {}}
 	WIKI_API_PATH = paths[0]
 	WIKI_SCRIPT_PATH = paths[1]
 	WIKI_ARTICLE_PATH = paths[2]
 	WIKI_JUST_DOMAIN = paths[3]
-	LinkParser = LinkParser(paths[3])
 	if action != "suppressed":
 		author_url = link_formatter(create_article_path("User:{user}".format(user=change["user"]), WIKI_ARTICLE_PATH))
 		author = change["user"]
@@ -280,21 +279,15 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) edited the slice for [{article}]({article_url})").format(author=author, author_url=author_url, article=change["title"], article_url=link)
 	elif action == "cargo/createtable":
-		LinkParser.feed(change["logparams"]["0"])
-		table = LinkParser.new_string
-		LinkParser.new_string = ""
+		table = parse_link(paths[3], change["logparams"]["0"])
 		content = _("[{author}]({author_url}) created the Cargo table \"{table}\"").format(author=author, author_url=author_url, table=table)
 	elif action == "cargo/deletetable":
 		content = _("[{author}]({author_url}) deleted the Cargo table \"{table}\"").format(author=author, author_url=author_url, table=change["logparams"]["0"])
 	elif action == "cargo/recreatetable":
-		LinkParser.feed(change["logparams"]["0"])
-		table = LinkParser.new_string
-		LinkParser.new_string = ""
+		table = parse_link(paths[3], change["logparams"]["0"])
 		content = _("[{author}]({author_url}) recreated the Cargo table \"{table}\"").format(author=author, author_url=author_url, table=table)
 	elif action == "cargo/replacetable":
-		LinkParser.feed(change["logparams"]["0"])
-		table = LinkParser.new_string
-		LinkParser.new_string = ""
+		table = parse_link(paths[3], change["logparams"]["0"])
 		content = _("[{author}]({author_url}) replaced the Cargo table \"{table}\"").format(author=author, author_url=author_url, table=table)
 	elif action == "managetags/create":
 		link = link_formatter(create_article_path("Special:Tags", WIKI_ARTICLE_PATH))
@@ -319,14 +312,12 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 
 
 async def embed_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths, additional_data=None):
-	global LinkParser
 	if additional_data is None:
 		additional_data = {"namespaces": {}, "tags": {}}
 	WIKI_API_PATH = paths[0]
 	WIKI_SCRIPT_PATH = paths[1]
 	WIKI_ARTICLE_PATH = paths[2]
 	WIKI_JUST_DOMAIN = paths[3]
-	LinkParser = LinkParser(paths[3])
 	embed = DiscordMessage("embed", action, target[1], wiki=WIKI_SCRIPT_PATH)
 	if parsed_comment is None:
 		parsed_comment = _("No description provided")
@@ -358,7 +349,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		embed["title"] = "{redirect}{article} ({new}{minor}{bot}{space}{editsize})".format(redirect="⤷ " if "redirect" in change else "", article=change["title"], editsize="+" + str(
 			editsize) if editsize > 0 else editsize, new=_("(N!) ") if action == "new" else "",
 		                                                             minor=_("m") if action == "edit" and "minor" in change else "", bot=_('b') if "bot" in change else "", space=" " if "bot" in change or (action == "edit" and "minor" in change) or action == "new" else "")
-		if target[1] == 3:
+		if target[0][1] == 3:
 			if action == "new":
 				changed_content = await safe_read(await recent_changes.safe_request(
 				"{wiki}?action=compare&format=json&fromtext=&torev={diff}&topst=1&prop=diff".format(
@@ -432,7 +423,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 			embed["title"] = _("Uploaded {name}").format(name=change["title"])
 			if additional_info_retrieved:
 				embed.add_field(_("Options"), _("([preview]({link}))").format(link=image_direct_url))
-				if target[1] > 1:
+				if target[0][1] > 1:
 					embed["image"]["url"] = image_direct_url
 	elif action == "delete/delete":
 		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
@@ -643,9 +634,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Edited the slice for {article}").format(article=change["title"])
 	elif action == "cargo/createtable":
-		LinkParser.feed(change["logparams"]["0"])
-		table = re.search(r"\[(.*?)\]\(<(.*?)>\)", LinkParser.new_string)
-		LinkParser.new_string = ""
+		table = re.search(r"\[(.*?)\]\(<(.*?)>\)", parse_link(paths[3], change["logparams"]["0"]))
 		link = table.group(2)
 		embed["title"] = _("Created the Cargo table \"{table}\"").format(table=table.group(1))
 		parsed_comment = None
@@ -654,16 +643,12 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		embed["title"] = _("Deleted the Cargo table \"{table}\"").format(table=change["logparams"]["0"])
 		parsed_comment = None
 	elif action == "cargo/recreatetable":
-		LinkParser.feed(change["logparams"]["0"])
-		table = re.search(r"\[(.*?)\]\(<(.*?)>\)", LinkParser.new_string)
-		LinkParser.new_string = ""
+		table = re.search(r"\[(.*?)\]\(<(.*?)>\)", parse_link(paths[3], change["logparams"]["0"]))
 		link = table.group(2)
 		embed["title"] = _("Recreated the Cargo table \"{table}\"").format(table=table.group(1))
 		parsed_comment = None
 	elif action == "cargo/replacetable":
-		LinkParser.feed(change["logparams"]["0"])
-		table = re.search(r"\[(.*?)\]\(<(.*?)>\)", LinkParser.new_string)
-		LinkParser.new_string = ""
+		table = re.search(r"\[(.*?)\]\(<(.*?)>\)", parse_link(paths[3], change["logparams"]["0"]))
 		link = table.group(2)
 		embed["title"] = _("Replaced the Cargo table \"{table}\"").format(table=table.group(1))
 		parsed_comment = None

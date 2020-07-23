@@ -4,7 +4,8 @@ import gettext
 from urllib.parse import quote_plus
 
 from src.config import settings
-from src.misc import DiscordMessage, send_to_discord, escape_formatting
+from src.misc import send_to_discord, escape_formatting
+from discord import DiscordMessage
 from src.i18n import disc
 
 _ = disc.gettext

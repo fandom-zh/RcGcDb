@@ -4,7 +4,7 @@ import logging, aiohttp
 from src.exceptions import *
 from src.database import db_cursor, db_connection
 from src.formatters.rc import embed_formatter, compact_formatter
-from src.misc import LinkParser
+from src.misc import parse_link
 from src.i18n import langs
 import src.discord
 from src.config import settings
@@ -157,7 +157,6 @@ async def process_mwmsgs(wiki_response: dict, local_wiki: Wiki, mw_msgs: dict):
 	local_wiki.mw_messages = key
 
 async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_wiki: tuple, target: tuple, paths: tuple, request: dict):
-	global LinkParser
 	"""Prepares essential information for both embed and compact message format."""
 	def _(string: str) -> str:
 		"""Our own translation string to make it compatible with async"""
@@ -166,16 +165,13 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 	lang = langs[target[0][0]]
 	ngettext = lang.ngettext
 	# recent_changes = RecentChangesClass()  # TODO Look into replacing RecentChangesClass with local_wiki
-	LinkParser = LinkParser(paths[3])
 	logger.debug(change)
 	appearance_mode = embed_formatter if target[0][1] > 0 else compact_formatter
 	if ("actionhidden" in change or "suppressed" in change):  # if event is hidden using suppression
 		await appearance_mode("suppressed", change, "", changed_categories, local_wiki, target, _, ngettext, paths)
 		return
 	if "commenthidden" not in change:
-		LinkParser.feed(change["parsedcomment"])
-		parsed_comment = LinkParser.new_string
-		LinkParser.new_string = ""
+		parsed_comment = parse_link(paths[3], change["parsedcomment"])
 		parsed_comment = re.sub(r"(`|_|\*|~|{|}|\|\|)", "\\\\\\1", parsed_comment, 0)
 	else:
 		parsed_comment = _("~~hidden~~")

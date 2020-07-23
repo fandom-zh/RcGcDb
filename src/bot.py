@@ -48,8 +48,9 @@ def generate_targets(wiki_url: str) -> defaultdict:
 async def wiki_scanner():
 	while True:
 		calc_delay = calculate_delay()
-		# db_cursor.execute('SELECT DISTINCT wiki FROM rcgcdw'):
-		for db_wiki in db_cursor.execute('SELECT * FROM rcgcdw GROUP BY wiki'):
+		fetch_all = db_cursor.execute('SELECT * FROM rcgcdw GROUP BY wiki')
+		for db_wiki in fetch_all.fetchall():
+			logger.debug("Wiki {}".format(db_wiki[3]))
 			extended = False
 			if db_wiki[3] not in all_wikis:
 				logger.debug("New wiki: {}".format(db_wiki[3]))
@@ -86,13 +87,13 @@ async def wiki_scanner():
 			for change in recent_changes:
 				await process_cats(change, local_wiki, mw_msgs, categorize_events)
 			for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
-				if change["rcid"] < db_wiki[6]:
+				if change["rcid"] > db_wiki[6]:
 					for target in targets.items():
 						await essential_info(change, categorize_events, local_wiki, db_wiki, target, paths, recent_changes_resp)
 			if recent_changes:
 				DBHandler.add(db_wiki[3], change["rcid"])
+			DBHandler.update_db()
 			await asyncio.sleep(delay=calc_delay)
-		DBHandler.update_db()
 
 
 async def message_sender():
