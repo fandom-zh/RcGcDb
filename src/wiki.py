@@ -21,12 +21,8 @@ class Wiki:
 	fail_times: int = 0  # corresponding to amount of times connection with wiki failed for client reasons (400-499)
 	session: aiohttp.ClientSession = None
 
-	async def create_session(self):
-		self.session = aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(5.0))
 
 	async def fetch_wiki(self, extended, script_path) -> aiohttp.ClientResponse:
-		if self.session is None:
-			await self.create_session()
 		url_path = script_path + "api.php"
 		amount = 20
 		if extended:
@@ -44,7 +40,8 @@ class Wiki:
 			          "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user",
 			          "rclimit": amount, "rctype": "edit|new|log|external", "siprop": "namespaces|general"}
 		try:
-			response = await self.session.get(url_path, params=params)
+			async with aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(5.0)) as session:
+				response = await session.get(url_path, params=params)
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError):
 			logger.exception("A connection error occurred while requesting {}".format(url_path))
 			raise WikiServerError
@@ -52,7 +49,8 @@ class Wiki:
 
 	async def safe_request(self, url):
 		try:
-			request = await self.session.get(url, timeout=5, allow_redirects=False)
+			async with aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(5.0)) as session:
+				request = await session.get(url, timeout=5, allow_redirects=False)
 			request.raise_for_status()
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError):
 			logger.exception("Reached connection error for request on link {url}".format(url=url))

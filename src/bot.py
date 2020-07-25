@@ -112,9 +112,9 @@ def global_exception_handler(loop, context):
 	"""Global exception handler for asyncio, lets us know when something crashes"""
 	msg = context.get("exception", context["message"])
 	logger.error(msg)
-	requests.post("https://discord.com/api/webhooks/" + settings["monitoring_webhook"],
-	              data=DiscordMessage("embed", "exception", None, content=
-	              "[RcGcDb] Exception detected, function might have shut down! Exception: {}".format(msg), wiki=None))
+	#requests.post("https://discord.com/api/webhooks/" + settings["monitoring_webhook"],
+	#              data=DiscordMessage("embed", "exception", None, content=
+	#              "[RcGcDb] Exception detected, function might have shut down! Exception: {}".format(msg), wiki=None))
 
 
 async def main_loop():

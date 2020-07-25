@@ -11,7 +11,7 @@ RcGcDb is a backend for handling webhooks to which recent changes of MediaWiki w
 #### Installation
 ```
 $ git clone git@gitlab.com:chicken-riders/rcgcdb.git #clone repo
-$ cd RcGcDw
+$ cd RcGcDb
 $ python3 -m venv . #(optional, if you want to contain everything (you should!))
 $ source bin/activate #(optional, see above)
 $ pip3 install -r requirements.txt #install requirements (lxml may require additional distro packages, more on that here https://lxml.de/build.html)
