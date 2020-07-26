@@ -1,6 +1,8 @@
 import logging.config
 from src.config import settings
 import sqlite3
+import sys
+import signal
 from src.wiki import Wiki, process_cats, process_mwmsgs, essential_info
 import asyncio, aiohttp
 from src.misc import get_paths
@@ -49,58 +51,64 @@ def generate_targets(wiki_url: str) -> defaultdict:
 
 
 async def wiki_scanner():
-	while True:
-		calc_delay = calculate_delay()
-		fetch_all = db_cursor.execute('SELECT * FROM rcgcdw GROUP BY wiki')
-		for db_wiki in fetch_all.fetchall():
-			logger.debug("Wiki {}".format(db_wiki[3]))
-			extended = False
-			if db_wiki[3] not in all_wikis:
-				logger.debug("New wiki: {}".format(db_wiki[3]))
-				all_wikis[db_wiki[3]] = Wiki()
-			local_wiki = all_wikis[db_wiki[3]]  # set a reference to a wiki object from memory
-			if local_wiki.mw_messages is None:
-				extended = True
-			logger.debug("test")
-			try:
-				wiki_response = await local_wiki.fetch_wiki(extended, db_wiki[3])
-				await local_wiki.check_status(db_wiki[3], wiki_response.status)
-			except (WikiServerError, WikiError):
-				logger.exception("Exeption when fetching the wiki")
-				continue  # ignore this wiki if it throws errors
-			try:
-				recent_changes_resp = await wiki_response.json(encoding="UTF-8")
-				if "error" in recent_changes_resp or "errors" in recent_changes_resp:
-					# TODO Remove on some errors (example "code": "readapidenied")
-					raise WikiError
-				recent_changes = recent_changes_resp['query']['recentchanges']
-				recent_changes.reverse()
-			except:
-				logger.exception("On loading json of response.")
-				continue
-			if extended:
-				await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
-			if db_wiki[6] is None:  # new wiki, just get the last rc to not spam the channel
-				if len(recent_changes) > 0:
-					DBHandler.add(db_wiki[3], recent_changes[-1]["rcid"])
+	try:
+		while True:
+			calc_delay = calculate_delay()
+			fetch_all = db_cursor.execute('SELECT * FROM rcgcdw GROUP BY wiki')
+			for db_wiki in fetch_all.fetchall():
+				logger.debug("Wiki {}".format(db_wiki[3]))
+				extended = False
+				if db_wiki[3] not in all_wikis:
+					logger.debug("New wiki: {}".format(db_wiki[3]))
+					all_wikis[db_wiki[3]] = Wiki()
+				local_wiki = all_wikis[db_wiki[3]]  # set a reference to a wiki object from memory
+				if local_wiki.mw_messages is None:
+					extended = True
+				logger.debug("test")
+				try:
+					wiki_response = await local_wiki.fetch_wiki(extended, db_wiki[3])
+					await local_wiki.check_status(db_wiki[3], wiki_response.status)
+				except (WikiServerError, WikiError):
+					logger.exception("Exeption when fetching the wiki")
+					continue  # ignore this wiki if it throws errors
+				try:
+					recent_changes_resp = await wiki_response.json(encoding="UTF-8")
+					if "error" in recent_changes_resp or "errors" in recent_changes_resp:
+						# TODO Remove on some errors (example "code": "readapidenied")
+						raise WikiError
+					recent_changes = recent_changes_resp['query']['recentchanges']
+					recent_changes.reverse()
+				except asyncio.exceptions.TimeoutError:
+					logger.debug("Timeout on fetching {}.".format(db_wiki[3]))
 					continue
-				else:
-					DBHandler.add(db_wiki[3], 0)
+				except:
+					logger.exception("On loading json of response.")
 					continue
-			categorize_events = {}
-			targets = generate_targets(db_wiki[3])
-			paths = get_paths(db_wiki[3], recent_changes_resp)
-			for change in recent_changes:
-				await process_cats(change, local_wiki, mw_msgs, categorize_events)
-			for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
-				if change["rcid"] > db_wiki[6]:
-					for target in targets.items():
-						await essential_info(change, categorize_events, local_wiki, db_wiki, target, paths,
-						                     recent_changes_resp)
-			if recent_changes:
-				DBHandler.add(db_wiki[3], change["rcid"])
-			DBHandler.update_db()
-			await asyncio.sleep(delay=calc_delay)
+				if extended:
+					await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
+				if db_wiki[6] is None:  # new wiki, just get the last rc to not spam the channel
+					if len(recent_changes) > 0:
+						DBHandler.add(db_wiki[3], recent_changes[-1]["rcid"])
+						continue
+					else:
+						DBHandler.add(db_wiki[3], 0)
+						continue
+				categorize_events = {}
+				targets = generate_targets(db_wiki[3])
+				paths = get_paths(db_wiki[3], recent_changes_resp)
+				for change in recent_changes:
+					await process_cats(change, local_wiki, mw_msgs, categorize_events)
+				for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
+					if change["rcid"] > db_wiki[6]:
+						for target in targets.items():
+							await essential_info(change, categorize_events, local_wiki, db_wiki, target, paths,
+							                     recent_changes_resp)
+				if recent_changes:
+					DBHandler.add(db_wiki[3], change["rcid"])
+				DBHandler.update_db()
+				await asyncio.sleep(delay=calc_delay)
+	except asyncio.CancelledError:
+		return
 
 
 async def message_sender():
@@ -108,17 +116,26 @@ async def message_sender():
 		await messagequeue.resend_msgs()
 
 
+def shutdown(loop, signal=None):
+	DBHandler.update_db()
+	loop.stop()
+	logger.info("Script has shut down due to signal {}.".format(signal))
+	for task in asyncio.all_tasks(loop):
+		task.cancel()
+	sys.exit(0)
+
 def global_exception_handler(loop, context):
 	"""Global exception handler for asyncio, lets us know when something crashes"""
 	msg = context.get("exception", context["message"])
-	logger.error(msg)
-	#requests.post("https://discord.com/api/webhooks/" + settings["monitoring_webhook"],
-	#              data=DiscordMessage("embed", "exception", None, content=
-	#              "[RcGcDb] Exception detected, function might have shut down! Exception: {}".format(msg), wiki=None))
+	logger.error("Global exception handler:" + msg)
 
 
 async def main_loop():
 	loop = asyncio.get_event_loop()
+	signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
+	for s in signals:
+		loop.add_signal_handler(
+			s, lambda s=s: shutdown(loop, signal=s))
 	loop.set_exception_handler(global_exception_handler)
 	task1 = asyncio.create_task(wiki_scanner())
 	task2 = asyncio.create_task(message_sender())

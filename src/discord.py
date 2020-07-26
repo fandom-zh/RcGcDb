@@ -15,7 +15,7 @@ logger = logging.getLogger("rcgcdb.discord")
 
 
 # User facing webhook functions
-def wiki_removal(wiki_id, status):
+async def wiki_removal(wiki_id, status):
 	for observer in db_cursor.execute('SELECT * FROM rcgcdw WHERE wiki = ?', (wiki_id,)):
 		def _(string: str) -> str:
 			"""Our own translation string to make it compatible with async"""
@@ -23,7 +23,13 @@ def wiki_removal(wiki_id, status):
 		reasons = {410: _("wiki deletion"), 404: _("wiki deletion"), 401: _("wiki becoming inaccessible"),
 		           402: _("wiki becoming inaccessible"), 403: _("wiki becoming inaccessible")}
 		reason = reasons.get(status, _("unknown error"))
-		send_to_discord_webhook(DiscordMessage("compact", "webhook/remove", webhook_url=[observer[2]], content=_("The webhook for {} has been removed due to {}.".format(wiki_id, reason)), wiki=None))
+		await send_to_discord_webhook(DiscordMessage("compact", "webhook/remove", webhook_url=[observer[2]], content=_("The webhook for {} has been removed due to {}.".format(wiki_id, reason)), wiki=None))
+		header = settings["header"]
+		header['Content-Type'] = 'application/json'
+		header['X-Audit-Log-Reason'] = "Wiki becoming unavailable"
+		async with aiohttp.ClientSession(headers=header, timeout=aiohttp.ClientTimeout(5.0)) as session:
+			await session.delete("https://discord.com/api/webhooks/"+observer[2])
+
 
 async def webhook_removal_monitor(webhook_url: list, reason: int):
 	await send_to_discord_webhook_monitoring(DiscordMessage("compact", "webhook/remove", None, content="The webhook {} has been removed due to {}.".format("https://discord.com/api/webhooks/" + webhook_url[0], reason), wiki=None),
@@ -97,32 +103,32 @@ class DiscordMessage:
 
 
 # Monitoring webhook functions
-def wiki_removal_monitor(wiki_id, status):
-	pass
+async def wiki_removal_monitor(wiki_id, status):
+	await send_to_discord_webhook_monitoring(DiscordMessage("compact", "webhook/remove", content="Removing {} because {}.".format(wiki_id, status), webhook_url=[None], wiki=None))
 
 
-async def send_to_discord_webhook_monitoring(data: DiscordMessage, session: aiohttp.ClientSession):
+async def send_to_discord_webhook_monitoring(data: DiscordMessage):
 	header = settings["header"]
 	header['Content-Type'] = 'application/json'
-	try:
-		result = await session.post("https://discord.com/api/webhooks/"+settings["monitoring_webhook"], data=repr(data),
-		                       headers=header)
-	except (aiohttp.ClientConnectionError, aiohttp.ServerConnectionError):
-		logger.exception("Could not send the message to Discord")
-		return 3
-
-
-async def send_to_discord_webhook(data: DiscordMessage, session: aiohttp.ClientSession):
-	header = settings["header"]
-	header['Content-Type'] = 'application/json'
-	for webhook in data.webhook_url:
+	async with aiohttp.ClientSession(headers=header, timeout=aiohttp.ClientTimeout(5.0)) as session:
 		try:
-			result = await session.post("https://discord.com/api/webhooks/"+webhook, data=repr(data),
-			                       headers=header)
+			result = await session.post("https://discord.com/api/webhooks/"+settings["monitoring_webhook"], data=repr(data))
 		except (aiohttp.ClientConnectionError, aiohttp.ServerConnectionError):
 			logger.exception("Could not send the message to Discord")
 			return 3
-		return await handle_discord_http(result.status, repr(data), await result.text(), data)
+
+
+async def send_to_discord_webhook(data: DiscordMessage):
+	header = settings["header"]
+	header['Content-Type'] = 'application/json'
+	async with aiohttp.ClientSession(headers=header, timeout=aiohttp.ClientTimeout(5.0)) as session:
+		for webhook in data.webhook_url:
+			try:
+				result = await session.post("https://discord.com/api/webhooks/"+webhook, data=repr(data))
+			except (aiohttp.ClientConnectionError, aiohttp.ServerConnectionError):
+				logger.exception("Could not send the message to Discord")
+				return 3
+			return await handle_discord_http(result.status, repr(data), await result.text(), data)
 
 
 async def handle_discord_http(code, formatted_embed, result, dmsg):

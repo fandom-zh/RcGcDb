@@ -40,7 +40,7 @@ class Wiki:
 			          "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user",
 			          "rclimit": amount, "rctype": "edit|new|log|external", "siprop": "namespaces|general"}
 		try:
-			async with aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(5.0)) as session:
+			async with aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(6.0)) as session:
 				response = await session.get(url_path, params=params)
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError):
 			logger.exception("A connection error occurred while requesting {}".format(url_path))
@@ -73,8 +73,8 @@ class Wiki:
 			raise WikiServerError
 
 	async def remove(self, wiki_id, reason):
-		src.discord.wiki_removal(wiki_id, reason)
-		src.discord.wiki_removal_monitor(wiki_id, reason)
+		await src.discord.wiki_removal(wiki_id, reason)
+		await src.discord.wiki_removal_monitor(wiki_id, reason)
 		db_cursor.execute("DELETE FROM rcgcdw WHERE wiki = ?", (wiki_id,))
 		logger.warning("{} rows affected by DELETE FROM rcgcdw WHERE wiki = {}".format(db_cursor.rowcount, wiki_id))
 		db_connection.commit()
