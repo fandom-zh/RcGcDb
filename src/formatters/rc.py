@@ -104,10 +104,13 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 			english_length_num = re.sub(r"(\D+)", "", change["logparams"]["duration"])
 			try:
 				english_length = english_length.rstrip("s").strip()
-				block_time = "{num} {translated_length}".format(num=english_length_num,
+				try:
+					block_time = "{num} {translated_length}".format(num=english_length_num,
 				                                                translated_length=ngettext(english_length,
 				                                                                           english_length + "s",
 				                                                                           int(english_length_num)))
+				except ValueError:
+					logger.exception("Couldn't properly resolve block expiry.")
 			except AttributeError:
 				logger.error("Could not strip s from the block event, seems like the regex didn't work?")
 				return

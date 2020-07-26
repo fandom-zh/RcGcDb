@@ -40,9 +40,9 @@ class MessageQueue:
 				logger.debug(
 					"Trying to send a message to Discord from the queue with id of {} and content {}".format(str(num),
 					                                                                                         str(item)))
-				if await send_to_discord_webhook(item, self.session) < 2:
+				if await send_to_discord_webhook(item) < 2:
 					logger.debug("Sending message succeeded")
-					await asyncio.sleep(1.5)
+					await asyncio.sleep(1.9)
 				else:
 					logger.debug("Sending message failed")
 					break

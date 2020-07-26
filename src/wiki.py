@@ -7,6 +7,7 @@ from src.formatters.rc import embed_formatter, compact_formatter
 from src.misc import parse_link
 from src.i18n import langs
 import src.discord
+import asyncio
 from src.config import settings
 from bs4 import BeautifulSoup
 
@@ -22,7 +23,7 @@ class Wiki:
 	session: aiohttp.ClientSession = None
 
 
-	async def fetch_wiki(self, extended, script_path) -> aiohttp.ClientResponse:
+	async def fetch_wiki(self, extended, script_path, session) -> aiohttp.ClientResponse:
 		url_path = script_path + "api.php"
 		amount = 20
 		if extended:
@@ -30,18 +31,17 @@ class Wiki:
 			          "meta": "allmessages|siteinfo",
 			          "utf8": 1, "tglimit": "max", "tgprop": "displayname",
 			          "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user",
-			          "rclimit": amount, "rctype": "edit|new|log|external",
+			          "rclimit": amount, "rcshow": "!bot", "rctype": "edit|new|log|external",
 			          "ammessages": "recentchanges-page-added-to-category|recentchanges-page-removed-from-category|recentchanges-page-added-to-category-bundled|recentchanges-page-removed-from-category-bundled",
 			          "amenableparser": 1, "amincludelocal": 1, "siprop": "namespaces|general"}
 		else:
 			params = {"action": "query", "format": "json", "uselang": "content", "list": "tags|recentchanges",
 			          "meta": "siteinfo", "utf8": 1,
-			          "tglimit": "max", "tgprop": "displayname",
+			          "tglimit": "max", "rcshow": "!bot", "tgprop": "displayname",
 			          "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user",
 			          "rclimit": amount, "rctype": "edit|new|log|external", "siprop": "namespaces|general"}
 		try:
-			async with aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(6.0)) as session:
-				response = await session.get(url_path, params=params)
+			response = await session.get(url_path, params=params)
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError):
 			logger.exception("A connection error occurred while requesting {}".format(url_path))
 			raise WikiServerError
@@ -49,7 +49,7 @@ class Wiki:
 
 	async def safe_request(self, url):
 		try:
-			async with aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(5.0)) as session:
+			async with aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(2.0)) as session:
 				request = await session.get(url, timeout=5, allow_redirects=False)
 			request.raise_for_status()
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError):
@@ -58,15 +58,19 @@ class Wiki:
 		else:
 			return request
 
+	async def fail_add(self, wiki_url, status):
+		logger.debug("Increasing fail_times to {}".format(self.fail_times+3))
+		self.fail_times += 3
+		if self.fail_times > 9:
+			await self.remove(wiki_url, status)
+
 	async def check_status(self, wiki_url, status):
 		if 199 < status < 300:
-			self.fail_times = 0
+			self.fail_times -= 1
 			pass
 		elif 400 < status < 500:  # ignore 400 error since this might be our fault
-			self.fail_times += 1
+			await self.fail_add(wiki_url, status)
 			logger.warning("Wiki {} responded with HTTP code {}, increased fail_times to {}, skipping...".format(wiki_url, status, self.fail_times))
-			if self.fail_times > 3:
-				await self.remove(wiki_url, status)
 			raise WikiError
 		elif 499 < status < 600:
 			logger.warning("Wiki {} responded with HTTP code {}, skipping...".format(wiki_url, status, self.fail_times))
@@ -75,8 +79,8 @@ class Wiki:
 	async def remove(self, wiki_id, reason):
 		await src.discord.wiki_removal(wiki_id, reason)
 		await src.discord.wiki_removal_monitor(wiki_id, reason)
-		db_cursor.execute("DELETE FROM rcgcdw WHERE wiki = ?", (wiki_id,))
-		logger.warning("{} rows affected by DELETE FROM rcgcdw WHERE wiki = {}".format(db_cursor.rowcount, wiki_id))
+		db_cursor.execute('DELETE FROM rcgcdw WHERE wiki = "?"', (wiki_id,))
+		logger.warning('{} rows affected by DELETE FROM rcgcdw WHERE wiki = "{}"'.format(db_cursor.rowcount, wiki_id))
 		db_connection.commit()
 
 	async def pull_comment(self, comment_id, WIKI_API_PATH):
@@ -143,7 +147,7 @@ async def process_mwmsgs(wiki_response: dict, local_wiki: Wiki, mw_msgs: dict):
 		if not "missing" in message:  # ignore missing strings
 			msgs.append((message["name"], re.sub(r'\[\[.*?\]\]', '', message["*"])))
 		else:
-			logging.warning("Could not fetch the MW message translation for: {}".format(message["name"]))
+			logger.warning("Could not fetch the MW message translation for: {}".format(message["name"]))
 	msgs = tuple(msgs)
 	for key, set in mw_msgs.items():
 		if msgs == set:
@@ -163,7 +167,6 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 	lang = langs[target[0][0]]
 	ngettext = lang.ngettext
 	# recent_changes = RecentChangesClass()  # TODO Look into replacing RecentChangesClass with local_wiki
-	logger.debug(change)
 	appearance_mode = embed_formatter if target[0][1] > 0 else compact_formatter
 	if ("actionhidden" in change or "suppressed" in change):  # if event is hidden using suppression
 		await appearance_mode("suppressed", change, "", changed_categories, local_wiki, target, _, ngettext, paths)

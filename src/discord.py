@@ -21,7 +21,7 @@ async def wiki_removal(wiki_id, status):
 			"""Our own translation string to make it compatible with async"""
 			return langs[observer[4]].gettext(string)
 		reasons = {410: _("wiki deletion"), 404: _("wiki deletion"), 401: _("wiki becoming inaccessible"),
-		           402: _("wiki becoming inaccessible"), 403: _("wiki becoming inaccessible")}
+		           402: _("wiki becoming inaccessible"), 403: _("wiki becoming inaccessible"), 410: _("wiki becoming inaccessible")}
 		reason = reasons.get(status, _("unknown error"))
 		await send_to_discord_webhook(DiscordMessage("compact", "webhook/remove", webhook_url=[observer[2]], content=_("The webhook for {} has been removed due to {}.".format(wiki_id, reason)), wiki=None))
 		header = settings["header"]

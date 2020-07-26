@@ -64,26 +64,31 @@ async def wiki_scanner():
 				local_wiki = all_wikis[db_wiki[3]]  # set a reference to a wiki object from memory
 				if local_wiki.mw_messages is None:
 					extended = True
-				logger.debug("test")
-				try:
-					wiki_response = await local_wiki.fetch_wiki(extended, db_wiki[3])
-					await local_wiki.check_status(db_wiki[3], wiki_response.status)
-				except (WikiServerError, WikiError):
-					logger.exception("Exeption when fetching the wiki")
-					continue  # ignore this wiki if it throws errors
-				try:
-					recent_changes_resp = await wiki_response.json(encoding="UTF-8")
-					if "error" in recent_changes_resp or "errors" in recent_changes_resp:
-						# TODO Remove on some errors (example "code": "readapidenied")
-						raise WikiError
-					recent_changes = recent_changes_resp['query']['recentchanges']
-					recent_changes.reverse()
-				except asyncio.exceptions.TimeoutError:
-					logger.debug("Timeout on fetching {}.".format(db_wiki[3]))
-					continue
-				except:
-					logger.exception("On loading json of response.")
-					continue
+				async with aiohttp.ClientSession(headers=settings["header"],
+				                                 timeout=aiohttp.ClientTimeout(2.0)) as session:
+					try:
+						wiki_response = await local_wiki.fetch_wiki(extended, db_wiki[3], session)
+						await local_wiki.check_status(db_wiki[3], wiki_response.status)
+					except (WikiServerError, WikiError):
+						logger.exception("Exeption when fetching the wiki")
+						continue  # ignore this wiki if it throws errors
+					try:
+						recent_changes_resp = await wiki_response.json()
+						if "error" in recent_changes_resp or "errors" in recent_changes_resp:
+							error = recent_changes_resp.get("error", recent_changes_resp["errors"])
+							if error["code"] == "readapidenied":
+								await local_wiki.fail_add(db_wiki[3], 410)
+								continue
+							raise WikiError
+						recent_changes = recent_changes_resp['query']['recentchanges']
+						recent_changes.reverse()
+					except aiohttp.ContentTypeError:
+						logger.exception("Wiki seems to be resulting in non-json content.")
+						await local_wiki.fail_add(db_wiki[3], 410)
+						continue
+					except:
+						logger.exception("On loading json of response.")
+						continue
 				if extended:
 					await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
 				if db_wiki[6] is None:  # new wiki, just get the last rc to not spam the channel
@@ -108,7 +113,7 @@ async def wiki_scanner():
 				DBHandler.update_db()
 				await asyncio.sleep(delay=calc_delay)
 	except asyncio.CancelledError:
-		return
+		raise
 
 
 async def message_sender():
@@ -121,6 +126,7 @@ def shutdown(loop, signal=None):
 	loop.stop()
 	logger.info("Script has shut down due to signal {}.".format(signal))
 	for task in asyncio.all_tasks(loop):
+		logger.debug("Killing task {}".format(task.get_name()))
 		task.cancel()
 	sys.exit(0)
 
@@ -134,17 +140,20 @@ async def main_loop():
 	loop = asyncio.get_event_loop()
 	try:
 		signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
+		for s in signals:
+			loop.add_signal_handler(
+				s, lambda s=s: shutdown(loop, signal=s))
 	except AttributeError:
 		logger.info("Running on Windows huh? This complicates things")
 		signals = (signal.SIGBREAK, signal.SIGTERM, signal.SIGINT)
-	for s in signals:
-		loop.add_signal_handler(
-			s, lambda s=s: shutdown(loop, signal=s))
 	loop.set_exception_handler(global_exception_handler)
-	task1 = asyncio.create_task(wiki_scanner())
-	task2 = asyncio.create_task(message_sender())
-	await task1
-	await task2
+	try:
+		task1 = asyncio.create_task(wiki_scanner())
+		task2 = asyncio.create_task(message_sender())
+		await task1
+		await task2
+	except KeyboardInterrupt:
+		shutdown(loop)
 
 
 asyncio.run(main_loop())
