@@ -76,11 +76,11 @@ class Wiki:
 			logger.warning("Wiki {} responded with HTTP code {}, skipping...".format(wiki_url, status, self.fail_times))
 			raise WikiServerError
 
-	async def remove(self, wiki_id, reason):
-		await src.discord.wiki_removal(wiki_id, reason)
-		await src.discord.wiki_removal_monitor(wiki_id, reason)
-		db_cursor.execute('DELETE FROM rcgcdw WHERE wiki = "?"', (wiki_id,))
-		logger.warning('{} rows affected by DELETE FROM rcgcdw WHERE wiki = "{}"'.format(db_cursor.rowcount, wiki_id))
+	async def remove(self, wiki_url, reason):
+		await src.discord.wiki_removal(wiki_url, reason)
+		await src.discord.wiki_removal_monitor(wiki_url, reason)
+		db_cursor.execute('DELETE FROM rcgcdw WHERE wiki = ?', (wiki_url,))
+		logger.warning('{} rows affected by DELETE FROM rcgcdw WHERE wiki = "{}"'.format(db_cursor.rowcount, wiki_url))
 		db_connection.commit()
 
 	async def pull_comment(self, comment_id, WIKI_API_PATH):
