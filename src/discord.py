@@ -32,8 +32,7 @@ async def wiki_removal(wiki_id, status):
 
 
 async def webhook_removal_monitor(webhook_url: list, reason: int):
-	await send_to_discord_webhook_monitoring(DiscordMessage("compact", "webhook/remove", None, content="The webhook {} has been removed due to {}.".format("https://discord.com/api/webhooks/" + webhook_url[0], reason), wiki=None),
-	                                   aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(4.0)))
+	await send_to_discord_webhook_monitoring(DiscordMessage("compact", "webhook/remove", None, content="The webhook {} has been removed due to {}.".format("https://discord.com/api/webhooks/" + webhook_url[0], reason), wiki=None))
 
 
 class DiscordMessage:
