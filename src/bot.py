@@ -132,7 +132,11 @@ def global_exception_handler(loop, context):
 
 async def main_loop():
 	loop = asyncio.get_event_loop()
-	signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
+	try:
+		signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
+	except AttributeError:
+		logger.info("Running on Windows huh? This complicates things")
+		signals = (signal.SIGBREAK, signal.SIGTERM, signal.SIGINT)
 	for s in signals:
 		loop.add_signal_handler(
 			s, lambda s=s: shutdown(loop, signal=s))
