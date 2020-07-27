@@ -44,8 +44,8 @@ def calculate_delay() -> float:
 def generate_targets(wiki_url: str) -> defaultdict:
 	combinations = defaultdict(list)
 	for webhook in db_cursor.execute('SELECT webhook, lang, display FROM rcgcdw WHERE wiki = ?', (wiki_url,)):
-		combination = (webhook[1], webhook[2])  # lang, display
-		combinations[combination].append(webhook[0])
+		combination = (webhook["lang"], webhook["display"])
+		combinations[combination].append(webhook["webhook"])
 	return combinations
 
 
@@ -55,19 +55,19 @@ async def wiki_scanner():
 			calc_delay = calculate_delay()
 			fetch_all = db_cursor.execute('SELECT webhook, wiki, lang, display, wikiid, rcid, postid FROM rcgcdw GROUP BY wiki')
 			for db_wiki in fetch_all.fetchall():
-				logger.debug("Wiki {}".format(db_wiki[1]))
+				logger.debug("Wiki {}".format(db_wiki["wiki"]))
 				extended = False
-				if db_wiki[1] not in all_wikis:
-					logger.debug("New wiki: {}".format(db_wiki[1]))
+				if db_wiki["wiki"] not in all_wikis:
+					logger.debug("New wiki: {}".format(db_wiki["wiki"]))
 					all_wikis[db_wiki["wiki"]] = Wiki()
-				local_wiki = all_wikis[db_wiki[1]]  # set a reference to a wiki object from memory
+				local_wiki = all_wikis[db_wiki["wiki"]]  # set a reference to a wiki object from memory
 				if local_wiki.mw_messages is None:
 					extended = True
 				async with aiohttp.ClientSession(headers=settings["header"],
 				                                 timeout=aiohttp.ClientTimeout(2.0)) as session:
 					try:
-						wiki_response = await local_wiki.fetch_wiki(extended, db_wiki[1], session)
-						await local_wiki.check_status(db_wiki[1], wiki_response.status)
+						wiki_response = await local_wiki.fetch_wiki(extended, db_wiki["wiki"], session)
+						await local_wiki.check_status(db_wiki["wiki"], wiki_response.status)
 					except (WikiServerError, WikiError):
 						logger.exception("Exeption when fetching the wiki")
 						continue  # ignore this wiki if it throws errors
@@ -76,39 +76,39 @@ async def wiki_scanner():
 						if "error" in recent_changes_resp or "errors" in recent_changes_resp:
 							error = recent_changes_resp.get("error", recent_changes_resp["errors"])
 							if error["code"] == "readapidenied":
-								await local_wiki.fail_add(db_wiki[1], 410)
+								await local_wiki.fail_add(db_wiki["wiki"], 410)
 								continue
 							raise WikiError
 						recent_changes = recent_changes_resp['query']['recentchanges']
 						recent_changes.reverse()
 					except aiohttp.ContentTypeError:
 						logger.exception("Wiki seems to be resulting in non-json content.")
-						await local_wiki.fail_add(db_wiki[1], 410)
+						await local_wiki.fail_add(db_wiki["wiki"], 410)
 						continue
 					except:
 						logger.exception("On loading json of response.")
 						continue
 				if extended:
 					await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
-				if db_wiki[5] is None:  # new wiki, just get the last rc to not spam the channel
+				if db_wiki["rcid"] is None:  # new wiki, just get the last rc to not spam the channel
 					if len(recent_changes) > 0:
-						DBHandler.add(db_wiki[1], recent_changes[-1]["rcid"])
+						DBHandler.add(db_wiki["wiki"], recent_changes[-1]["rcid"])
 					else:
-						DBHandler.add(db_wiki[1], 0)
+						DBHandler.add(db_wiki["wiki"], 0)
 					DBHandler.update_db()
 					continue
 				categorize_events = {}
-				targets = generate_targets(db_wiki[1])
-				paths = get_paths(db_wiki[1], recent_changes_resp)
+				targets = generate_targets(db_wiki["wiki"])
+				paths = get_paths(db_wiki["wiki"], recent_changes_resp)
 				for change in recent_changes:
 					await process_cats(change, local_wiki, mw_msgs, categorize_events)
 				for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
-					if change["rcid"] > db_wiki[5]:
+					if change["rcid"] > db_wiki["rcid"]:
 						for target in targets.items():
 							await essential_info(change, categorize_events, local_wiki, db_wiki, target, paths,
 							                     recent_changes_resp)
 				if recent_changes:
-					DBHandler.add(db_wiki[1], change["rcid"])
+					DBHandler.add(db_wiki["wiki"], change["rcid"])
 				DBHandler.update_db()
 				await asyncio.sleep(delay=calc_delay)
 	except asyncio.CancelledError:
