@@ -94,10 +94,10 @@ async def wiki_scanner():
 				if db_wiki[5] is None:  # new wiki, just get the last rc to not spam the channel
 					if len(recent_changes) > 0:
 						DBHandler.add(db_wiki[1], recent_changes[-1]["rcid"])
-						continue
 					else:
 						DBHandler.add(db_wiki[1], 0)
-						continue
+					DBHandler.update_db()
+					continue
 				categorize_events = {}
 				targets = generate_targets(db_wiki[1])
 				paths = get_paths(db_wiki[1], recent_changes_resp)
