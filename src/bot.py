@@ -60,7 +60,7 @@ async def wiki_scanner():
 				extended = False
 				if db_wiki[1] not in all_wikis:
 					logger.debug("New wiki: {}".format(db_wiki[1]))
-					all_wikis[db_wiki[1]] = Wiki()
+					all_wikis[db_wiki["wiki"]] = Wiki()
 				local_wiki = all_wikis[db_wiki[1]]  # set a reference to a wiki object from memory
 				if local_wiki.mw_messages is None:
 					extended = True
