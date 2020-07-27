@@ -138,6 +138,7 @@ def global_exception_handler(loop, context):
 
 async def main_loop():
 	loop = asyncio.get_event_loop()
+	loop.run_forever()
 	try:
 		signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
 		for s in signals:
