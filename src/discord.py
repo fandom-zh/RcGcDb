@@ -23,7 +23,7 @@ async def wiki_removal(wiki_url, status):
 		reasons = {410: _("wiki deletion"), 404: _("wiki deletion"), 401: _("wiki becoming inaccessible"),
 		           402: _("wiki becoming inaccessible"), 403: _("wiki becoming inaccessible"), 410: _("wiki becoming inaccessible")}
 		reason = reasons.get(status, _("unknown error"))
-		await send_to_discord_webhook(DiscordMessage("compact", "webhook/remove", webhook_url=[observer[0]], content=_("The webhook for {} has been removed due to {}.".format(wiki_url, reason)), wiki=None))
+		await send_to_discord_webhook(DiscordMessage("compact", "webhook/remove", webhook_url=[], content=_("The webhook for {} has been removed due to {}.".format(wiki_url, reason)), wiki=None), webhook_url=observer[0])
 		header = settings["header"]
 		header['Content-Type'] = 'application/json'
 		header['X-Audit-Log-Reason'] = "Wiki becoming unavailable"
@@ -117,17 +117,16 @@ async def send_to_discord_webhook_monitoring(data: DiscordMessage):
 			return 3
 
 
-async def send_to_discord_webhook(data: DiscordMessage):
+async def send_to_discord_webhook(data: DiscordMessage, webhook_url: str):
 	header = settings["header"]
 	header['Content-Type'] = 'application/json'
 	async with aiohttp.ClientSession(headers=header, timeout=aiohttp.ClientTimeout(5.0)) as session:
-		for webhook in data.webhook_url:
-			try:
-				result = await session.post("https://discord.com/api/webhooks/"+webhook, data=repr(data))
-			except (aiohttp.ClientConnectionError, aiohttp.ServerConnectionError):
-				logger.exception("Could not send the message to Discord")
-				return 3
-			return await handle_discord_http(result.status, repr(data), await result.text(), data)
+		try:
+			result = await session.post("https://discord.com/api/webhooks/"+webhook_url, data=repr(data))
+		except (aiohttp.ClientConnectionError, aiohttp.ServerConnectionError):
+			logger.exception("Could not send the message to Discord")
+			return 3
+		return await handle_discord_http(result.status, repr(data), await result.text(), data)
 
 
 async def handle_discord_http(code, formatted_embed, result, dmsg):

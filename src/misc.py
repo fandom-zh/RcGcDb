@@ -9,8 +9,9 @@ logger = logging.getLogger("rcgcdw.misc")
 
 
 def get_paths(wiki: str, request) -> tuple:
+	"""Prepares wiki paths for the functions"""
 	parsed_url = urlparse(wiki)
-	WIKI_API_PATH = wiki + request["query"]["general"]["scriptpath"] + "api.php"
+	WIKI_API_PATH = wiki + "api.php"
 	WIKI_SCRIPT_PATH = wiki
 	WIKI_ARTICLE_PATH = urlunparse((*parsed_url[0:2], "", "", "", "")) + request["query"]["general"]["articlepath"]
 	WIKI_JUST_DOMAIN = urlunparse((*parsed_url[0:2], "", "", "", ""))

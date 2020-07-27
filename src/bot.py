@@ -54,7 +54,6 @@ async def wiki_scanner():
 		while True:
 			calc_delay = calculate_delay()
 			fetch_all = db_cursor.execute('SELECT webhook, wiki, lang, display, wikiid, rcid, postid FROM rcgcdw GROUP BY wiki')
-			# webhook, wiki, lang, display, wikiid, rcid, postid
 			for db_wiki in fetch_all.fetchall():
 				logger.debug("Wiki {}".format(db_wiki[1]))
 				extended = False

@@ -102,6 +102,7 @@ class Wiki:
 
 
 async def process_cats(event: dict, local_wiki: Wiki, category_msgs: dict, categorize_events: dict):
+	"""Process categories based on local MW messages. """
 	if event["type"] == "categorize":
 		if "commenthidden" not in event:
 			if local_wiki.mw_messages:

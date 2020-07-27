@@ -24,6 +24,7 @@ logger = logging.getLogger("rcgcdw.rc_formatters")
 
 async def compact_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths,
                             additional_data=None):
+	"""Recent Changes compact formatter, part of RcGcDw"""
 	if additional_data is None:
 		additional_data = {"namespaces": {}, "tags": {}}
 	WIKI_API_PATH = paths[0]
@@ -315,6 +316,7 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 
 
 async def embed_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths, additional_data=None):
+	"""Recent Changes embed formatter, part of RcGcDw"""
 	if additional_data is None:
 		additional_data = {"namespaces": {}, "tags": {}}
 	WIKI_API_PATH = paths[0]

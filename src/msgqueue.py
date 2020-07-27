@@ -1,6 +1,7 @@
 import asyncio, logging, aiohttp
 from src.discord import send_to_discord_webhook
 from src.config import settings
+from collections import defaultdict, ItemsView
 logger = logging.getLogger("rcgcdw.msgqueue")
 
 class MessageQueue:
@@ -30,26 +31,35 @@ class MessageQueue:
 	async def create_session(self):
 		self.session = aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(5.0))
 
+	async def group_by_webhook(self):  # TODO Change into iterable
+		"""Group Discord messages in the queue by the dictionary, allowing to send multiple messages to different
+		webhooks at the same time avoiding ratelimits per Discord webhook route."""
+		message_dict = defaultdict(list)
+		for msg in self._queue:
+			for webhook in msg.webhook_url:
+				message_dict[webhook].append(msg)
+		return message_dict.items()
+
+	async def send_msg_set(self, msg_set: tuple):
+		webhook_url, messages = msg_set
+		for msg in messages:
+			if await send_to_discord_webhook(msg, webhook_url) < 2:
+				logger.debug("Sending message succeeded")
+				self._queue.remove(msg)
+				await asyncio.sleep(1.9)
+			else:
+				logger.debug("Sending message failed")
+				break
+
 	async def resend_msgs(self):
-		if self.session is None:
-			await self.create_session()
 		if self._queue:
 			logger.info(
 				"{} messages waiting to be delivered to Discord.".format(len(self._queue)))
-			for num, item in enumerate(self._queue):
-				logger.debug(
-					"Trying to send a message to Discord from the queue with id of {} and content {}".format(str(num),
-					                                                                                         str(item)))
-				if await send_to_discord_webhook(item) < 2:
-					logger.debug("Sending message succeeded")
-					await asyncio.sleep(1.9)
-				else:
-					logger.debug("Sending message failed")
-					break
-			else:
-				self.clear()
-				logger.debug("Queue emptied, all messages delivered")
-			self.cut_messages(num)
+			tasks_to_run = []
+			for set_msgs in await self.group_by_webhook():
+				logger.debug(set_msgs)
+				tasks_to_run.append(self.send_msg_set(set_msgs))
+			await asyncio.gather(*tasks_to_run)
 			logger.debug(self._queue)
 		await asyncio.sleep(4.0)
 
