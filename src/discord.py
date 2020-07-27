@@ -19,16 +19,16 @@ async def wiki_removal(wiki_url, status):
 	for observer in db_cursor.execute('SELECT webhook, lang FROM rcgcdw WHERE wiki = ?', (wiki_url,)):
 		def _(string: str) -> str:
 			"""Our own translation string to make it compatible with async"""
-			return langs[observer[1]].gettext(string)
+			return langs[observer["lang"]].gettext(string)
 		reasons = {410: _("wiki deletion"), 404: _("wiki deletion"), 401: _("wiki becoming inaccessible"),
 		           402: _("wiki becoming inaccessible"), 403: _("wiki becoming inaccessible"), 410: _("wiki becoming inaccessible")}
 		reason = reasons.get(status, _("unknown error"))
-		await send_to_discord_webhook(DiscordMessage("compact", "webhook/remove", webhook_url=[observer[0]], content=_("The webhook for {} has been removed due to {}.".format(wiki_url, reason)), wiki=None))
+		await send_to_discord_webhook(DiscordMessage("compact", "webhook/remove", webhook_url=[observer["webhook"]], content=_("The webhook for {} has been removed due to {}.".format(wiki_url, reason)), wiki=None))
 		header = settings["header"]
 		header['Content-Type'] = 'application/json'
 		header['X-Audit-Log-Reason'] = "Wiki becoming unavailable"
 		async with aiohttp.ClientSession(headers=header, timeout=aiohttp.ClientTimeout(5.0)) as session:
-			await session.delete("https://discord.com/api/webhooks/"+observer[0])
+			await session.delete("https://discord.com/api/webhooks/"+observer["webhook"])
 
 
 async def webhook_removal_monitor(webhook_url: list, reason: int):
