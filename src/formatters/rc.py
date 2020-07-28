@@ -2,6 +2,7 @@ import ipaddress
 import math
 import re
 import time
+import json
 import logging
 from src.config import settings
 from src.misc import link_formatter, create_article_path, parse_link, profile_field_name, ContentParser
@@ -675,8 +676,13 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		logger.warning("No entry for {event} with params: {params}".format(event=action, params=change))
 		link = create_article_path("Special:RecentChanges", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Unknown event `{event}`").format(event=action)
+		embed["color"] = 0
 		if settings["support"]:
-			embed.add_field(_("Report this on the support server"), settings["support"])
+			change_params = "[```json\n{params}\n```]({support})".format(params=json.dumps(change, indent=2), support=settings["support"])
+			if len(change_params) > 1000:
+				embed.add_field(_("Report this on the support server"), settings["support"])
+			else:
+				embed.add_field(_("Report this on the support server"), change_params)
 	embed["author"]["icon_url"] = settings["appearance"]["embed"].get(action, {"icon": None})["icon"]
 	embed["url"] = link
 	if parsed_comment is not None:

@@ -199,16 +199,10 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 		identification_string = change["type"]
 	elif change["type"] == "log":
 		identification_string = "{logtype}/{logaction}".format(logtype=change["logtype"], logaction=change["logaction"])
-		if identification_string not in supported_logs:
-			logger.warning(
-				"This event is not implemented in the script. Please make an issue on the tracker attaching the following info: wiki url, time, and this information: {}".format(
-					change))
-			return
 	elif change["type"] == "categorize":
 		return
 	else:
-		logger.warning("This event is not implemented in the script. Please make an issue on the tracker attaching the following info: wiki url, time, and this information: {}".format(change))
-		return
+		identification_string = change["type"]
 	additional_data = {"namespaces": request["query"]["namespaces"], "tags": {}}
 	for tag in request["query"]["tags"]:
 		try:
