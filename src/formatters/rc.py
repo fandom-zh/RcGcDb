@@ -248,6 +248,16 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		link_dest = link_formatter(create_article_path(change["logparams"]["dest_title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) merged revision histories of [{article}]({article_url}) into [{dest}]({dest_url}){comment}").format(author=author, author_url=author_url, article=change["title"], article_url=link, dest_url=link_dest,
 		                                                                                dest=change["logparams"]["dest_title"], comment=parsed_comment)
+	elif action == "newusers/autocreate":
+		content = _("Account [{author}]({author_url}) was created automatically").format(author=author, author_url=author_url)
+	elif action == "newusers/create":
+		content = _("Account [{author}]({author_url}) was created").format(author=author, author_url=author_url)
+	elif action == "newusers/create2":
+		content = _("Account [{article}]({article_url}) was created by [{author}]({author_url}){comment}").format(article=change["title"], article_url=link, author=author, author_url=author_url, comment=parsed_comment)
+	elif action == "newusers/byemail":
+		content = _("Account [{article}]({article_url}) was created by [{author}]({author_url}) and password was sent by email{comment}").format(article=change["title"], article_url=link, author=author, author_url=author_url, comment=parsed_comment)
+	elif action == "newusers/newusers":
+		content = _("Account [{author}]({author_url}) was created").format(author=author, author_url=author_url)
 	elif action == "interwiki/iw_add":
 		link = link_formatter(create_article_path("Special:Interwiki", WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) added an entry to the [interwiki table]({table_url}) pointing to {website} with {prefix} prefix").format(author=author, author_url=author_url, desc=parsed_comment,
@@ -405,7 +415,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 			logger.warning("Request for additional image information have failed. The preview will not be shown.")
 		if action in ("upload/overwrite", "upload/revert"):
 			if additional_info_retrieved:
-				article_encoded = change["title"].replace(" ", "_").replace(')', '\)')
+				article_encoded = change["title"].replace(" ", "_")
 				try:
 					revision = img_info[num+1]
 				except IndexError:
@@ -453,7 +463,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 			ipaddress.ip_address(user)
 			link = create_article_path("Special:Contributions/{user}".format(user=user), WIKI_ARTICLE_PATH)
 		except ValueError:
-			link = create_article_path(change["title"].replace(" ", "_").replace(')', '\)'), WIKI_ARTICLE_PATH)
+			link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		if change["logparams"]["duration"] == "infinite":
 			block_time = _("infinity and beyond")
 		else:
@@ -491,11 +501,11 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 			embed.add_field(_("Partial block details"), restriction_description, inline=True)
 		embed["title"] = _("Blocked {blocked_user} for {time}").format(blocked_user=user, time=block_time)
 	elif action == "block/reblock":
-		link = create_article_path(change["title"].replace(" ", "_").replace(')', '\)'), WIKI_ARTICLE_PATH)
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		user = change["title"].split(':')[1]
 		embed["title"] = _("Changed block settings for {blocked_user}").format(blocked_user=user)
 	elif action == "block/unblock":
-		link = create_article_path(change["title"].replace(" ", "_").replace(')', '\)'), WIKI_ARTICLE_PATH)
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		user = change["title"].split(':')[1]
 		embed["title"] = _("Unblocked {blocked_user}").format(blocked_user=user)
 	elif action == "curseprofile/comment-created":
@@ -520,7 +530,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		                                                                                                change["user"] else _(
 			"Edited a comment on their own profile")
 	elif action == "curseprofile/profile-edited":
-		link = create_article_path("UserProfile:{target}".format(target=change["title"].split(':')[1].replace(" ", "_").replace(')', '\)')), WIKI_ARTICLE_PATH)
+		link = create_article_path("UserProfile:{target}".format(target=change["title"].split(':')[1].replace(" ", "_")), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Edited {target}'s profile").format(target=change["title"].split(':')[1]) if change["user"] != change["title"].split(':')[1] else _("Edited their own profile")
 		if not change["parsedcomment"]:  # If the field is empty
 			parsed_comment = _("Cleared the {field} field").format(field=profile_field_name(change["logparams"]['4:section'], True, _))
@@ -604,6 +614,21 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Merged revision histories of {article} into {dest}").format(article=change["title"],
 		                                                                                dest=change["logparams"]["dest_title"])
+	elif action == "newusers/autocreate":
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
+		embed["title"] = _("Created account automatically")
+	elif action == "newusers/create":
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
+		embed["title"] = _("Created account")
+	elif action == "newusers/create2":
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
+		embed["title"] = _("Created account {article}").format(article=change["title"])
+	elif action == "newusers/byemail":
+		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
+		embed["title"] = _("Created account {article} and password was sent by email").format(article=change["title"])
+	elif action == "newusers/newusers":
+		link = author_url
+		embed["title"] = _("Created account")
 	elif action == "interwiki/iw_add":
 		link = create_article_path("Special:Interwiki", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Added an entry to the interwiki table")
