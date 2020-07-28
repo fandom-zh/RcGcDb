@@ -424,7 +424,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 						wiki=WIKI_SCRIPT_PATH, filename=article_encoded, archiveid=revision["archivename"])
 					embed.add_field(_("Options"), _("([preview]({link}) | [undo]({undolink}))").format(
 						link=image_direct_url, undolink=undolink))
-				if settings["appearance"]["embed"]["embed_images"]:
+				if target[0][1] > 1:
 					embed["image"]["url"] = image_direct_url
 			if action == "upload/overwrite":
 				embed["title"] = _("Uploaded a new version of {name}").format(name=change["title"])
