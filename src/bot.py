@@ -34,6 +34,7 @@ for wiki in db_cursor.execute('SELECT DISTINCT wiki FROM rcgcdw'):
 
 
 def calculate_delay() -> float:
+	"""Calculate the delay between fetching each wiki to avoid rate limits"""
 	min_delay = 60 / settings["max_requests_per_minute"]
 	if (len(all_wikis) * min_delay) < settings["minimal_cooldown_per_wiki_in_sec"]:
 		return settings["minimal_cooldown_per_wiki_in_sec"] / len(all_wikis)
@@ -42,6 +43,10 @@ def calculate_delay() -> float:
 
 
 def generate_targets(wiki_url: str) -> defaultdict:
+	"""To minimize the amount of requests, we generate a list of language/display mode combinations to create messages for
+	this way we can send the same message to multiple webhooks which have the same wiki and settings without doing another
+	request to the wiki just to duplicate the message.
+	"""
 	combinations = defaultdict(list)
 	for webhook in db_cursor.execute('SELECT webhook, lang, display FROM rcgcdw WHERE wiki = ?', (wiki_url,)):
 		combination = (webhook["lang"], webhook["display"])
@@ -133,7 +138,7 @@ def global_exception_handler(loop, context):
 	"""Global exception handler for asyncio, lets us know when something crashes"""
 	msg = context.get("exception", context["message"])
 	logger.error("Global exception handler:" + msg)
-
+	requests.post("https://discord.com/api/webhooks/"+settings["monitoring_webhook"], data={"content": "test"})
 
 async def main_loop():
 	loop = asyncio.get_event_loop()

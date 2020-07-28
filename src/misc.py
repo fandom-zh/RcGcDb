@@ -59,8 +59,8 @@ def parse_link(domain: str, to_parse: str) -> str:
 	"""Because I have strange issues using the LinkParser class myself, this is a helper function
 	to utilize the LinkParser properly"""
 	LinkParse.WIKI_JUST_DOMAIN = domain
-	LinkParse.feed(to_parse)
 	LinkParse.new_string = ""
+	LinkParse.feed(to_parse)
 	LinkParse.recent_href = ""
 	return LinkParse.new_string
 
