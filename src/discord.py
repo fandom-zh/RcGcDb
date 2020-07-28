@@ -5,6 +5,7 @@ from src.misc import logger
 from src.config import settings
 from src.database import db_cursor
 from src.i18n import langs
+from asyncio.exceptions import TimeoutError
 import aiohttp
 
 logger = logging.getLogger("rcgcdb.discord")
@@ -121,7 +122,7 @@ async def send_to_discord_webhook(data: DiscordMessage, webhook_url: str):
 	async with aiohttp.ClientSession(headers=header, timeout=aiohttp.ClientTimeout(5.0)) as session:
 		try:
 			result = await session.post("https://discord.com/api/webhooks/"+webhook_url, data=repr(data))
-		except (aiohttp.ClientConnectionError, aiohttp.ServerConnectionError):
+		except (aiohttp.ClientConnectionError, aiohttp.ServerConnectionError, TimeoutError):
 			logger.exception("Could not send the message to Discord")
 			return 3
 		return await handle_discord_http(result.status, repr(data), await result.text(), data)

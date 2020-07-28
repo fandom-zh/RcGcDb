@@ -117,17 +117,17 @@ async def process_cats(event: dict, local_wiki: Wiki, category_msgs: dict, categ
 	"""Process categories based on local MW messages. """
 	if event["type"] == "categorize":
 		if "commenthidden" not in event:
-			if local_wiki.mw_messages:
+			if local_wiki.mw_messages is not None:
 				cat_title = event["title"].split(':', 1)[1]
 				# I so much hate this, blame Markus for making me do this
 				if event["revid"] not in categorize_events:
 					categorize_events[event["revid"]] = {"new": set(), "removed": set()}
 				comment_to_match = re.sub(r'<.*?a>', '', event["parsedcomment"])
 				wiki_cat_mw_messages = category_msgs[local_wiki.mw_messages]
-				if wiki_cat_mw_messages[0] in comment_to_match or wiki_cat_mw_messages[2] in comment_to_match:  # Added to category
+				if wiki_cat_mw_messages[0][1] in comment_to_match or wiki_cat_mw_messages[2][1] in comment_to_match:  # Added to category
 					categorize_events[event["revid"]]["new"].add(cat_title)
 					logger.debug("Matched {} to added category for {}".format(cat_title, event["revid"]))
-				elif wiki_cat_mw_messages[1] in comment_to_match or wiki_cat_mw_messages[3] in comment_to_match:  # Removed from category
+				elif wiki_cat_mw_messages[1][1] in comment_to_match or wiki_cat_mw_messages[3][1] in comment_to_match:  # Removed from category
 					categorize_events[event["revid"]]["removed"].add(cat_title)
 					logger.debug("Matched {} to removed category for {}".format(cat_title, event["revid"]))
 				else:
@@ -193,6 +193,7 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 	if not parsed_comment:
 		parsed_comment = None
 	if change["type"] in ["edit", "new"]:
+		changed_categories = changed_categories.get(change["revid"], None)
 		logger.debug("List of categories in essential_info: {}".format(changed_categories))
 		if "userhidden" in change:
 			change["user"] = _("hidden")

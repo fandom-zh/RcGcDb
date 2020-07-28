@@ -140,7 +140,7 @@ def shutdown(loop, signal=None):
 def global_exception_handler(loop, context):
 	"""Global exception handler for asyncio, lets us know when something crashes"""
 	msg = context.get("exception", context["message"])
-	logger.error("Global exception handler:" + msg)
+	logger.error("Global exception handler: {}".format(msg))
 	requests.post("https://discord.com/api/webhooks/" + settings["monitoring_webhook"], data={"content": "test"})
 
 
