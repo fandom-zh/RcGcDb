@@ -32,7 +32,10 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 	WIKI_ARTICLE_PATH = paths[2]
 	WIKI_JUST_DOMAIN = paths[3]
 	if action != "suppressed":
-		author_url = link_formatter(create_article_path("User:{user}".format(user=change["user"]), WIKI_ARTICLE_PATH))
+		if "anon" in change:
+			author_url = link_formatter(create_article_path("Special:Contributions/{user}".format(user=change["user"]), WIKI_ARTICLE_PATH))
+		else:
+			author_url = link_formatter(create_article_path("User:{user}".format(user=change["user"]), WIKI_ARTICLE_PATH))
 		author = change["user"]
 	parsed_comment = "" if parsed_comment is None else " *("+parsed_comment+")*"
 	parsed_comment = re.sub(r"([^<]|\A)(http(s)://.*?)( |\Z)", "\\1<\\2>\\4", parsed_comment)  # see #97
@@ -311,7 +314,10 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		content = _("An action has been hidden by administration.")
 	else:
 		logger.warning("No entry for {event} with params: {params}".format(event=action, params=change))
-		return
+		if not settings["support"]:
+			return
+		else:
+			content = _("Unknown event `{event}` by [{author}]({author_url}), report it on the [support server](<{support}>).").format(event=action, author=author, author_url=author_url, support=settings["support"])
 	await send_to_discord(DiscordMessage("compact", action, target[1], content=content, wiki=WIKI_SCRIPT_PATH))
 
 
@@ -677,7 +683,11 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		embed["author"]["name"] = _("Unknown")
 	else:
 		logger.warning("No entry for {event} with params: {params}".format(event=action, params=change))
-	embed["author"]["icon_url"] = settings["appearance"]["embed"][action]["icon"]
+		link = create_article_path("Special:RecentChanges", WIKI_ARTICLE_PATH)
+		embed["title"] = _("Unknown event `{event}`.").format(event=action)
+		if settings["support"]:
+			embed.add_field(_("Report it on the support server"), settings["support"])
+	embed["author"]["icon_url"] = settings["appearance"]["embed"].get(action, {"icon": None})["icon"]
 	embed["url"] = link
 	if parsed_comment is not None:
 		embed["description"] = parsed_comment
