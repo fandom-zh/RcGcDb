@@ -5,7 +5,7 @@ from src.misc import logger
 from src.config import settings
 from src.database import db_cursor
 from src.i18n import langs
-from asyncio.exceptions import TimeoutError
+from asyncio import TimeoutError
 import aiohttp
 
 logger = logging.getLogger("rcgcdb.discord")
