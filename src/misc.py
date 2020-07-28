@@ -3,7 +3,6 @@ import base64, re
 
 import logging
 from urllib.parse import urlparse, urlunparse
-import aiohttp
 
 logger = logging.getLogger("rcgcdw.misc")
 

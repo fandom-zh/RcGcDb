@@ -3,7 +3,8 @@ from src.database import db_cursor, db_connection
 
 logger = logging.getLogger("rcgcdb.queue_handler")
 
-class UpdateDB():
+
+class UpdateDB:
 	def __init__(self):
 		self.updated = []
 

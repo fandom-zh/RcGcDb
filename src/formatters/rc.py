@@ -3,20 +3,18 @@ import math
 import re
 import time
 import logging
-import base64
 from src.config import settings
 from src.misc import link_formatter, create_article_path, parse_link, profile_field_name, ContentParser
 from src.discord import DiscordMessage
-from urllib.parse import quote_plus
 from src.msgqueue import send_to_discord
 # from html.parser import HTMLParser
 
+# noinspection PyPackageRequirements
 from bs4 import BeautifulSoup
 
 #from src.configloader import settings
 #from src.misc import link_formatter, create_article_path, WIKI_SCRIPT_PATH, send_to_discord, DiscordMessage, safe_read, \
 #	WIKI_API_PATH, ContentParser, profile_field_name, LinkParser
-from src.i18n import langs
 #from src.rc import recent_changes, pull_comment
 
 logger = logging.getLogger("rcgcdw.rc_formatters")
@@ -254,7 +252,7 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		content = _("[{author}]({author_url}) created abuse filter [number {number}]({filter_url})").format(author=author, author_url=author_url, number=change["logparams"]['newId'], filter_url=link)
 	elif action == "merge/merge":
 		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
-		link_dest = link_formatter(create_article_path(change["logparams"]["dest_title"]))
+		link_dest = link_formatter(create_article_path(change["logparams"]["dest_title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) merged revision histories of [{article}]({article_url}) into [{dest}]({dest_url}){comment}").format(author=author, author_url=author_url, article=change["title"], article_url=link, dest_url=link_dest,
 		                                                                                dest=change["logparams"]["dest_title"], comment=parsed_comment)
 	elif action == "interwiki/iw_add":
@@ -532,9 +530,9 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		link = create_article_path("UserProfile:{target}".format(target=change["title"].split(':')[1].replace(" ", "_").replace(')', '\)')), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Edited {target}'s profile").format(target=change["title"].split(':')[1]) if change["user"] != change["title"].split(':')[1] else _("Edited their own profile")
 		if not change["parsedcomment"]:  # If the field is empty
-			parsed_comment = _("Cleared the {field} field").format(field=profile_field_name(change["logparams"]['4:section'], True))
+			parsed_comment = _("Cleared the {field} field").format(field=profile_field_name(change["logparams"]['4:section'], True, _))
 		else:
-			parsed_comment = _("{field} field changed to: {desc}").format(field=profile_field_name(change["logparams"]['4:section'], True), desc=BeautifulSoup(change["parsedcomment"], "lxml").get_text())
+			parsed_comment = _("{field} field changed to: {desc}").format(field=profile_field_name(change["logparams"]['4:section'], True, _), desc=BeautifulSoup(change["parsedcomment"], "lxml").get_text())
 	elif action == "curseprofile/comment-purged":
 		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Purged a comment on {target}'s profile").format(target=change["title"].split(':')[1])

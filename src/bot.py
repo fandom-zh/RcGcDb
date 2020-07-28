@@ -1,18 +1,19 @@
+import aiohttp
+import asyncio
 import logging.config
-from src.config import settings
-import sqlite3
-import sys
 import signal
-from src.wiki import Wiki, process_cats, process_mwmsgs, essential_info
-import asyncio, aiohttp
-from src.misc import get_paths
-from src.exceptions import *
-from src.database import db_cursor
+import sys
 from collections import defaultdict
-from src.queue_handler import DBHandler
-from src.discord import DiscordMessage
-from src.msgqueue import messagequeue
+
 import requests
+
+from src.config import settings
+from src.database import db_cursor
+from src.exceptions import *
+from src.misc import get_paths
+from src.msgqueue import messagequeue
+from src.queue_handler import DBHandler
+from src.wiki import Wiki, process_cats, process_mwmsgs, essential_info
 
 logging.config.dictConfig(settings["logging"])
 logger = logging.getLogger("rcgcdb.bot")
@@ -58,7 +59,8 @@ async def wiki_scanner():
 	try:
 		while True:
 			calc_delay = calculate_delay()
-			fetch_all = db_cursor.execute('SELECT webhook, wiki, lang, display, wikiid, rcid, postid FROM rcgcdw GROUP BY wiki')
+			fetch_all = db_cursor.execute(
+				'SELECT webhook, wiki, lang, display, wikiid, rcid, postid FROM rcgcdw GROUP BY wiki')
 			for db_wiki in fetch_all.fetchall():
 				logger.debug("Wiki {}".format(db_wiki["wiki"]))
 				extended = False
@@ -134,11 +136,13 @@ def shutdown(loop, signal=None):
 		task.cancel()
 	sys.exit(0)
 
+
 def global_exception_handler(loop, context):
 	"""Global exception handler for asyncio, lets us know when something crashes"""
 	msg = context.get("exception", context["message"])
 	logger.error("Global exception handler:" + msg)
-	requests.post("https://discord.com/api/webhooks/"+settings["monitoring_webhook"], data={"content": "test"})
+	requests.post("https://discord.com/api/webhooks/" + settings["monitoring_webhook"], data={"content": "test"})
+
 
 async def main_loop():
 	loop = asyncio.get_event_loop()

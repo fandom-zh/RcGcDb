@@ -1,7 +1,7 @@
 import asyncio, logging, aiohttp
 from src.discord import send_to_discord_webhook
 from src.config import settings
-from collections import defaultdict, ItemsView
+from collections import defaultdict
 logger = logging.getLogger("rcgcdw.msgqueue")
 
 class MessageQueue:

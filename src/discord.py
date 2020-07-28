@@ -1,13 +1,11 @@
 import json, random, math, logging
 from collections import defaultdict
 
-from src.config import settings
-from src.database import db_cursor
 from src.misc import logger
 from src.config import settings
 from src.database import db_cursor
 from src.i18n import langs
-import aiohttp, gettext
+import aiohttp
 
 logger = logging.getLogger("rcgcdb.discord")
 
@@ -21,7 +19,7 @@ async def wiki_removal(wiki_url, status):
 			"""Our own translation string to make it compatible with async"""
 			return langs[observer["lang"]].gettext(string)
 		reasons = {410: _("wiki deletion"), 404: _("wiki deletion"), 401: _("wiki becoming inaccessible"),
-		           402: _("wiki becoming inaccessible"), 403: _("wiki becoming inaccessible"), 410: _("wiki becoming inaccessible")}
+		           402: _("wiki becoming inaccessible"), 403: _("wiki becoming inaccessible")}
 		reason = reasons.get(status, _("unknown error"))
 		await send_to_discord_webhook(DiscordMessage("compact", "webhook/remove", webhook_url=[], content=_("The webhook for {} has been removed due to {}.".format(wiki_url, reason)), wiki=None), webhook_url=observer["webhook"])
 		header = settings["header"]

@@ -9,6 +9,7 @@ from src.i18n import langs
 import src.discord
 import asyncio
 from src.config import settings
+# noinspection PyPackageRequirements
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger("rcgcdb.wiki")
@@ -23,7 +24,8 @@ class Wiki:
 	session: aiohttp.ClientSession = None
 
 
-	async def fetch_wiki(self, extended, script_path, session: aiohttp.ClientSession) -> aiohttp.ClientResponse:
+	@staticmethod
+	async def fetch_wiki(extended, script_path, session: aiohttp.ClientSession) -> aiohttp.ClientResponse:
 		url_path = script_path + "api.php"
 		amount = 20
 		if extended:
@@ -84,7 +86,8 @@ class Wiki:
 			logger.warning("Wiki {} responded with HTTP code {}, skipping...".format(wiki_url, status, self.fail_times))
 			raise WikiServerError
 
-	async def remove(self, wiki_url, reason):
+	@staticmethod
+	async def remove(wiki_url, reason):
 		await src.discord.wiki_removal(wiki_url, reason)
 		await src.discord.wiki_removal_monitor(wiki_url, reason)
 		db_cursor.execute('DELETE FROM rcgcdw WHERE wiki = ?', (wiki_url,))
@@ -179,7 +182,7 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 	ngettext = lang.ngettext
 	# recent_changes = RecentChangesClass()  # TODO Look into replacing RecentChangesClass with local_wiki
 	appearance_mode = embed_formatter if target[0][1] > 0 else compact_formatter
-	if ("actionhidden" in change or "suppressed" in change):  # if event is hidden using suppression
+	if "actionhidden" in change or "suppressed" in change:  # if event is hidden using suppression
 		await appearance_mode("suppressed", change, "", changed_categories, local_wiki, target, _, ngettext, paths)
 		return
 	if "commenthidden" not in change:
