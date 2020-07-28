@@ -44,7 +44,7 @@ class Wiki:
 			          "rclimit": amount, "rctype": "edit|new|log|categorize", "siprop": "namespaces|general"}
 		try:
 			response = await session.get(url_path, params=params)
-		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.exceptions.TimeoutError):
+		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
 			logger.exception("A connection error occurred while requesting {}".format(url_path))
 			raise WikiServerError
 		return response
