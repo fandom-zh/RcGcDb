@@ -33,7 +33,7 @@ class Wiki:
 			          "meta": "allmessages|siteinfo",
 			          "utf8": 1, "tglimit": "max", "tgprop": "displayname",
 			          "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user",
-			          "rclimit": amount, "rcshow": "!bot", "rctype": "edit|new|log|external",
+			          "rclimit": amount, "rcshow": "!bot", "rctype": "edit|new|log|categorize",
 			          "ammessages": "recentchanges-page-added-to-category|recentchanges-page-removed-from-category|recentchanges-page-added-to-category-bundled|recentchanges-page-removed-from-category-bundled",
 			          "amenableparser": 1, "amincludelocal": 1, "siprop": "namespaces|general"}
 		else:
@@ -41,7 +41,7 @@ class Wiki:
 			          "meta": "siteinfo", "utf8": 1,
 			          "tglimit": "max", "rcshow": "!bot", "tgprop": "displayname",
 			          "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user",
-			          "rclimit": amount, "rctype": "edit|new|log|external", "siprop": "namespaces|general"}
+			          "rclimit": amount, "rctype": "edit|new|log|categorize", "siprop": "namespaces|general"}
 		try:
 			response = await session.get(url_path, params=params)
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.exceptions.TimeoutError):

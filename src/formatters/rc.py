@@ -7,18 +7,10 @@ from src.config import settings
 from src.misc import link_formatter, create_article_path, parse_link, profile_field_name, ContentParser
 from src.discord import DiscordMessage
 from src.msgqueue import send_to_discord
-# from html.parser import HTMLParser
 
-# noinspection PyPackageRequirements
 from bs4 import BeautifulSoup
 
-#from src.configloader import settings
-#from src.misc import link_formatter, create_article_path, WIKI_SCRIPT_PATH, send_to_discord, DiscordMessage, safe_read, \
-#	WIKI_API_PATH, ContentParser, profile_field_name, LinkParser
-#from src.rc import recent_changes, pull_comment
-
 logger = logging.getLogger("rcgcdw.rc_formatters")
-#from src.rcgcdw import recent_changes, ngettext, logger, profile_field_name, LinkParser, pull_comment
 
 async def compact_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths,
                             additional_data=None):
