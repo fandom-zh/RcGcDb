@@ -684,9 +684,9 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 	else:
 		logger.warning("No entry for {event} with params: {params}".format(event=action, params=change))
 		link = create_article_path("Special:RecentChanges", WIKI_ARTICLE_PATH)
-		embed["title"] = _("Unknown event `{event}`.").format(event=action)
+		embed["title"] = _("Unknown event `{event}`").format(event=action)
 		if settings["support"]:
-			embed.add_field(_("Report it on the support server"), settings["support"])
+			embed.add_field(_("Report this on the support server"), settings["support"])
 	embed["author"]["icon_url"] = settings["appearance"]["embed"].get(action, {"icon": None})["icon"]
 	embed["url"] = link
 	if parsed_comment is not None:
