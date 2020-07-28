@@ -168,20 +168,3 @@ class ContentParser(HTMLParser):
 			self.current_tag = "afterdel"
 		else:
 			self.current_tag = ""
-
-
-async def safe_read(request: aiohttp.ClientResponse, *keys):
-	if request is None:
-		return None
-	try:
-		request = await request.json(encoding="UTF-8")
-		for item in keys:
-			request = request[item]
-	except KeyError:
-		logger.warning(
-			"Failure while extracting data from request on key {key} in {change}".format(key=item, change=request))
-		return None
-	except aiohttp.ClientResponseError:
-		logger.warning("Failure while extracting data from request in {change}".format(change=request))
-		return None
-	return request

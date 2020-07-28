@@ -5,7 +5,7 @@ import time
 import logging
 import base64
 from src.config import settings
-from src.misc import link_formatter, create_article_path, parse_link, profile_field_name, ContentParser, safe_read
+from src.misc import link_formatter, create_article_path, parse_link, profile_field_name, ContentParser
 from src.discord import DiscordMessage
 from urllib.parse import quote_plus
 from src.msgqueue import send_to_discord
@@ -356,15 +356,15 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		                                                             minor=_("m") if action == "edit" and "minor" in change else "", bot=_('b') if "bot" in change else "", space=" " if "bot" in change or (action == "edit" and "minor" in change) or action == "new" else "")
 		if target[0][1] == 3:
 			if action == "new":
-				changed_content = await safe_read(await recent_changes.safe_request(
+				changed_content = await recent_changes.safe_request(
 				"{wiki}?action=compare&format=json&fromtext=&torev={diff}&topst=1&prop=diff".format(
 					wiki=WIKI_API_PATH, diff=change["revid"]
-				)), "compare", "*")
+				), "compare", "*")
 			else:
-				changed_content = await safe_read(await recent_changes.safe_request(
+				changed_content = await recent_changes.safe_request(
 					"{wiki}?action=compare&format=json&fromrev={oldrev}&torev={diff}&topst=1&prop=diff".format(
 						wiki=WIKI_API_PATH, diff=change["revid"],oldrev=change["old_revid"]
-					)), "compare", "*")
+					), "compare", "*")
 			if changed_content:
 				EditDiff = ContentParser(_)
 				EditDiff.feed(changed_content)
@@ -387,9 +387,9 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 				logger.warning("Unable to download data on the edit content!")
 	elif action in ("upload/overwrite", "upload/upload", "upload/revert"):  # sending files
 		license = None
-		urls = await safe_read(await recent_changes.safe_request(
+		urls = await recent_changes.safe_request(
 			"{wiki}?action=query&format=json&prop=imageinfo&list=&meta=&titles={filename}&iiprop=timestamp%7Curl%7Carchivename&iilimit=5".format(
-				wiki=WIKI_API_PATH, filename=change["title"])), "query", "pages")
+				wiki=WIKI_API_PATH, filename=change["title"]), "query", "pages")
 		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		additional_info_retrieved = False
 		if urls is not None:

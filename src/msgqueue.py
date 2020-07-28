@@ -61,7 +61,7 @@ class MessageQueue:
 				tasks_to_run.append(self.send_msg_set(set_msgs))
 			await asyncio.gather(*tasks_to_run)
 			logger.debug(self._queue)
-		await asyncio.sleep(4.0)
+		await asyncio.sleep(0.1)
 
 
 messagequeue = MessageQueue()

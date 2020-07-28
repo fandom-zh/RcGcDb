@@ -23,7 +23,7 @@ class Wiki:
 	session: aiohttp.ClientSession = None
 
 
-	async def fetch_wiki(self, extended, script_path, session) -> aiohttp.ClientResponse:
+	async def fetch_wiki(self, extended, script_path, session: aiohttp.ClientSession) -> aiohttp.ClientResponse:
 		url_path = script_path + "api.php"
 		amount = 20
 		if extended:
@@ -42,21 +42,29 @@ class Wiki:
 			          "rclimit": amount, "rctype": "edit|new|log|external", "siprop": "namespaces|general"}
 		try:
 			response = await session.get(url_path, params=params)
-		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError):
+		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.exceptions.TimeoutError):
 			logger.exception("A connection error occurred while requesting {}".format(url_path))
 			raise WikiServerError
 		return response
 
-	async def safe_request(self, url):
+	@staticmethod
+	async def safe_request(url, *keys):
 		try:
 			async with aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(2.0)) as session:
 				request = await session.get(url, timeout=5, allow_redirects=False)
-			request.raise_for_status()
-		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError):
+				request.raise_for_status()
+				json_request = await request.json(encoding="UTF-8")
+		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.exceptions.TimeoutError):
 			logger.exception("Reached connection error for request on link {url}".format(url=url))
-			return None
 		else:
-			return request
+			try:
+				for item in keys:
+					json_request = json_request[item]
+			except KeyError:
+				logger.warning(
+					"Failure while extracting data from request on key {key} in {change}".format(key=item, change=request))
+				return None
+			return json_request
 
 	async def fail_add(self, wiki_url, status):
 		logger.debug("Increasing fail_times to {}".format(self.fail_times+3))
@@ -87,8 +95,7 @@ class Wiki:
 		try:
 			comment = await self.safe_request(
 				"{wiki}?action=comment&do=getRaw&comment_id={comment}&format=json".format(wiki=WIKI_API_PATH,
-				                                                                          comment=comment_id)).json()[
-				"text"]
+				                                                                          comment=comment_id), "text")
 			logger.debug("Got the following comment from the API: {}".format(comment))
 		except (TypeError, AttributeError):
 			logger.exception("Could not resolve the comment text.")
