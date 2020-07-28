@@ -181,6 +181,8 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 	lang = langs[target[0][0]]
 	ngettext = lang.ngettext
 	# recent_changes = RecentChangesClass()  # TODO Look into replacing RecentChangesClass with local_wiki
+	changed_categories = changed_categories.get(change["revid"], None)
+	logger.debug("List of categories in essential_info: {}".format(changed_categories))
 	appearance_mode = embed_formatter if target[0][1] > 0 else compact_formatter
 	if "actionhidden" in change or "suppressed" in change:  # if event is hidden using suppression
 		await appearance_mode("suppressed", change, "", changed_categories, local_wiki, target, _, ngettext, paths)
@@ -193,8 +195,6 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 	if not parsed_comment:
 		parsed_comment = None
 	if change["type"] in ["edit", "new"]:
-		changed_categories = changed_categories.get(change["revid"], None)
-		logger.debug("List of categories in essential_info: {}".format(changed_categories))
 		if "userhidden" in change:
 			change["user"] = _("hidden")
 		identification_string = change["type"]
