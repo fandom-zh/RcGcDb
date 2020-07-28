@@ -97,6 +97,8 @@ class Wiki:
 				"{wiki}?action=comment&do=getRaw&comment_id={comment}&format=json".format(wiki=WIKI_API_PATH,
 				                                                                          comment=comment_id), "text")
 			logger.debug("Got the following comment from the API: {}".format(comment))
+			if comment is None:
+				raise TypeError
 		except (TypeError, AttributeError):
 			logger.exception("Could not resolve the comment text.")
 		except KeyError:
