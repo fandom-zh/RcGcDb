@@ -4,6 +4,7 @@ import re
 import time
 import json
 import logging
+import datetime
 from src.config import settings
 from src.misc import link_formatter, create_article_path, parse_link, profile_field_name, ContentParser
 from src.discord import DiscordMessage
@@ -84,7 +85,7 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 			"[{author}]({author_url}) moved protection settings from {redirect}*{article}* to [{target}]({target_url}){comment}").format(author=author, author_url=author_url, redirect="⤷ " if "redirect" in change else "", article=change["logparams"]["oldtitle_title"],
 			target=change["title"], target_url=link, comment=parsed_comment)
 	elif action == "block/block":
-		user = change["title"].split(':')[1]
+		user = change["title"].split(':', 1)[1]
 		restriction_description = ""
 		try:
 			ipaddress.ip_address(user)
@@ -92,23 +93,25 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		except ValueError:
 			link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		if change["logparams"]["duration"] == "infinite":
-			block_time = _("infinity and beyond")
+			block_time = _("for infinity and beyond")
 		else:
 			english_length = re.sub(r"(\d+)", "", change["logparams"][
 				"duration"])  # note that translation won't work for millenia and century yet
 			english_length_num = re.sub(r"(\D+)", "", change["logparams"]["duration"])
 			try:
+				if "@" in english_length:
+					raise ValueError
 				english_length = english_length.rstrip("s").strip()
 				try:
-					block_time = "{num} {translated_length}".format(num=english_length_num,
+					block_time = _("for {num} {translated_length}").format(num=english_length_num,
 				                                                translated_length=ngettext(english_length,
 				                                                                           english_length + "s",
 				                                                                           int(english_length_num)))
 				except ValueError:
 					logger.exception("Couldn't properly resolve block expiry.")
-			except AttributeError:
-				logger.error("Could not strip s from the block event, seems like the regex didn't work?")
-				return
+			except (AttributeError, ValueError):
+				date_time_obj = datetime.datetime.strptime(change["logparams"]["expiry"], '%Y-%m-%dT%H:%M:%SZ')
+				block_time = _("until {}").format(date_time_obj.strftime("%Y-%m-%d %H:%M:%S UTC"))
 			if "sitewide" not in change["logparams"]:
 				restriction_description = ""
 				if "pages" in change["logparams"]["restrictions"] and change["logparams"]["restrictions"]["pages"]:
@@ -133,14 +136,14 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 					logger.debug(restriction_description)
 					restriction_description = restriction_description[:1020] + "…"
 		content = _(
-			"[{author}]({author_url}) blocked [{user}]({user_url}) for {time}{restriction_desc}{comment}").format(author=author, author_url=author_url, user=user, time=block_time, user_url=link, restriction_desc=restriction_description, comment=parsed_comment)
+			"[{author}]({author_url}) blocked [{user}]({user_url}) {time}{restriction_desc}{comment}").format(author=author, author_url=author_url, user=user, time=block_time, user_url=link, restriction_desc=restriction_description, comment=parsed_comment)
 	elif action == "block/reblock":
 		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
-		user = change["title"].split(':')[1]
+		user = change["title"].split(':', 1)[1]
 		content = _("[{author}]({author_url}) changed block settings for [{blocked_user}]({user_url}){comment}").format(author=author, author_url=author_url, blocked_user=user, user_url=link, comment=parsed_comment)
 	elif action == "block/unblock":
 		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
-		user = change["title"].split(':')[1]
+		user = change["title"].split(':', 1)[1]
 		content = _("[{author}]({author_url}) unblocked [{blocked_user}]({user_url}){comment}").format(author=author, author_url=author_url, blocked_user=user, user_url=link, comment=parsed_comment)
 	elif action == "curseprofile/comment-created":
 		link = link_formatter(create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]), WIKI_ARTICLE_PATH))
@@ -458,23 +461,25 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		embed["title"] = _("Moved protection settings from {redirect}{article} to {title}").format(redirect="⤷ " if "redirect" in change else "", article=change["logparams"]["oldtitle_title"],
 		                                                                                 title=change["title"])
 	elif action == "block/block":
-		user = change["title"].split(':')[1]
+		user = change["title"].split(':', 1)[1]
 		try:
 			ipaddress.ip_address(user)
 			link = create_article_path("Special:Contributions/{user}".format(user=user), WIKI_ARTICLE_PATH)
 		except ValueError:
 			link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
 		if change["logparams"]["duration"] == "infinite":
-			block_time = _("infinity and beyond")
+			block_time = _("for infinity and beyond")
 		else:
-			english_length = re.sub(r"(\d+)", "", change["logparams"]["duration"]) #note that translation won't work for millenia and century yet
+			english_length = re.sub(r"(\d+)", "", change["logparams"]["duration"])  # note that translation won't work for millenia and century yet
 			english_length_num = re.sub(r"(\D+)", "", change["logparams"]["duration"])
 			try:
+				if "@" in english_length:
+					raise ValueError
 				english_length = english_length.rstrip("s").strip()
-				block_time = "{num} {translated_length}".format(num=english_length_num, translated_length=ngettext(english_length, english_length + "s", int(english_length_num)))
-			except AttributeError:
-				logger.error("Could not strip s from the block event, seems like the regex didn't work?")
-				return
+				block_time = _("for {num} {translated_length}").format(num=english_length_num, translated_length=ngettext(english_length, english_length + "s", int(english_length_num)))
+			except (AttributeError, ValueError):
+				date_time_obj = datetime.datetime.strptime(change["logparams"]["expiry"], '%Y-%m-%dT%H:%M:%SZ')
+				block_time = _("until {}").format(date_time_obj.strftime("%Y-%m-%d %H:%M:%S UTC"))
 		if "sitewide" not in change["logparams"]:
 			restriction_description = ""
 			if "pages" in change["logparams"]["restrictions"] and change["logparams"]["restrictions"]["pages"]:
@@ -499,14 +504,14 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 				logger.debug(restriction_description)
 				restriction_description = restriction_description[:1020]+"…"
 			embed.add_field(_("Partial block details"), restriction_description, inline=True)
-		embed["title"] = _("Blocked {blocked_user} for {time}").format(blocked_user=user, time=block_time)
+		embed["title"] = _("Blocked {blocked_user} {time}").format(blocked_user=user, time=block_time)
 	elif action == "block/reblock":
 		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
-		user = change["title"].split(':')[1]
+		user = change["title"].split(':', 1)[1]
 		embed["title"] = _("Changed block settings for {blocked_user}").format(blocked_user=user)
 	elif action == "block/unblock":
 		link = create_article_path(change["title"].replace(" ", "_"), WIKI_ARTICLE_PATH)
-		user = change["title"].split(':')[1]
+		user = change["title"].split(':', 1)[1]
 		embed["title"] = _("Unblocked {blocked_user}").format(blocked_user=user)
 	elif action == "curseprofile/comment-created":
 		if settings["appearance"]["embed"]["show_edit_changes"]:
