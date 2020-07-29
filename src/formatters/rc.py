@@ -14,6 +14,10 @@ from bs4 import BeautifulSoup
 
 logger = logging.getLogger("rcgcdw.rc_formatters")
 
+if 1 == 2: # additional translation strings in unreachable code
+	print(_("director"), _("bot"), _("editor"), _("directors"), _("sysop"), _("bureaucrat"), _("reviewer"),
+	      _("autoreview"), _("autopatrol"), _("wiki_guardian"), ngettext("second", "seconds", 1), ngettext("minute", "minutes", 1), ngettext("hour", "hours", 1), ngettext("day", "days", 1), ngettext("week", "weeks", 1), ngettext("month", "months",1), ngettext("year", "years", 1), ngettext("millennium", "millennia", 1), ngettext("decade", "decades", 1), ngettext("century", "centuries", 1))
+
 async def compact_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths,
                             additional_data=None):
 	"""Recent Changes compact formatter, part of RcGcDw"""

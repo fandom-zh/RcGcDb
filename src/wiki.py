@@ -88,6 +88,7 @@ class Wiki:
 
 	@staticmethod
 	async def remove(wiki_url, reason):
+		logger.info("Removing a wiki {}".format(wiki_url))
 		await src.discord.wiki_removal(wiki_url, reason)
 		await src.discord.wiki_removal_monitor(wiki_url, reason)
 		db_cursor.execute('DELETE FROM rcgcdw WHERE wiki = ?', (wiki_url,))

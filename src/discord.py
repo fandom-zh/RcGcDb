@@ -150,3 +150,5 @@ async def handle_discord_http(code, formatted_embed, result, dmsg):
 			"Discord have trouble processing the event, and because the HTTP code returned is {} it means we blame them.".format(
 				code))
 		return 3
+	else:
+		return 4

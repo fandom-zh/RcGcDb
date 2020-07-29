@@ -14,10 +14,12 @@ from src.misc import get_paths
 from src.msgqueue import messagequeue
 from src.queue_handler import DBHandler
 from src.wiki import Wiki, process_cats, process_mwmsgs, essential_info
+from src.discord import DiscordMessage
 
 logging.config.dictConfig(settings["logging"])
 logger = logging.getLogger("rcgcdb.bot")
 logger.debug("Current settings: {settings}".format(settings=settings))
+logger.info("RcGcDb v.{} is starting up.".format("1.0"))
 
 # Log Fail states with structure wiki_url: number of fail states
 all_wikis: dict = {}
@@ -65,7 +67,7 @@ async def wiki_scanner():
 				logger.debug("Wiki {}".format(db_wiki["wiki"]))
 				extended = False
 				if db_wiki["wiki"] not in all_wikis:
-					logger.debug("New wiki: {}".format(db_wiki["wiki"]))
+					logger.info("Registering new wiki locally: {}".format(db_wiki["wiki"]))
 					all_wikis[db_wiki["wiki"]] = Wiki()
 				local_wiki = all_wikis[db_wiki["wiki"]]  # set a reference to a wiki object from memory
 				if local_wiki.mw_messages is None:
@@ -141,8 +143,7 @@ def global_exception_handler(loop, context):
 	"""Global exception handler for asyncio, lets us know when something crashes"""
 	msg = context.get("exception", context["message"])
 	logger.error("Global exception handler: {}".format(msg))
-	requests.post("https://discord.com/api/webhooks/" + settings["monitoring_webhook"], data={"content": "test"})
-
+	requests.post("https://discord.com/api/webhooks/"+settings["monitoring_webhook"], data=repr(DiscordMessage("compact", "monitoring", [settings["monitoring_webhook"]], wiki=None, content="[RcGcDb] Global exception handler: {}".format(msg))))
 
 async def main_loop():
 	loop = asyncio.get_event_loop()
@@ -152,7 +153,7 @@ async def main_loop():
 			loop.add_signal_handler(
 				s, lambda s=s: shutdown(loop, signal=s))
 	except AttributeError:
-		logger.info("Running on Windows huh? This complicates things")
+		logger.info("Running on Windows, some things may not work as they should.")
 		signals = (signal.SIGBREAK, signal.SIGTERM, signal.SIGINT)
 	loop.set_exception_handler(global_exception_handler)
 	try:
