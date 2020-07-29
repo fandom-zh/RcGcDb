@@ -56,7 +56,7 @@ class Wiki:
 				request = await session.get(url, timeout=5, allow_redirects=False)
 				request.raise_for_status()
 				json_request = await request.json(encoding="UTF-8")
-		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.exceptions.TimeoutError):
+		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
 			logger.exception("Reached connection error for request on link {url}".format(url=url))
 		else:
 			try:

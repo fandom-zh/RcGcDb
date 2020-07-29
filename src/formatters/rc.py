@@ -256,8 +256,10 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 	elif action == "newusers/create":
 		content = _("Account [{author}]({author_url}) was created").format(author=author, author_url=author_url)
 	elif action == "newusers/create2":
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("Account [{article}]({article_url}) was created by [{author}]({author_url}){comment}").format(article=change["title"], article_url=link, author=author, author_url=author_url, comment=parsed_comment)
 	elif action == "newusers/byemail":
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("Account [{article}]({article_url}) was created by [{author}]({author_url}) and password was sent by email{comment}").format(article=change["title"], article_url=link, author=author, author_url=author_url, comment=parsed_comment)
 	elif action == "newusers/newusers":
 		content = _("Account [{author}]({author_url}) was created").format(author=author, author_url=author_url)
