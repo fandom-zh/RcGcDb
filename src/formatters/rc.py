@@ -632,7 +632,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		embed["title"] = _("Created account")
 	elif action == "newusers/create2":
-		link = create_article_path(change["title"].replace(" ", "_ WIKI_ARTICLE_PATH)
+		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		embed["title"] = _("Created account {article}").format(article=change["title"])
 	elif action == "newusers/byemail":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
