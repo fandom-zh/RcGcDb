@@ -6,6 +6,7 @@ from src.config import settings
 from src.database import db_cursor
 from src.i18n import langs
 from asyncio import TimeoutError
+
 import aiohttp
 
 logger = logging.getLogger("rcgcdb.discord")
@@ -103,6 +104,18 @@ class DiscordMessage:
 # Monitoring webhook functions
 async def wiki_removal_monitor(wiki_url, status):
 	await send_to_discord_webhook_monitoring(DiscordMessage("compact", "webhook/remove", content="Removing {} because {}.".format(wiki_url, status), webhook_url=[None], wiki=None))
+
+
+async def formatter_exception_logger(wiki_url, change, exception):
+	"""Creates a Discord message reporting a crash in RC formatter area"""
+	message = DiscordMessage("embed", "bot/exception", [None], wiki=None)
+	message["description"] = exception
+	message["title"] = "RC Exception Report"
+	change = change[0:1000]
+	message.add_field("Wiki URL", wiki_url)
+	message.add_field("Change", change)
+	message.finish_embed()
+	await send_to_discord_webhook_monitoring(message)
 
 
 async def send_to_discord_webhook_monitoring(data: DiscordMessage):
