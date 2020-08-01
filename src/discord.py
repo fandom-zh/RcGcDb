@@ -13,6 +13,10 @@ logger = logging.getLogger("rcgcdb.discord")
 
 # General functions
 
+default_header = settings["header"]
+default_header['Content-Type'] = 'application/json'
+default_header["X-RateLimit-Precision"] = "millisecond"
+
 
 # User facing webhook functions
 async def wiki_removal(wiki_url, status):
@@ -142,13 +146,9 @@ async def send_to_discord_webhook(data: DiscordMessage, webhook_url: str) -> tup
 	"""Sends a message to webhook
 
 	:return tuple(status code for request, rate limit info (None for can send more, string for amount of seconds to wait)"""
-	header = settings["header"]
-	header['Content-Type'] = 'application/json'
-	header["X-RateLimit-Precision"] = "millisecond"
-	async with aiohttp.ClientSession(headers=header, timeout=aiohttp.ClientTimeout(5.0)) as session:
+	async with aiohttp.ClientSession(headers=default_header, timeout=aiohttp.ClientTimeout(5.0)) as session:
 		try:
 			result = await session.post("https://discord.com/api/webhooks/"+webhook_url, data=repr(data))
-			logger.debug(result.headers)
 			rate_limit = None if int(result.headers.get('x-ratelimit-remaining', "-1")) > 0 else result.headers.get('x-ratelimit-reset-after', None)
 		except (aiohttp.ClientConnectionError, aiohttp.ServerConnectionError, TimeoutError):
 			logger.exception("Could not send the message to Discord")

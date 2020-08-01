@@ -52,8 +52,8 @@ class Wiki:
 	@staticmethod
 	async def safe_request(url, *keys):
 		try:
-			async with aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(2.0)) as session:
-				request = await session.get(url, timeout=5, allow_redirects=False)
+			async with aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(3.0)) as session:
+				request = await session.get(url, allow_redirects=False)
 				request.raise_for_status()
 				json_request = await request.json(encoding="UTF-8")
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):

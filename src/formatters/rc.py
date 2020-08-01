@@ -18,7 +18,7 @@ if 1 == 2: # additional translation strings in unreachable code
 	print(_("director"), _("bot"), _("editor"), _("directors"), _("sysop"), _("bureaucrat"), _("reviewer"),
 	      _("autoreview"), _("autopatrol"), _("wiki_guardian"), ngettext("second", "seconds", 1), ngettext("minute", "minutes", 1), ngettext("hour", "hours", 1), ngettext("day", "days", 1), ngettext("week", "weeks", 1), ngettext("month", "months",1), ngettext("year", "years", 1), ngettext("millennium", "millennia", 1), ngettext("decade", "decades", 1), ngettext("century", "centuries", 1))
 
-async def compact_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths,
+async def compact_formatter(action, change, parsed_comment, categories, recent_changes, message_target, _, ngettext, paths,
                             additional_data=None):
 	"""Recent Changes compact formatter, part of RcGcDw"""
 	if additional_data is None:
@@ -328,7 +328,7 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 			return
 		else:
 			content = _("Unknown event `{event}` by [{author}]({author_url}), report it on the [support server](<{support}>).").format(event=action, author=author, author_url=author_url, support=settings["support"])
-	await send_to_discord(DiscordMessage("compact", action, target[1], content=content, wiki=WIKI_SCRIPT_PATH))
+	await send_to_discord(DiscordMessage("compact", action, message_target[1], content=content, wiki=WIKI_SCRIPT_PATH))
 
 
 async def embed_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths, additional_data=None):

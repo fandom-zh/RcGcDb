@@ -80,7 +80,7 @@ async def wiki_scanner():
 				if local_wiki.mw_messages is None:
 					extended = True
 				async with aiohttp.ClientSession(headers=settings["header"],
-				                                 timeout=aiohttp.ClientTimeout(2.0)) as session:
+				                                 timeout=aiohttp.ClientTimeout(3.0)) as session:
 					try:
 						wiki_response = await local_wiki.fetch_wiki(extended, db_wiki["wiki"], session)
 						await local_wiki.check_status(db_wiki["wiki"], wiki_response.status)
