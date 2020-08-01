@@ -47,8 +47,9 @@ class MessageQueue:
 			if status[0] < 2:
 				logger.debug("Sending message succeeded")
 				self._queue.remove(msg)
+				logger.debug("Current rate limit time: {}".format(status[1]))
 				if status[1] is not None:
-					await asyncio.sleep(float(status[1]))
+					await asyncio.sleep(float(status[1]))  # note, the timer on the last request won't matter that much since it's separate task and for the time of sleep it will give control to other tasks
 			else:
 				logger.debug("Sending message failed")
 				break
