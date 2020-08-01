@@ -43,10 +43,12 @@ class MessageQueue:
 	async def send_msg_set(self, msg_set: tuple):
 		webhook_url, messages = msg_set
 		for msg in messages:
-			if await send_to_discord_webhook(msg, webhook_url) < 2:
+			status = await send_to_discord_webhook(msg, webhook_url)
+			if status[0] < 2:
 				logger.debug("Sending message succeeded")
 				self._queue.remove(msg)
-				await asyncio.sleep(1.9)
+				if status[1] is not None:
+					await asyncio.sleep(float(status[1]))
 			else:
 				logger.debug("Sending message failed")
 				break
