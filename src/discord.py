@@ -149,7 +149,7 @@ async def send_to_discord_webhook(data: DiscordMessage, webhook_url: str) -> tup
 		try:
 			result = await session.post("https://discord.com/api/webhooks/"+webhook_url, data=repr(data))
 			logger.debug(result.headers)
-			rate_limit = None if int(result.headers.get('x-ratelimit-remaining')) > 0 else result.headers.get('x-ratelimit-reset-after')
+			rate_limit = None if int(result.headers.get('x-ratelimit-remaining', "-1")) > 0 else result.headers.get('x-ratelimit-reset-after', None)
 		except (aiohttp.ClientConnectionError, aiohttp.ServerConnectionError, TimeoutError):
 			logger.exception("Could not send the message to Discord")
 			return 3, None
