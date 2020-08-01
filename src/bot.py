@@ -63,6 +63,8 @@ def generate_targets(wiki_url: str) -> defaultdict:
 
 
 async def wiki_scanner():
+	"""Wiki scanner is spawned as a task which purpose is to continuously run over wikis in the DB, fetching recent changes
+	to add messages based on the changes to message queue later handled by message_sender coroutine."""
 	try:
 		while True:
 			calc_delay = calculate_delay()
@@ -126,6 +128,7 @@ async def wiki_scanner():
 								if command_line_args.debug:
 									raise  # reraise the issue
 								else:
+									logger.exception("Exception on RC formatter")
 									await formatter_exception_logger(db_wiki["wiki"], change, traceback.format_exc())
 				if recent_changes:
 					DBHandler.add(db_wiki["wiki"], change["rcid"])
@@ -136,6 +139,7 @@ async def wiki_scanner():
 
 
 async def message_sender():
+	"""message_sender is a coroutine responsible for handling Discord messages and their sending to Discord"""
 	while True:
 		await messagequeue.resend_msgs()
 
