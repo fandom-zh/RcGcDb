@@ -111,7 +111,7 @@ async def formatter_exception_logger(wiki_url, change, exception):
 	message = DiscordMessage("embed", "bot/exception", [None], wiki=None)
 	message["description"] = exception
 	message["title"] = "RC Exception Report"
-	change = change[0:1000]
+	change = str(change)[0:1000]
 	message.add_field("Wiki URL", wiki_url)
 	message.add_field("Change", change)
 	message.finish_embed()

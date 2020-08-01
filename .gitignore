@@ -4,4 +4,4 @@ settings.json
 *.db
 *.code-workspace
 *.bat
-/locale/
+source-file-list.txt

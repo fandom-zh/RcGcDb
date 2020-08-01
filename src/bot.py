@@ -159,6 +159,7 @@ def global_exception_handler(loop, context):
 	else:
 		shutdown(loop)
 
+
 async def main_loop():
 	loop = asyncio.get_event_loop()
 	try:
@@ -179,4 +180,4 @@ async def main_loop():
 		shutdown(loop)
 
 
-asyncio.run(main_loop())
+asyncio.run(main_loop(), debug=command_line_args.debug)
