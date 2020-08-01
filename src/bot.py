@@ -16,7 +16,7 @@ from src.misc import get_paths
 from src.msgqueue import messagequeue
 from src.queue_handler import DBHandler
 from src.wiki import Wiki, process_cats, process_mwmsgs, essential_info
-from src.discord import DiscordMessage, formatter_exception_logger
+from src.discord import DiscordMessage, formatter_exception_logger, msg_sender_exception_logger
 
 logging.config.dictConfig(settings["logging"])
 logger = logging.getLogger("rcgcdb.bot")
@@ -140,12 +140,22 @@ async def wiki_scanner():
 
 async def message_sender():
 	"""message_sender is a coroutine responsible for handling Discord messages and their sending to Discord"""
-	while True:
-		await messagequeue.resend_msgs()
+	try:
+		while True:
+			await messagequeue.resend_msgs()
+	except:
+		if command_line_args.debug:
+			logger.exception("Exception on DC message sender")
+			raise  # reraise the issue
+		else:
+			logger.exception("Exception on DC message sender")
+			await msg_sender_exception_logger(traceback.format_exc())
 
 
 def shutdown(loop, signal=None):
 	DBHandler.update_db()
+	if len(messagequeue) > 0:
+		logger.warning("Some messages are still queued!")
 	loop.stop()
 	logger.info("Script has shut down due to signal {}.".format(signal))
 	for task in asyncio.all_tasks(loop):

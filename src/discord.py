@@ -118,6 +118,15 @@ async def formatter_exception_logger(wiki_url, change, exception):
 	await send_to_discord_webhook_monitoring(message)
 
 
+async def msg_sender_exception_logger(exception):
+	"""Creates a Discord message reporting a crash in RC formatter area"""
+	message = DiscordMessage("embed", "bot/exception", [None], wiki=None)
+	message["description"] = exception
+	message["title"] = "MSGSENDER Exception Report"
+	message.finish_embed()
+	await send_to_discord_webhook_monitoring(message)
+
+
 async def send_to_discord_webhook_monitoring(data: DiscordMessage):
 	header = settings["header"]
 	header['Content-Type'] = 'application/json'
@@ -135,24 +144,30 @@ async def send_to_discord_webhook(data: DiscordMessage, webhook_url: str) -> tup
 	:return tuple(status code for request, rate limit info (None for can send more, string for amount of seconds to wait)"""
 	header = settings["header"]
 	header['Content-Type'] = 'application/json'
+	header["X-RateLimit-Precision"] = "millisecond"
 	async with aiohttp.ClientSession(headers=header, timeout=aiohttp.ClientTimeout(5.0)) as session:
 		try:
 			result = await session.post("https://discord.com/api/webhooks/"+webhook_url, data=repr(data))
+			logger.debug(result.headers)
 			rate_limit = None if int(result.headers.get('x-ratelimit-remaining')) > 0 else result.headers.get('x-ratelimit-reset-after')
 		except (aiohttp.ClientConnectionError, aiohttp.ServerConnectionError, TimeoutError):
 			logger.exception("Could not send the message to Discord")
 			return 3, None
-		return await handle_discord_http(result.status, repr(data), await result.text(), data), rate_limit
+		status = await handle_discord_http(result.status, repr(data), result, data)
+		if status == 5:
+			return 5, await result.json()
+		else:
+			return status, rate_limit
 
 
-async def handle_discord_http(code, formatted_embed, result, dmsg):
+async def handle_discord_http(code: int, formatted_embed: str, result: aiohttp.ClientResponse, dmsg: DiscordMessage):
 	if 300 > code > 199:  # message went through
 		return 0
 	elif code == 400:  # HTTP BAD REQUEST result.status_code, data, result, header
 		logger.error(
 			"Following message has been rejected by Discord, please submit a bug on our bugtracker adding it:")
 		logger.error(formatted_embed)
-		logger.error(result.text)
+		logger.error(await result.text())
 		return 1
 	elif code == 401 or code == 404:  # HTTP UNAUTHORIZED AND NOT FOUND
 		logger.error("Webhook URL is invalid or no longer in use, please replace it with proper one.")
@@ -161,7 +176,7 @@ async def handle_discord_http(code, formatted_embed, result, dmsg):
 		return 1
 	elif code == 429:
 		logger.error("We are sending too many requests to the Discord, slowing down...")
-		return 2
+		return 5
 	elif 499 < code < 600:
 		logger.error(
 			"Discord have trouble processing the event, and because the HTTP code returned is {} it means we blame them.".format(
