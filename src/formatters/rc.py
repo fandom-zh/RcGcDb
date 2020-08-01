@@ -34,7 +34,6 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 			author_url = link_formatter(create_article_path("User:{user}".format(user=change["user"]), WIKI_ARTICLE_PATH))
 		author = change["user"]
 	parsed_comment = "" if parsed_comment is None else " *("+parsed_comment+")*"
-	parsed_comment = re.sub(r"([^<]|\A)(http(s)://.*?)( |\Z)", "\\1<\\2>\\4", parsed_comment)  # see #97
 	if action in ["edit", "new"]:
 		edit_link = link_formatter("{wiki}index.php?title={article}&curid={pageid}&diff={diff}&oldid={oldrev}".format(
 			wiki=WIKI_SCRIPT_PATH, pageid=change["pageid"], diff=change["revid"], oldrev=change["old_revid"],
