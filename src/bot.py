@@ -148,7 +148,7 @@ async def wiki_scanner():
 							logger.error("Exeption when fetching the wiki")
 							continue  # ignore this wiki if it throws errors
 						try:
-							discussion_feed_resp = await feeds_response.json()
+							discussion_feed_resp = await feeds_response.json(encoding="UTF-8")
 							if "title" in discussion_feed_resp:
 								error = discussion_feed_resp["error"]
 								if error == "site doesn't exists":
