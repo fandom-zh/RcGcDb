@@ -39,13 +39,13 @@ class LinkParser(HTMLParser):
 
 	def handle_data(self, data):
 		if self.recent_href:
-			self.new_string = self.new_string + "[{}](<{}>)".format(data.replace("//", "/\\/"), self.recent_href)
+			self.new_string = self.new_string + "[{}](<{}>)".format(escape_formatting(data), self.recent_href)
 			self.recent_href = ""
 		else:
-			self.new_string = self.new_string + data.replace("//", "/\\/")
+			self.new_string = self.new_string + escape_formatting(data)
 
 	def handle_comment(self, data):
-		self.new_string = self.new_string + data.replace("//", "/\\/")
+		self.new_string = self.new_string + escape_formatting(data)
 
 	def handle_endtag(self, tag):
 		# logger.debug(self.new_string)
@@ -71,7 +71,7 @@ def link_formatter(link: str) -> str:
 
 def escape_formatting(data: str) -> str:
 	"""Escape Discord formatting"""
-	return re.sub(r"([`_*~<>{}@/|\\])", "\\\\\\1", data, 0)
+	return re.sub(r"([`_*~:<>{}@/|\\\[\]\(\)])", "\\\\\\1", data, 0)
 
 
 def create_article_path(article: str, WIKI_ARTICLE_PATH: str) -> str:
@@ -125,7 +125,7 @@ class ContentParser(HTMLParser):
 			self.added = True
 
 	def handle_data(self, data):
-		data = re.sub(r"([`_*~<>{}@/|\\])", "\\\\\\1", data, 0)
+		data = escape_formatting(data)
 		if self.current_tag == "ins" and self.ins_length <= 1000:
 			self.ins_length += len("**" + data + '**')
 			if self.ins_length <= 1000:

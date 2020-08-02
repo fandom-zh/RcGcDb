@@ -8,7 +8,7 @@ class UpdateDB:
 	def __init__(self):
 		self.updated = []
 
-	def add(self, wiki, rc_id, feeds: None):
+	def add(self, wiki, rc_id, feeds=None):
 		self.updated.append((wiki, rc_id, feeds))
 
 	def clear_list(self):

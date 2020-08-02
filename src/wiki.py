@@ -202,7 +202,6 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 		return
 	if "commenthidden" not in change:
 		parsed_comment = parse_link(paths[3], change["parsedcomment"])
-		parsed_comment = re.sub(r"(`|_|\*|~|{|}|\|\|)", "\\\\\\1", parsed_comment, 0)
 	else:
 		parsed_comment = _("~~hidden~~")
 	if not parsed_comment:
@@ -234,4 +233,5 @@ async def essential_feeds(change: dict, db_wiki: tuple, target: tuple):
 
 	lang = langs[target[0][0]]
 	appearance_mode = feeds_embed_formatter if target[0][1] > 0 else feeds_compact_formatter
-	await appearance_mode(change.get("funnel", "TEXT"), change, target, db_wiki["wiki"], _)
+	identification_string = change["_embedded"]["thread"][0]["containerType"]
+	await appearance_mode(identification_string, change, target, db_wiki["wiki"], _)

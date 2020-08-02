@@ -16,7 +16,6 @@ from src.misc import get_paths
 from src.msgqueue import messagequeue
 from src.queue_handler import DBHandler
 from src.wiki import Wiki, process_cats, process_mwmsgs, essential_info, essential_feeds
-from src.formatters.discussions import embed_formatter, compact_formatter
 from src.discord import DiscordMessage, formatter_exception_logger, msg_sender_exception_logger
 
 logging.config.dictConfig(settings["logging"])
