@@ -1,19 +1,15 @@
 import datetime, logging
 import json
-import gettext
 from urllib.parse import quote_plus
 
 from src.config import settings
 from src.misc import send_to_discord, escape_formatting
 from discord import DiscordMessage
-from src.i18n import disc
-
-_ = disc.gettext
 
 
 discussion_logger = logging.getLogger("rcgcdw.discussion_formatter")
 
-def embed_formatter(post, post_type):
+def feeds_embed_formatter(post_type, post, message_target, wiki, _):
 	"""Embed formatter for Fandom discussions."""
 	embed = DiscordMessage("embed", "discussion", settings["fandom_discussions"]["webhookURL"])
 	embed.set_author(post["createdBy"]["name"], "{wikiurl}f/u/{creatorId}".format(
@@ -74,13 +70,15 @@ def embed_formatter(post, post_type):
 			embed.add_field(option["text"] if image_type is True else _("Option {}").format(num+1),
 			                option["text"] if image_type is False else _("__[View image]({image_url})__").format(image_url=option["image"]["url"]),
 			                inline=True)
+	else:
+		# UNKNOWN EVENT
 	embed["footer"]["text"] = post["forumName"]
 	embed["timestamp"] = datetime.datetime.fromtimestamp(post["creationDate"]["epochSecond"], tz=datetime.timezone.utc).isoformat()
 	embed.finish_embed()
 	send_to_discord(embed)
 
 
-def compact_formatter(post, post_type):
+def feeds_compact_formatter(post_type, post, message_target, wiki, _):
 	"""Compact formatter for Fandom discussions."""
 	message = None
 	discussion_post_type = post["_embedded"]["thread"][0].get("containerType",
@@ -117,12 +115,13 @@ def compact_formatter(post, post_type):
 					"[{author}](<{url}f/u/{creatorId}>) replied to [{title}](<{wikiurl}wiki/Message_Wall:{user_wall}?threadId={threadid}#{replyId}>) on {user}'s Message Wall").format(
 						author=post["createdBy"]["name"], url=settings["fandom_discussions"]["wiki_url"], creatorId=post["creatorId"], title=post["_embedded"]["thread"][0]["title"], user=user_wall,
 						wikiurl=settings["fandom_discussions"]["wiki_url"], user_wall=quote_plus(user_wall.replace(" ", "_")), threadid=post["threadId"], replyId=post["id"])
-
 	elif post_type == "POLL":
 		message = _(
 			"[{author}](<{url}f/u/{creatorId}>) created a poll [{title}](<{url}f/p/{threadId}>) in {forumName}").format(
 			author=post["createdBy"]["name"], url=settings["fandom_discussions"]["wiki_url"],
 			creatorId=post["creatorId"], title=post["title"], threadId=post["threadId"], forumName=post["forumName"])
+	else:
+		# UNKNOWN EVENT
 	send_to_discord(DiscordMessage("compact", "discussion", settings["fandom_discussions"]["webhookURL"], content=message))
 
 

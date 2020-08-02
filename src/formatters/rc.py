@@ -330,7 +330,7 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 	await send_to_discord(DiscordMessage("compact", action, message_target[1], content=content, wiki=WIKI_SCRIPT_PATH))
 
 
-async def embed_formatter(action, change, parsed_comment, categories, recent_changes, target, _, ngettext, paths, additional_data=None):
+async def embed_formatter(action, change, parsed_comment, categories, recent_changes, message_target, _, ngettext, paths, additional_data=None):
 	"""Recent Changes embed formatter, part of RcGcDw"""
 	if additional_data is None:
 		additional_data = {"namespaces": {}, "tags": {}}
@@ -338,7 +338,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 	WIKI_SCRIPT_PATH = paths[1]
 	WIKI_ARTICLE_PATH = paths[2]
 	WIKI_JUST_DOMAIN = paths[3]
-	embed = DiscordMessage("embed", action, target[1], wiki=WIKI_SCRIPT_PATH)
+	embed = DiscordMessage("embed", action, message_target[1], wiki=WIKI_SCRIPT_PATH)
 	if parsed_comment is None:
 		parsed_comment = _("No description provided")
 	if action != "suppressed":
@@ -369,7 +369,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		embed["title"] = "{redirect}{article} ({new}{minor}{bot}{space}{editsize})".format(redirect="⤷ " if "redirect" in change else "", article=change["title"], editsize="+" + str(
 			editsize) if editsize > 0 else editsize, new=_("(N!) ") if action == "new" else "",
 		                                                             minor=_("m") if action == "edit" and "minor" in change else "", bot=_('b') if "bot" in change else "", space=" " if "bot" in change or (action == "edit" and "minor" in change) or action == "new" else "")
-		if target[0][1] == 3:
+		if message_target[0][1] == 3:
 			if action == "new":
 				changed_content = await recent_changes.safe_request(
 				"{wiki}?action=compare&format=json&fromtext=&torev={diff}&topst=1&prop=diff".format(
@@ -433,7 +433,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 						wiki=WIKI_SCRIPT_PATH, filename=article_encoded, archiveid=revision["archivename"])
 					embed.add_field(_("Options"), _("([preview]({link}) | [undo]({undolink}))").format(
 						link=image_direct_url, undolink=undolink))
-				if target[0][1] > 1:
+				if message_target[0][1] > 1:
 					embed["image"]["url"] = image_direct_url
 			if action == "upload/overwrite":
 				embed["title"] = _("Uploaded a new version of {name}").format(name=change["title"])
@@ -443,7 +443,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 			embed["title"] = _("Uploaded {name}").format(name=change["title"])
 			if additional_info_retrieved:
 				embed.add_field(_("Options"), _("([preview]({link}))").format(link=image_direct_url))
-				if target[0][1] > 1:
+				if message_target[0][1] > 1:
 					embed["image"]["url"] = image_direct_url
 	elif action == "delete/delete":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)

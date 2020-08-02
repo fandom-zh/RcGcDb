@@ -4,6 +4,7 @@ import logging, aiohttp
 from src.exceptions import *
 from src.database import db_cursor, db_connection
 from src.formatters.rc import embed_formatter, compact_formatter
+from src.formatters.discussions import feeds_embed_formatter, feeds_compact_formatter
 from src.misc import parse_link
 from src.i18n import langs
 import src.discord
@@ -42,6 +43,17 @@ class Wiki:
 			          "tglimit": "max", "rcshow": "!bot", "tgprop": "displayname",
 			          "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user",
 			          "rclimit": amount, "rctype": "edit|new|log|categorize", "siprop": "namespaces|general"}
+		try:
+			response = await session.get(url_path, params=params)
+		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
+			logger.exception("A connection error occurred while requesting {}".format(url_path))
+			raise WikiServerError
+		return response
+
+	@staticmethod
+	async def fetch_feeds(wiki_id, session: aiohttp.ClientSession) -> aiohttp.ClientResponse:
+		url_path = "https://services.fandom.com/discussion/{wikiid}/posts".format(wikiid=wiki_id)
+		params = {"sortDirection": "descending", "sortKey": "creation_date", "limit": 20}
 		try:
 			response = await session.get(url_path, params=params)
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
@@ -212,3 +224,14 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 		except KeyError:
 			additional_data["tags"][tag["name"]] = None  # Tags with no displ
 	await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, _, ngettext, paths, additional_data=additional_data)
+
+
+async def essential_feeds(change: dict, db_wiki: tuple, target: tuple):
+	"""Prepares essential information for both embed and compact message format."""
+	def _(string: str) -> str:
+		"""Our own translation string to make it compatible with async"""
+		return lang.gettext(string)
+
+	lang = langs[target[0][0]]
+	appearance_mode = feeds_embed_formatter if target[0][1] > 0 else feeds_compact_formatter
+	await appearance_mode(change.get("funnel", "TEXT"), change, target, db_wiki["wiki"], _)
