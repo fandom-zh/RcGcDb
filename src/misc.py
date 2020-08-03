@@ -17,6 +17,12 @@ def get_paths(wiki: str, request) -> tuple:
 	return WIKI_API_PATH, WIKI_SCRIPT_PATH, WIKI_ARTICLE_PATH, WIKI_JUST_DOMAIN
 
 
+def get_domain(url: str) -> str:
+	"""Get domain of given URL"""
+	parsed_url = urlparse(url)
+	return ".".join(urlunparse((*parsed_url[0:2], "", "", "", "")).split(".")[-2:])  # something like gamepedia.com, fandom.com
+
+
 class LinkParser(HTMLParser):
 
 	new_string = ""
