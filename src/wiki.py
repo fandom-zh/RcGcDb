@@ -56,7 +56,8 @@ class Wiki:
 		params = {"sortDirection": "descending", "sortKey": "creation_date", "limit": 20}
 		try:
 			response = await session.get(url_path, params=params)
-		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
+			response.raise_for_status()
+		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError, aiohttp.ClientResponseError):
 			logger.exception("A connection error occurred while requesting {}".format(url_path))
 			raise WikiServerError
 		return response

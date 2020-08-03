@@ -133,8 +133,7 @@ async def wiki_scanner():
 										await formatter_exception_logger(db_wiki["wiki"], change, traceback.format_exc())
 					if recent_changes:
 						DBHandler.add(db_wiki["wiki"], change["rcid"])
-					DBHandler.update_db()
-					await asyncio.sleep(delay=calc_delay)
+				await asyncio.sleep(delay=2.0)  # temporary measure until rate limiting is not implemented
 				if db_wiki["wikiid"] is not None:
 					header = settings["header"]
 					header["Accept"] = "application/hal+json"
@@ -142,8 +141,6 @@ async def wiki_scanner():
 					                                 timeout=aiohttp.ClientTimeout(3.0)) as session:
 						try:
 							feeds_response = await local_wiki.fetch_feeds(db_wiki["wikiid"], session)
-							# await local_wiki.check_status(db_wiki["wiki"], wiki_response.status)
-							# NEED A GOAT TO CHECK THIS
 						except (WikiServerError, WikiError):
 							logger.error("Exeption when fetching the wiki")
 							continue  # ignore this wiki if it throws errors
@@ -161,8 +158,6 @@ async def wiki_scanner():
 							discussion_feed.reverse()
 						except aiohttp.ContentTypeError:
 							logger.exception("Wiki seems to be resulting in non-json content.")
-							# NEED A GOAT TO CHECK THIS
-							# await local_wiki.fail_add(db_wiki["wiki"], 410)
 							continue
 						except:
 							logger.exception("On loading json of response.")
@@ -188,8 +183,8 @@ async def wiki_scanner():
 										await formatter_exception_logger(db_wiki["wiki"], post, traceback.format_exc())
 					if discussion_feed:
 						DBHandler.add(db_wiki["wiki"], post["id"], True)
-					DBHandler.update_db()
-					await asyncio.sleep(delay=calc_delay)
+				await asyncio.sleep(delay=calc_delay)
+			DBHandler.update_db()
 	except asyncio.CancelledError:
 		raise
 
