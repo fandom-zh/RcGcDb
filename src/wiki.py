@@ -4,6 +4,7 @@ import logging, aiohttp
 from src.exceptions import *
 from src.database import db_cursor, db_connection
 from src.formatters.rc import embed_formatter, compact_formatter
+from src.formatters.discussions import feeds_embed_formatter, feeds_compact_formatter
 from src.misc import parse_link
 from src.i18n import langs
 import src.discord
@@ -45,6 +46,18 @@ class Wiki:
 		try:
 			response = await session.get(url_path, params=params)
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
+			logger.exception("A connection error occurred while requesting {}".format(url_path))
+			raise WikiServerError
+		return response
+
+	@staticmethod
+	async def fetch_feeds(wiki_id, session: aiohttp.ClientSession) -> aiohttp.ClientResponse:
+		url_path = "https://services.fandom.com/discussion/{wikiid}/posts".format(wikiid=wiki_id)
+		params = {"sortDirection": "descending", "sortKey": "creation_date", "limit": 20}
+		try:
+			response = await session.get(url_path, params=params)
+			response.raise_for_status()
+		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError, aiohttp.ClientResponseError):
 			logger.exception("A connection error occurred while requesting {}".format(url_path))
 			raise WikiServerError
 		return response
@@ -190,7 +203,6 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 		return
 	if "commenthidden" not in change:
 		parsed_comment = parse_link(paths[3], change["parsedcomment"])
-		parsed_comment = re.sub(r"(`|_|\*|~|{|}|\|\|)", "\\\\\\1", parsed_comment, 0)
 	else:
 		parsed_comment = _("~~hidden~~")
 	if not parsed_comment:
@@ -212,3 +224,15 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 		except KeyError:
 			additional_data["tags"][tag["name"]] = None  # Tags with no displ
 	await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, _, ngettext, paths, additional_data=additional_data)
+
+
+async def essential_feeds(change: dict, db_wiki: tuple, target: tuple):
+	"""Prepares essential information for both embed and compact message format."""
+	def _(string: str) -> str:
+		"""Our own translation string to make it compatible with async"""
+		return lang.gettext(string)
+
+	lang = langs[target[0][0]]
+	appearance_mode = feeds_embed_formatter if target[0][1] > 0 else feeds_compact_formatter
+	identification_string = change["_embedded"]["thread"][0]["containerType"]
+	await appearance_mode(identification_string, change, target, db_wiki["wiki"], _)
