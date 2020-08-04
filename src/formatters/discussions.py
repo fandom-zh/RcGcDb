@@ -14,36 +14,45 @@ async def feeds_compact_formatter(post_type, post, message_target, wiki, _):
 	"""Compact formatter for Fandom discussions."""
 	message = None
 	if post_type == "FORUM":
+		author = post["createdBy"]["name"]
+		author_url = "<{url}f/u/{creatorId}>".format(url=wiki, creatorId=post["creatorId"])
+	elif post["creatorIp"]:
+		author = post["creatorIp"][1:]
+		author_url = "<{url}wiki/Special:Contributions{creatorIp}>".format(url=wiki, creatorIp=post["creatorIp"])
+	else:
+		author = post["createdBy"]["name"]
+		author_url = "<{url}wiki/User:{author}>".format(url=wiki, author=author)
+	if post_type == "FORUM":
 		if not post["isReply"]:
 			thread_funnel = post.get("funnel")
-			msg_text = "[{author}](<{url}f/u/{creatorId}>) created [{title}](<{url}f/p/{threadId}>) in {forumName}"
+			msg_text = "[{author}]({author_url}) created [{title}](<{url}f/p/{threadId}>) in {forumName}"
 			if thread_funnel == "POLL":
-				msg_text = "[{author}](<{url}f/u/{creatorId}>) created a poll [{title}](<{url}f/p/{threadId}>) in {forumName}"
+				msg_text = "[{author}]({author_url}) created a poll [{title}](<{url}f/p/{threadId}>) in {forumName}"
 			elif thread_funnel != "TEXT":
 				logger.warning("No entry for {event} with params: {params}".format(event=thread_funnel, params=post))
-			message = _(msg_text).format(author=post["createdBy"]["name"], url=wiki, creatorId=post["creatorId"], title=post["title"], threadId=post["threadId"], forumName=post["forumName"])
+			message = _(msg_text).format(author=author, author_url=author_url, title=post["title"], url=wiki, threadId=post["threadId"], forumName=post["forumName"])
 		else:
-			message = _("[{author}](<{url}f/u/{creatorId}>) created a [reply](<{url}f/p/{threadId}/r/{postId}>) to [{title}](<{url}f/p/{threadId}>) in {forumName}").format(author=post["createdBy"]["name"], url=wiki, creatorId=post["creatorId"], threadId=post["threadId"], postId=post["id"], title=post["_embedded"]["thread"][0]["title"], forumName=post["forumName"])
+			message = _("[{author}]({author_url}) created a [reply](<{url}f/p/{threadId}/r/{postId}>) to [{title}](<{url}f/p/{threadId}>) in {forumName}").format(author=author, author_url=author_url, url=wiki, threadId=post["threadId"], postId=post["id"], title=post["_embedded"]["thread"][0]["title"], forumName=post["forumName"])
 	elif post_type == "WALL":
 		user_wall = _("unknown")  # Fail safe
 		if post["forumName"].endswith(' Message Wall'):
 			user_wall = post["forumName"][:-13]
 		if not post["isReply"]:
-			message = _("[{author}](<{url}f/u/{creatorId}>) created [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(author=post["createdBy"]["name"], url=wiki, creatorId=post["creatorId"], title=post["_embedded"]["thread"][0]["title"], user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"])
+			message = _("[{author}]({author_url}) created [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(author=author, author_url=author_url, title=post["title"], url=wiki, user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"])
 		else:
-			message = _("[{author}](<{url}f/u/{creatorId}>) created a [reply](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}#{replyId}>) to [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(author=post["createdBy"]["name"], url=wiki, creatorId=post["creatorId"], title=post["_embedded"]["thread"][0]["title"], user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"], replyId=post["id"])
+			message = _("[{author}]({author_url}) created a [reply](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}#{replyId}>) to [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(author=author, author_url=author_url, url=wiki, title=post["_embedded"]["thread"][0]["title"], user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"], replyId=post["id"])
 	elif post_type == "ARTICLE_COMMENT":
 		article_page = _("unknown")  # No page known
 		if not post["isReply"]:
-			message = _("[{author}](<{url}f/u/{creatorId}>) created a [comment](<{url}wiki/{article}?threadId={threadId}>) on [{article}](<{url}wiki/{article}>)").format(author=post["createdBy"]["name"], url=wiki, creatorId=post["creatorId"], article=article_page, threadId=post["threadId"])
+			message = _("[{author}]({author_url}) created a [comment](<{url}wiki/{article}?commentId={commentId}>) on [{article}](<{url}wiki/{article}>)").format(author=author, author_url=author_url, url=wiki, article=article_page, commentId=post["threadId"])
 		else:
-			message = _("[{author}](<{url}f/u/{creatorId}>) created a [reply](<{url}wiki/{article}?threadId={threadId}) to a [comment](<{url}wiki/{article}?threadId={threadId}#{replyId}>) on [{article}](<{url}wiki/{article}>)").format(author=post["createdBy"]["name"], url=wiki, creatorId=post["creatorId"], article=article_page, threadId=post["threadId"], replyId=post["id"])
+			message = _("[{author}]({author_url}) created a [reply](<{url}wiki/{article}?threadId={threadId}) to a [comment](<{url}wiki/{article}?commentId={commentId}&replyId={replyId}>) on [{article}](<{url}wiki/{article}>)").format(author=author, author_url=author_url, url=wiki, article=article_page, commentId=post["threadId"], replyId=post["id"])
 	else:
 		logger.warning("No entry for {event} with params: {params}".format(event=post_type, params=post))
 		if not settings["support"]:
 			return
 		else:
-			content = _("Unknown event `{event}` by [{author}]({author_url}), report it on the [support server](<{support}>).").format(event=post_type, author=post["createdBy"]["name"], author_url=link_formatter(create_article_path("User:{user}".format(user=post["createdBy"]["name"]), "{url}wiki/$1".format(url=wiki))), support=settings["support"])
+			content = _("Unknown event `{event}` by [{author}]({author_url}), report it on the [support server](<{support}>).").format(event=post_type, author=author, author_url=author_url, support=settings["support"])
 	await send_to_discord(DiscordMessage("compact", "discussion", message_target[1], content=message, wiki=wiki))
 
 
@@ -52,6 +61,8 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, _):
 	embed = DiscordMessage("embed", "discussion", message_target[1], wiki=wiki)
 	if post_type == "FORUM":
 		embed.set_author(post["createdBy"]["name"], "{url}f/u/{creatorId}".format(url=wiki, creatorId=post["creatorId"]), icon_url=post["createdBy"]["avatarUrl"])
+	elif post["creatorIp"]:
+		embed.set_author(post["creatorIp"][1:], "{url}wiki/Special:Contributions{creatorIp}".format(url=wiki, creatorIp=post["creatorIp"]))
 	else:
 		embed.set_author(post["createdBy"]["name"], "{url}wiki/User:{creator}".format(url=wiki, creator=post["createdBy"]["name"]), icon_url=post["createdBy"]["avatarUrl"])
 	if message_target[0][1] == 3:
@@ -95,21 +106,21 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, _):
 			user_wall = post["forumName"][:-13]
 		if not post["isReply"]:
 			embed.event_type = "discussion/wall/post"
-			embed["url"] = "{url}wiki/Message_Wall:{user_wall}?threadId={threadid}".format(url=wiki, user_wall=quote_plus(user_wall.replace(" ", "_")), threadid=post["threadId"])
-			embed["title"] = _("Created \"{title}\" on {user}'s Message Wall").format(title=post["_embedded"]["thread"][0]["title"], user=user_wall)
+			embed["url"] = "{url}wiki/Message_Wall:{user_wall}?threadId={threadId}".format(url=wiki, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"])
+			embed["title"] = _("Created \"{title}\" on {user}'s Message Wall").format(title=post["title"], user=user_wall)
 		else:
 			embed.event_type = "discussion/wall/reply"
-			embed["url"] = "{url}wiki/Message_Wall:{user_wall}?threadId={threadid}#{replyId}".format(url=wiki, user_wall=quote_plus(user_wall.replace(" ", "_")), threadid=post["threadId"], replyId=post["id"])
+			embed["url"] = "{url}wiki/Message_Wall:{user_wall}?threadId={threadId}#{replyId}".format(url=wiki, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"], replyId=post["id"])
 			embed["title"] = _("Replied to \"{title}\" on {user}'s Message Wall").format(title=post["_embedded"]["thread"][0]["title"], user=user_wall)
 	elif post_type == "ARTICLE_COMMENT":
 		article_page = _("unknown")  # No page known
 		if not post["isReply"]:
 			embed.event_type = "discussion/comment/post"
-			# embed["url"] = "{url}wiki/{article}?threadId={threadid}".format(url=wiki, article=quote_plus(article_page.replace(" ", "_")), threadid=post["threadId"])
+			# embed["url"] = "{url}wiki/{article}?commentId={commentId}".format(url=wiki, article=quote_plus(article_page.replace(" ", "_")), commentId=post["threadId"])
 			embed["title"] = _("Commented on {article}").format(article=article_page)
 		else:
 			embed.event_type = "discussion/comment/reply"
-			# embed["url"] = "{url}wiki/{article}?threadId={threadid}#{replyId}".format(url=wiki, article=quote_plus(article_page.replace(" ", "_")), threadid=post["threadId"], replyId=post["id"])
+			# embed["url"] = "{url}wiki/{article}?commentId={commentId}&replyId={replyId}".format(url=wiki, article=quote_plus(article_page.replace(" ", "_")), commentId=post["threadId"], replyId=post["id"])
 			embed["title"] = _("Replied to a comment on {article}").format(article=article_page)
 		embed["footer"]["text"] = article_page
 	else:
