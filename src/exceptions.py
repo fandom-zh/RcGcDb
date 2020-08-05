@@ -15,3 +15,9 @@ class WikiUnauthorizedError(Exception):
 
 class OtherWikiError(Exception):
 	pass
+
+class QueueEmpty(Exception):
+	pass
+
+class ListFull(Exception):
+	pass
