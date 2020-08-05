@@ -6,6 +6,7 @@ import sys
 import traceback
 from collections import defaultdict
 
+import functools
 import requests
 
 from src.argparser import command_line_args
@@ -37,6 +38,33 @@ mw_msgs: dict = {}  # will have the type of id: tuple
 for wiki in db_cursor.execute('SELECT DISTINCT wiki FROM rcgcdw'):
 	all_wikis[wiki] = Wiki()
 
+class RcQueue:
+	def __init__(self):
+		self.domain_list = {}
+		self.to_remove = []
+
+	async def start_group(self, group):
+		"""Starts a task for given domain group"""
+		if group not in self.domain_list:
+			self.domain_list[group] = {"task": asyncio.create_task(scan_group(group)), "last_rowid": 0, "query": []}
+		else:
+			raise KeyError
+
+	async def remove_wiki_from_group(self, group, wiki):
+		"""Removes a wiki from query of given domain group"""
+		self[group]["query"]  # there can be multiple webhooks with
+
+
+	def __getitem__(self, item):
+		"""Returns the query of given domain group"""
+		return self.domain_list[item]
+
+	def __setitem__(self, key, value):
+		self.domain_list[key] = value
+
+
+rcqueue = RcQueue()
+
 
 # Start queueing logic
 
@@ -63,17 +91,19 @@ def generate_targets(wiki_url: str) -> defaultdict:
 
 
 async def generate_domain_groups():  # oh boy, I cannot wait to learn about async generators
+	"""Generate a list of wikis per domain (fandom.com, wikipedia.org etc.)"""
 	combinations = defaultdict(list)
 	fetch_all = db_cursor.execute('SELECT webhook, wiki, lang, display, wikiid, rcid FROM rcgcdw GROUP BY wiki')
 	for db_wiki in fetch_all.fetchall():
 		combinations[get_domain(db_wiki["wiki"])].append(db_wiki)
-	for item in combinations.values():
-		yield item
+	for group, db_wikis in combinations.items():
+		yield group, db_wikis
 
 
 async def scan_group(group: list):
-	calc_delay = calculate_delay_for_group(len(group))
-	for db_wiki in group:
+	while True:
+		calc_delay = calculate_delay_for_group(len(rcqueue[group]))
+		rcqueue[group]
 		logger.debug("Wiki {}".format(db_wiki["wiki"]))
 		if db_wiki["wiki"] not in all_wikis:
 			logger.info("Registering new wiki locally: {}".format(db_wiki["wiki"]))
@@ -137,19 +167,20 @@ async def scan_group(group: list):
 			if recent_changes:
 				DBHandler.add(db_wiki["wiki"], change["rcid"])
 		await asyncio.sleep(delay=calc_delay)
+	return group
 
 
 async def wiki_scanner():
 	"""Wiki scanner is spawned as a task which purpose is to continuously run over wikis in the DB, fetching recent changes
 	to add messages based on the changes to message queue later handled by message_sender coroutine."""
 	try:
-		while True:
-			async for group in generate_domain_groups():
-				asyncio.create_task(scan_group(group))
+		async for group, db_wikis in generate_domain_groups():
+			await rcqueue.start_group(group)
+			rcqueue[group]["query"] = db_wikis  # __SETITEM__ MIGHT BE BAD FOR NESTED, SEE IF CRASHES
+			while True:
+				await asyncio.sleep(20.0)
 
-			fetch_all = db_cursor.execute(
-				'SELECT webhook, wiki, lang, display, wikiid, rcid, postid FROM rcgcdw GROUP BY wiki')
-			for db_wiki in fetch_all.fetchall():
+
 
 				if db_wiki["wikiid"] is not None:
 					header = settings["header"]
