@@ -168,64 +168,63 @@ async def scan_group(group: str):
 		async with rcqueue.retrieve_next_queued(group) as db_wiki:  # acquire next wiki in queue
 			logger.debug("Wiki {}".format(db_wiki["wiki"]))
 			local_wiki = all_wikis[db_wiki["wiki"]]  # set a reference to a wiki object from memory
-			if db_wiki["rcid"] != -1:
-				extended = False
-				if local_wiki.mw_messages is None:
-					extended = True
-				async with aiohttp.ClientSession(headers=settings["header"],
-				                                 timeout=aiohttp.ClientTimeout(3.0)) as session:
-					try:
-						wiki_response = await local_wiki.fetch_wiki(extended, db_wiki["wiki"], session, rate_limiter)
-						await local_wiki.check_status(db_wiki["wiki"], wiki_response.status)
-					except (WikiServerError, WikiError):
-						logger.error("Exeption when fetching the wiki")
-						continue  # ignore this wiki if it throws errors
-					try:
-						recent_changes_resp = await wiki_response.json()
-						if "error" in recent_changes_resp or "errors" in recent_changes_resp:
-							error = recent_changes_resp.get("error", recent_changes_resp["errors"])
-							if error["code"] == "readapidenied":
-								await local_wiki.fail_add(db_wiki["wiki"], 410)
-								continue
-							raise WikiError
-						recent_changes = recent_changes_resp['query']['recentchanges']
-						recent_changes.reverse()
-					except aiohttp.ContentTypeError:
-						logger.exception("Wiki seems to be resulting in non-json content.")
-						await local_wiki.fail_add(db_wiki["wiki"], 410)
-						continue
-					except:
-						logger.exception("On loading json of response.")
-						continue
-				if extended:
-					await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
-				if db_wiki["rcid"] is None:  # new wiki, just get the last rc to not spam the channel
-					if len(recent_changes) > 0:
-						DBHandler.add(db_wiki["wiki"], recent_changes[-1]["rcid"])
-					else:
-						DBHandler.add(db_wiki["wiki"], 0)
-					DBHandler.update_db()
+			extended = False
+			if local_wiki.mw_messages is None:
+				extended = True
+			async with aiohttp.ClientSession(headers=settings["header"],
+			                                 timeout=aiohttp.ClientTimeout(3.0)) as session:
+				try:
+					wiki_response = await local_wiki.fetch_wiki(extended, db_wiki["wiki"], session, rate_limiter)
+					await local_wiki.check_status(db_wiki["wiki"], wiki_response.status)
+				except (WikiServerError, WikiError):
+					logger.error("Exeption when fetching the wiki")
+					continue  # ignore this wiki if it throws errors
+				try:
+					recent_changes_resp = await wiki_response.json()
+					if "error" in recent_changes_resp or "errors" in recent_changes_resp:
+						error = recent_changes_resp.get("error", recent_changes_resp["errors"])
+						if error["code"] == "readapidenied":
+							await local_wiki.fail_add(db_wiki["wiki"], 410)
+							continue
+						raise WikiError
+					recent_changes = recent_changes_resp['query']['recentchanges']
+					recent_changes.reverse()
+				except aiohttp.ContentTypeError:
+					logger.exception("Wiki seems to be resulting in non-json content.")
+					await local_wiki.fail_add(db_wiki["wiki"], 410)
 					continue
-				categorize_events = {}
-				targets = generate_targets(db_wiki["wiki"])
-				paths = get_paths(db_wiki["wiki"], recent_changes_resp)
-				for change in recent_changes:
-					await process_cats(change, local_wiki, mw_msgs, categorize_events)
-				for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
-					if change["rcid"] > db_wiki["rcid"]:
-						for target in targets.items():
-							try:
-								await essential_info(change, categorize_events, local_wiki, db_wiki,
-								                     target, paths, recent_changes_resp, rate_limiter)
-							except:
-								if command_line_args.debug:
-									logger.exception("Exception on RC formatter")
-									raise
-								else:
-									logger.exception("Exception on RC formatter")
-									await formatter_exception_logger(db_wiki["wiki"], change, traceback.format_exc())
-				if recent_changes:
-					DBHandler.add(db_wiki["wiki"], change["rcid"])
+				except:
+					logger.exception("On loading json of response.")
+					continue
+			if extended:
+				await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
+			if db_wiki["rcid"] is None:  # new wiki, just get the last rc to not spam the channel
+				if len(recent_changes) > 0:
+					DBHandler.add(db_wiki["wiki"], recent_changes[-1]["rcid"])
+				else:
+					DBHandler.add(db_wiki["wiki"], 0)
+				DBHandler.update_db()
+				continue
+			categorize_events = {}
+			targets = generate_targets(db_wiki["wiki"])
+			paths = get_paths(db_wiki["wiki"], recent_changes_resp)
+			for change in recent_changes:
+				await process_cats(change, local_wiki, mw_msgs, categorize_events)
+			for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
+				if change["rcid"] > db_wiki["rcid"]:
+					for target in targets.items():
+						try:
+							await essential_info(change, categorize_events, local_wiki, db_wiki,
+							                     target, paths, recent_changes_resp, rate_limiter)
+						except:
+							if command_line_args.debug:
+								logger.exception("Exception on RC formatter")
+								raise
+							else:
+								logger.exception("Exception on RC formatter")
+								await formatter_exception_logger(db_wiki["wiki"], change, traceback.format_exc())
+			if recent_changes:
+				DBHandler.add(db_wiki["wiki"], change["rcid"])
 		delay_between_wikis = calculate_delay_for_group(len(rcqueue[group]["query"]))
 		await asyncio.sleep(delay_between_wikis)
 		DBHandler.update_db()
