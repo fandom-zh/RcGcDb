@@ -110,6 +110,24 @@ async def wiki_removal_monitor(wiki_url, status):
 	await send_to_discord_webhook_monitoring(DiscordMessage("compact", "webhook/remove", content="Removing {} because {}.".format(wiki_url, status), webhook_url=[None], wiki=None))
 
 
+async def discussion_task_exception_logger(wiki, exception):
+	message = DiscordMessage("embed", "bot/exception", [None], wiki=None)
+	message["description"] = exception
+	message["title"] = "Discussion task exception logger"
+	message.add_field("Wiki", wiki)
+	message.finish_embed()
+	await send_to_discord_webhook_monitoring(message)
+
+
+async def group_task_exception_logger(group, exception):
+	message = DiscordMessage("embed", "bot/exception", [None], wiki=None)
+	message["description"] = exception
+	message["title"] = "Group task exception logger"
+	message.add_field("Group", group)
+	message.finish_embed()
+	await send_to_discord_webhook_monitoring(message)
+
+
 async def formatter_exception_logger(wiki_url, change, exception):
 	"""Creates a Discord message reporting a crash in RC formatter area"""
 	message = DiscordMessage("embed", "bot/exception", [None], wiki=None)

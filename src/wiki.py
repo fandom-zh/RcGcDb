@@ -7,6 +7,7 @@ from src.formatters.rc import embed_formatter, compact_formatter
 from src.formatters.discussions import feeds_embed_formatter, feeds_compact_formatter
 from src.misc import parse_link
 from src.i18n import langs
+from src.wiki_ratelimiter import RateLimiter
 import src.discord
 import asyncio
 from src.config import settings
@@ -26,7 +27,8 @@ class Wiki:
 
 
 	@staticmethod
-	async def fetch_wiki(extended, script_path, session: aiohttp.ClientSession) -> aiohttp.ClientResponse:
+	async def fetch_wiki(extended, script_path, session: aiohttp.ClientSession, ratelimiter: RateLimiter) -> aiohttp.ClientResponse:
+		await ratelimiter.timeout_wait()
 		url_path = script_path + "api.php"
 		amount = 20
 		if extended:
@@ -45,6 +47,7 @@ class Wiki:
 			          "rclimit": amount, "rctype": "edit|new|log|categorize", "siprop": "namespaces|general"}
 		try:
 			response = await session.get(url_path, params=params)
+			ratelimiter.timeout_add(1.0)
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
 			logger.exception("A connection error occurred while requesting {}".format(url_path))
 			raise WikiServerError
@@ -63,10 +66,12 @@ class Wiki:
 		return response
 
 	@staticmethod
-	async def safe_request(url, *keys):
+	async def safe_request(url, ratelimiter, *keys):
+		await ratelimiter.timeout_wait()
 		try:
 			async with aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(3.0)) as session:
 				request = await session.get(url, allow_redirects=False)
+				ratelimiter.timeout_add(1.0)
 				request.raise_for_status()
 				json_request = await request.json(encoding="UTF-8")
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
@@ -108,11 +113,11 @@ class Wiki:
 		logger.warning('{} rows affected by DELETE FROM rcgcdw WHERE wiki = "{}"'.format(db_cursor.rowcount, wiki_url))
 		db_connection.commit()
 
-	async def pull_comment(self, comment_id, WIKI_API_PATH):
+	async def pull_comment(self, comment_id, WIKI_API_PATH, rate_limiter):
 		try:
 			comment = await self.safe_request(
 				"{wiki}?action=comment&do=getRaw&comment_id={comment}&format=json".format(wiki=WIKI_API_PATH,
-				                                                                          comment=comment_id), "text")
+				                                                                          comment=comment_id), rate_limiter, "text")
 			logger.debug("Got the following comment from the API: {}".format(comment))
 			if comment is None:
 				raise TypeError
@@ -186,7 +191,7 @@ async def process_mwmsgs(wiki_response: dict, local_wiki: Wiki, mw_msgs: dict):
 	local_wiki.mw_messages = key
 
 # db_wiki: webhook, wiki, lang, display, wikiid, rcid, postid
-async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_wiki: tuple, target: tuple, paths: tuple, request: dict):
+async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_wiki: tuple, target: tuple, paths: tuple, request: dict, rate_limiter: RateLimiter):
 	"""Prepares essential information for both embed and compact message format."""
 	def _(string: str) -> str:
 		"""Our own translation string to make it compatible with async"""
@@ -199,7 +204,7 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 	logger.debug("List of categories in essential_info: {}".format(changed_categories))
 	appearance_mode = embed_formatter if target[0][1] > 0 else compact_formatter
 	if "actionhidden" in change or "suppressed" in change:  # if event is hidden using suppression
-		await appearance_mode("suppressed", change, "", changed_categories, local_wiki, target, _, ngettext, paths)
+		await appearance_mode("suppressed", change, "", changed_categories, local_wiki, target, _, ngettext, paths, rate_limiter)
 		return
 	if "commenthidden" not in change:
 		parsed_comment = parse_link(paths[3], change["parsedcomment"])
@@ -223,7 +228,7 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_
 			additional_data["tags"][tag["name"]] = (BeautifulSoup(tag["displayname"], "lxml")).get_text()
 		except KeyError:
 			additional_data["tags"][tag["name"]] = None  # Tags with no displ
-	await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, _, ngettext, paths, additional_data=additional_data)
+	await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, _, ngettext, paths, rate_limiter, additional_data=additional_data)
 
 
 async def essential_feeds(change: dict, db_wiki: tuple, target: tuple):
