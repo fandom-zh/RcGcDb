@@ -105,8 +105,13 @@ class RcQueue:
 			full = []
 			for db_wiki in fetch_all.fetchall():
 				domain = get_domain(db_wiki["wiki"])
-				current_domain = self[domain]
 				try:
+					all_wikis[db_wiki["wiki"]]
+				except KeyError:
+					all_wikis[db_wiki["wiki"]] = Wiki()
+					all_wikis[db_wiki["wiki"]].rc_active = True
+				try:
+					current_domain = self[domain]
 					if not db_wiki["ROWID"] < current_domain["last_rowid"]:
 						current_domain["query"].append(db_wiki)
 					self.to_remove.remove(db_wiki["wiki"])
@@ -288,7 +293,10 @@ async def discussion_handler():
 					header["Accept"] = "application/hal+json"
 					async with aiohttp.ClientSession(headers=header,
 					                                 timeout=aiohttp.ClientTimeout(3.0)) as session:
-						local_wiki = all_wikis[db_wiki["wiki"]]  # set a reference to a wiki object from memory
+						try:
+							local_wiki = all_wikis[db_wiki["wiki"]]  # set a reference to a wiki object from memory
+						except KeyError:
+							local_wiki = all_wikis[db_wiki["wiki"]] = Wiki()
 						try:
 							feeds_response = await local_wiki.fetch_feeds(db_wiki["wikiid"], session)
 						except (WikiServerError, WikiError):
