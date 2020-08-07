@@ -24,7 +24,7 @@ class Wiki:
 	mw_messages: int = None
 	fail_times: int = 0  # corresponding to amount of times connection with wiki failed for client reasons (400-499)
 	session: aiohttp.ClientSession = None
-	rc_active: bool = False
+	rc_active: int = 0
 
 	@staticmethod
 	async def fetch_wiki(extended, script_path, session: aiohttp.ClientSession, ratelimiter: RateLimiter) -> aiohttp.ClientResponse:
@@ -191,7 +191,8 @@ async def process_mwmsgs(wiki_response: dict, local_wiki: Wiki, mw_msgs: dict):
 	local_wiki.mw_messages = key
 
 # db_wiki: webhook, wiki, lang, display, wikiid, rcid, postid
-async def essential_info(change: dict, changed_categories, local_wiki: Wiki, db_wiki: tuple, target: tuple, paths: tuple, request: dict, rate_limiter: RateLimiter):
+async def essential_info(change: dict, changed_categories, local_wiki: Wiki, target: tuple, paths: tuple, request: dict,
+                         rate_limiter: RateLimiter):
 	"""Prepares essential information for both embed and compact message format."""
 	def _(string: str) -> str:
 		"""Our own translation string to make it compatible with async"""

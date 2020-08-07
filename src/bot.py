@@ -70,7 +70,7 @@ class RcQueue:
 		group = get_domain(wiki)
 		self[group]["query"] = [x for x in self[group]["query"] if x["wiki"] == wiki]
 		if not self[group]["query"]:  # if there is no wiki left in the queue, get rid of the task
-			all_wikis[wiki].rc_active = False
+			all_wikis[wiki].rc_active = -1
 			self[group]["task"].cancel()
 			del self.domain_list[group]
 
@@ -94,7 +94,7 @@ class RcQueue:
 
 	@staticmethod
 	def filter_rc_active(wiki_obj):
-		return wiki_obj[1].rc_active
+		return wiki_obj[1].rc_active > -1
 
 	async def update_queues(self):
 		"""Makes a round on rcgcdw DB and looks for updates to the queues in self.domain_list"""
@@ -109,7 +109,7 @@ class RcQueue:
 					all_wikis[db_wiki["wiki"]]
 				except KeyError:
 					all_wikis[db_wiki["wiki"]] = Wiki()
-					all_wikis[db_wiki["wiki"]].rc_active = True
+					all_wikis[db_wiki["wiki"]].rc_active = db_wiki["rcid"]
 				try:
 					current_domain = self[domain]
 					if not db_wiki["ROWID"] < current_domain["last_rowid"]:
@@ -178,7 +178,7 @@ async def generate_domain_groups():
 	domain_wikis = defaultdict(list)
 	fetch_all = db_cursor.execute('SELECT ROWID, webhook, wiki, lang, display, wikiid, rcid FROM rcgcdw WHERE NOT rcid = -1 GROUP BY wiki ORDER BY ROWID ASC')
 	for db_wiki in fetch_all.fetchall():
-		all_wikis[db_wiki["wiki"]].rc_active = True
+		all_wikis[db_wiki["wiki"]].rc_active = db_wiki["rcid"]
 		domain_wikis[get_domain(db_wiki["wiki"])].append(db_wiki)
 	for group, db_wikis in domain_wikis.items():
 		yield group, db_wikis
@@ -220,10 +220,12 @@ async def scan_group(group: str):
 					continue
 			if extended:
 				await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
-			if db_wiki["rcid"] is None:  # new wiki, just get the last rc to not spam the channel
+			if local_wiki.active_rc is 0:  # new wiki, just get the last rc to not spam the channel
 				if len(recent_changes) > 0:
+					local_wiki.active_rc = recent_changes[-1]["rcid"]
 					DBHandler.add(db_wiki["wiki"], recent_changes[-1]["rcid"])
 				else:
+					local_wiki.active_rc = 0
 					DBHandler.add(db_wiki["wiki"], 0)
 				DBHandler.update_db()
 				continue
@@ -233,11 +235,11 @@ async def scan_group(group: str):
 			for change in recent_changes:
 				await process_cats(change, local_wiki, mw_msgs, categorize_events)
 			for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
-				if change["rcid"] > db_wiki["rcid"]:
+				if change["rcid"] > local_wiki.active_rc:
 					for target in targets.items():
 						try:
-							await essential_info(change, categorize_events, local_wiki, db_wiki,
-							                     target, paths, recent_changes_resp, rate_limiter)
+							await essential_info(change, categorize_events, local_wiki, target, paths,
+							                     recent_changes_resp, rate_limiter)
 						except asyncio.CancelledError:
 							raise
 						except:
@@ -248,8 +250,9 @@ async def scan_group(group: str):
 								logger.exception("Exception on RC formatter")
 								await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in RC formatter", Wiki=db_wiki["wiki"], Change=str(change)[0:1000])
 			if recent_changes:
+				local_wiki.active_rc = change["rcid"]
 				DBHandler.add(db_wiki["wiki"], change["rcid"])
-		delay_between_wikis = calculate_delay_for_group(len(rcqueue[group]["query"]))
+		delay_between_wikis = calculate_delay_for_group(len(rcqueue[group]["query"]))  # TODO Find a way to not execute it every wiki
 		await asyncio.sleep(delay_between_wikis)
 		DBHandler.update_db()
 
