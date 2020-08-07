@@ -185,7 +185,7 @@ class DiscussionsFromHellParser:
 					if item["attrs"]["id"] is not None:
 						self.markdown_text = "{old}{img_url}\n".format(old=self.markdown_text, img_url=self.post["_embedded"]["contentImages"][int(item["attrs"]["id"])]["url"])
 					self.image_last = self.post["_embedded"]["contentImages"][int(item["attrs"]["id"])]["url"]
-				except (IndexError, ValueError):
+				except (IndexError, ValueError, TypeError):
 					logger.warning("Image {} not found.".format(item["attrs"]["id"]))
 				logger.debug(self.markdown_text)
 			elif item["type"] == "code_block":
