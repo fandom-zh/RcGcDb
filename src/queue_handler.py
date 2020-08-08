@@ -16,8 +16,11 @@ class UpdateDB:
 
 	def update_db(self):
 		for update in self.updated:
-			update_type = "postid" if update[2] is not None else "rcid"
-			db_cursor.execute("UPDATE rcgcdw SET {} = ? WHERE wiki = ? AND NOT ? = -1".format(update_type), (update[1], update[0], update_type))
+			if update[2] is None:
+				sql = "UPDATE rcgcdw SET rcid = ? WHERE wiki = ? AND rcid != -1"
+			else:
+				sql = "UPDATE rcgcdw SET postid = ? WHERE wikiid = ?"
+			db_cursor.execute(sql, (update[1], update[0]))
 		db_connection.commit()
 		self.clear_list()
 
