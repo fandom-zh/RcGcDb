@@ -28,6 +28,8 @@ async def feeds_compact_formatter(post_type, post, message_target, wiki, _):
 			msg_text = "[{author}]({author_url}) created [{title}](<{url}f/p/{threadId}>) in {forumName}"
 			if thread_funnel == "POLL":
 				msg_text = "[{author}]({author_url}) created a poll [{title}](<{url}f/p/{threadId}>) in {forumName}"
+			elif thread_funnel == "QUIZ":
+				msg_text = "[{author}]({author_url}) created a quiz [{title}](<{url}f/p/{threadId}>) in {forumName}"
 			elif thread_funnel != "TEXT":
 				logger.warning("No entry for {event} with params: {params}".format(event=thread_funnel, params=post))
 			message = _(msg_text).format(author=author, author_url=author_url, title=post["title"], url=wiki, threadId=post["threadId"], forumName=post["forumName"])
@@ -83,15 +85,24 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, _):
 			thread_funnel = post.get("funnel")
 			if thread_funnel == "POLL":
 				embed.event_type = "discussion/forum/poll"
-				poll = post["poll"]
-				embed["title"] = _("Created a poll \"{title}\"").format(title=poll["question"])
-				image_type = False
-				if poll["answers"][0]["image"] is not None:
-					image_type = True
-				for num, option in enumerate(poll["answers"]):
-					embed.add_field(option["text"] if image_type is True else _("Option {}").format(num+1),
-					                option["text"] if image_type is False else _("__[View image]({image_url})__").format(image_url=option["image"]["url"]),
-					                inline=True)
+				embed["title"] = _("Created a poll \"{title}\"").format(title=post["title"])
+				if message_target[0][1] > 1:
+					poll = post["poll"]
+					image_type = False
+					if poll["answers"][0]["image"] is not None:
+						image_type = True
+					for num, option in enumerate(poll["answers"]):
+						embed.add_field(option["text"] if image_type is True else _("Option {}").format(num+1),
+										option["text"] if image_type is False else _("__[View image]({image_url})__").format(image_url=option["image"]["url"]),
+										inline=True)
+			elif thread_funnel == "QUIZ":
+				embed.event_type = "discussion/forum/quiz"
+				embed["title"] = _("Created a quiz \"{title}\"").format(title=post["title"])
+				if message_target[0][1] > 1:
+					quiz = post["_embedded"]["quizzes"][0]
+					embed["description"] = quiz["title"]
+					if quiz["image"] is not None:
+						embed["image"]["url"] = quiz["image"]
 			elif thread_funnel == "TEXT":
 				embed.event_type = "discussion/forum/post"
 			else:
