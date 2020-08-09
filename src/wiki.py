@@ -193,18 +193,13 @@ async def process_mwmsgs(wiki_response: dict, local_wiki: Wiki, mw_msgs: dict):
 async def essential_info(change: dict, changed_categories, local_wiki: Wiki, target: tuple, paths: tuple, request: dict,
                          rate_limiter: RateLimiter):
 	"""Prepares essential information for both embed and compact message format."""
-	def _(string: str) -> str:
-		"""Our own translation string to make it compatible with async"""
-		return lang.gettext(string)
-
-	lang = langs[target[0][0]]
-	ngettext = lang.ngettext
+	_ = langs[target[0][0]]["wiki"].gettext
 	# recent_changes = RecentChangesClass()  # TODO Look into replacing RecentChangesClass with local_wiki
 	changed_categories = changed_categories.get(change["revid"], None)
 	logger.debug("List of categories in essential_info: {}".format(changed_categories))
 	appearance_mode = embed_formatter if target[0][1] > 0 else compact_formatter
 	if "actionhidden" in change or "suppressed" in change:  # if event is hidden using suppression
-		await appearance_mode("suppressed", change, "", changed_categories, local_wiki, target, _, ngettext, paths, rate_limiter)
+		await appearance_mode("suppressed", change, "", changed_categories, local_wiki, target, paths, rate_limiter)
 		return
 	if "commenthidden" not in change:
 		parsed_comment = parse_link(paths[3], change["parsedcomment"])
@@ -228,16 +223,11 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, tar
 			additional_data["tags"][tag["name"]] = (BeautifulSoup(tag["displayname"], "lxml")).get_text()
 		except KeyError:
 			additional_data["tags"][tag["name"]] = None  # Tags with no displ
-	await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, _, ngettext, paths, rate_limiter, additional_data=additional_data)
+	await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, paths, rate_limiter, additional_data=additional_data)
 
 
 async def essential_feeds(change: dict, db_wiki: tuple, target: tuple):
 	"""Prepares essential information for both embed and compact message format."""
-	def _(string: str) -> str:
-		"""Our own translation string to make it compatible with async"""
-		return lang.gettext(string)
-
-	lang = langs[target[0][0]]
 	appearance_mode = feeds_embed_formatter if target[0][1] > 0 else feeds_compact_formatter
 	identification_string = change["_embedded"]["thread"][0]["containerType"]
-	await appearance_mode(identification_string, change, target, db_wiki["wiki"], _)
+	await appearance_mode(identification_string, change, target, db_wiki["wiki"])

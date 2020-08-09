@@ -6,12 +6,14 @@ from src.config import settings
 from src.misc import link_formatter, create_article_path, escape_formatting
 from src.discord import DiscordMessage
 from src.msgqueue import send_to_discord
+from src.i18n import langs
 
 
 logger = logging.getLogger("rcgcdw.discussion_formatters")
 
-async def feeds_compact_formatter(post_type, post, message_target, wiki, _):
+async def feeds_compact_formatter(post_type, post, message_target, wiki):
 	"""Compact formatter for Fandom discussions."""
+	_ = langs[message_target[0][0]]["discussion_formatters"].gettext
 	message = None
 	if post_type == "FORUM":
 		if not post["isReply"]:
@@ -47,8 +49,9 @@ async def feeds_compact_formatter(post_type, post, message_target, wiki, _):
 	await send_to_discord(DiscordMessage("compact", "discussion", message_target[1], content=message, wiki=wiki))
 
 
-async def feeds_embed_formatter(post_type, post, message_target, wiki, _):
+async def feeds_embed_formatter(post_type, post, message_target, wiki):
 	"""Embed formatter for Fandom discussions."""
+	_ = langs[message_target[0][0]]["discussion_formatters"].gettext
 	embed = DiscordMessage("embed", "discussion", message_target[1], wiki=wiki)
 	if post_type == "FORUM":
 		embed.set_author(post["createdBy"]["name"], "{url}f/u/{creatorId}".format(url=wiki, creatorId=post["creatorId"]), icon_url=post["createdBy"]["avatarUrl"])

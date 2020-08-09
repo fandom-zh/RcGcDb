@@ -1,19 +1,20 @@
 import sys, logging, gettext
+from collections import defaultdict
 
 logger = logging.getLogger("rcgcdb.i18n")
+supported_languages = ('de', 'pl', 'pt-br')
+translated_files = ('wiki', 'misc', 'discord', 'rc_formatters', 'discussion_formatters')
 
 try:
-	en = gettext.translation('rcgcdw', localedir='locale', languages=["en"])
-	de = gettext.translation('rcgcdw', localedir='locale', languages=["de"])
-	pl = gettext.translation('rcgcdw', localedir='locale', languages=["pl"])
-	pt = gettext.translation('rcgcdw', localedir='locale', languages=["pt-br"])
-	#ru = gettext.translation('rcgcdw', localedir='locale', languages=["ru"])
-	#uk = gettext.translation('rcgcdw', localedir='locale', languages=["uk"])
-	#fr = gettext.translation('rcgcdw', localedir='locale', languages=["fr"])
-	langs = {"en": en, "de": de, "pl": pl, "pt": pt}
-	#langs = {"en": en, "de": de, "pl": pl, "pt": pt, "ru": ru, "uk": uk, "fr": fr}
+	langs = defaultdict(dict)
+	for lang in supported_languages:
+		for file in translated_files:
+			langs[lang][file] = gettext.translation(file, localedir='locale', languages=[lang])
+	for file in translated_files:
+		langs["en"][file] = gettext.NullTranslations()
 except FileNotFoundError:
 	logger.critical("No language files have been found. Make sure locale folder is located in the directory.")
+	raise
 	sys.exit(1)
 
 #ngettext = en.ngettext

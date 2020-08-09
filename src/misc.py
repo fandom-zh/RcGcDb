@@ -3,6 +3,7 @@ import base64, re
 
 import logging
 from urllib.parse import urlparse, urlunparse
+from src.i18n import langs
 
 logger = logging.getLogger("rcgcdw.misc")
 
@@ -90,7 +91,8 @@ def create_article_path(article: str, WIKI_ARTICLE_PATH: str) -> str:
 	return WIKI_ARTICLE_PATH.replace("$1", article)
 
 
-def profile_field_name(name, embed, _):
+def profile_field_name(name, embed, lang):
+	_ = langs[lang]["misc"].gettext
 	profile_fields = {"profile-location": _("Location"), "profile-aboutme": _("About me"),
 	                  "profile-link-google": _("Google link"), "profile-link-facebook": _("Facebook link"),
 	                  "profile-link-twitter": _("Twitter link"), "profile-link-reddit": _("Reddit link"),
@@ -114,9 +116,9 @@ class ContentParser(HTMLParser):
 	small_prev_del = ""
 	added = False
 
-	def __init__(self, _):
+	def __init__(self, lang):
 		super().__init__()
-		self.more = _("\n__And more__")
+		self.more = langs[lang]["misc"].gettext("\n__And more__")
 		self.ins_length = len(self.more)
 		self.del_length = len(self.more)
 

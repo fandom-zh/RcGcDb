@@ -116,7 +116,7 @@ class RcQueue:
 				except ValueError:
 					pass
 				try:
-					current_domain = self[domain]
+					current_domain: dict = self[domain]
 					if not db_wiki["ROWID"] < current_domain["last_rowid"]:
 						current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20))
 				except KeyError:

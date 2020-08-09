@@ -9,6 +9,7 @@ from src.config import settings
 from src.misc import link_formatter, create_article_path, parse_link, profile_field_name, ContentParser
 from src.discord import DiscordMessage
 from src.msgqueue import send_to_discord
+from src.i18n import langs
 
 from bs4 import BeautifulSoup
 
@@ -18,9 +19,11 @@ if 1 == 2: # additional translation strings in unreachable code
 	print(_("director"), _("bot"), _("editor"), _("directors"), _("sysop"), _("bureaucrat"), _("reviewer"),
 	      _("autoreview"), _("autopatrol"), _("wiki_guardian"), ngettext("second", "seconds", 1), ngettext("minute", "minutes", 1), ngettext("hour", "hours", 1), ngettext("day", "days", 1), ngettext("week", "weeks", 1), ngettext("month", "months",1), ngettext("year", "years", 1), ngettext("millennium", "millennia", 1), ngettext("decade", "decades", 1), ngettext("century", "centuries", 1))
 
-async def compact_formatter(action, change, parsed_comment, categories, recent_changes, message_target, _, ngettext, paths, rate_limiter,
+async def compact_formatter(action, change, parsed_comment, categories, recent_changes, message_target, paths, rate_limiter,
                             additional_data=None):
 	"""Recent Changes compact formatter, part of RcGcDw"""
+	_ = langs[message_target[0][0]]["rc_formatters"].gettext
+	ngettext = langs[message_target[0][0]]["rc_formatters"].ngettext
 	if additional_data is None:
 		additional_data = {"namespaces": {}, "tags": {}}
 	WIKI_API_PATH = paths[0]
@@ -185,7 +188,7 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		content = _("[{author}]({author_url}) edited the {field} on {target} profile. *({desc})*").format(author=author,
 		                                                                        author_url=author_url,
 		                                                                        target=target,
-		                                                                        field=profile_field_name(change["logparams"]['4:section'], False, _),
+		                                                                        field=profile_field_name(change["logparams"]['4:section'], False, message_target[0][0]),
 		                                                                        desc=BeautifulSoup(change["parsedcomment"], "lxml").get_text())
 	elif action in ("rights/rights", "rights/autopromote"):
 		link = link_formatter(create_article_path("User:{user}".format(user=change["title"].split(":")[1]), WIKI_ARTICLE_PATH))
@@ -330,8 +333,10 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 	await send_to_discord(DiscordMessage("compact", action, message_target[1], content=content, wiki=WIKI_SCRIPT_PATH))
 
 
-async def embed_formatter(action, change, parsed_comment, categories, recent_changes, message_target, _, ngettext, paths, rate_limiter, additional_data=None):
+async def embed_formatter(action, change, parsed_comment, categories, recent_changes, message_target, paths, rate_limiter, additional_data=None):
 	"""Recent Changes embed formatter, part of RcGcDw"""
+	_ = langs[message_target[0][0]]["rc_formatters"].gettext
+	ngettext = langs[message_target[0][0]]["rc_formatters"].ngettext
 	if additional_data is None:
 		additional_data = {"namespaces": {}, "tags": {}}
 	WIKI_API_PATH = paths[0]
@@ -381,7 +386,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 						wiki=WIKI_API_PATH, diff=change["revid"],oldrev=change["old_revid"]
 					), rate_limiter, "compare", "*")
 			if changed_content:
-				EditDiff = ContentParser(_)
+				EditDiff = ContentParser(message_target[0][0])
 				EditDiff.feed(changed_content)
 				if EditDiff.small_prev_del:
 					if EditDiff.small_prev_del.replace("~~", "").isspace():
@@ -543,9 +548,9 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		link = create_article_path("UserProfile:{target}".format(target=change["title"].split(':')[1]), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Edited {target}'s profile").format(target=change["title"].split(':')[1]) if change["user"] != change["title"].split(':')[1] else _("Edited their own profile")
 		if not change["parsedcomment"]:  # If the field is empty
-			parsed_comment = _("Cleared the {field} field").format(field=profile_field_name(change["logparams"]['4:section'], True, _))
+			parsed_comment = _("Cleared the {field} field").format(field=profile_field_name(change["logparams"]['4:section'], True, message_target[0][0]))
 		else:
-			parsed_comment = _("{field} field changed to: {desc}").format(field=profile_field_name(change["logparams"]['4:section'], True, _), desc=BeautifulSoup(change["parsedcomment"], "lxml").get_text())
+			parsed_comment = _("{field} field changed to: {desc}").format(field=profile_field_name(change["logparams"]['4:section'], True, message_target[0][0]), desc=BeautifulSoup(change["parsedcomment"], "lxml").get_text())
 	elif action == "curseprofile/comment-purged":
 		link = create_article_path("Special:CommentPermalink/{commentid}".format(commentid=change["logparams"]["4:comment_id"]), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Purged a comment on {target}'s profile").format(target=change["title"].split(':')[1])
