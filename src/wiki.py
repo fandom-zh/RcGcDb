@@ -27,10 +27,9 @@ class Wiki:
 	rc_active: int = 0
 
 	@staticmethod
-	async def fetch_wiki(extended, script_path, session: aiohttp.ClientSession, ratelimiter: RateLimiter) -> aiohttp.ClientResponse:
+	async def fetch_wiki(extended, script_path, session: aiohttp.ClientSession, ratelimiter: RateLimiter, amount=20) -> aiohttp.ClientResponse:
 		await ratelimiter.timeout_wait()
 		url_path = script_path + "api.php"
-		amount = 20
 		if extended:
 			params = {"action": "query", "format": "json", "uselang": "content", "list": "tags|recentchanges",
 			          "meta": "allmessages|siteinfo",

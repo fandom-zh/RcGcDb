@@ -2,11 +2,9 @@ import aiohttp
 import asyncio
 import logging.config
 import signal
-import sys
 import traceback
-from collections import defaultdict
-
-import requests
+from collections import defaultdict, namedtuple
+from typing import Generator
 
 from contextlib import asynccontextmanager
 from src.argparser import command_line_args
@@ -36,10 +34,12 @@ mw_msgs: dict = {}  # will have the type of id: tuple
 # Reasons for this: 1. we require amount of wikis to calculate the cooldown between requests
 # 2. Easier to code
 
-for db_wiki in db_cursor.execute('SELECT wiki FROM rcgcdw GROUP BY wiki ORDER BY ROWID'):
+for db_wiki in db_cursor.execute('SELECT wiki, rcid FROM rcgcdw GROUP BY wiki ORDER BY ROWID'):
 	all_wikis[db_wiki["wiki"]] = Wiki()  # populate all_wikis
+	all_wikis[db_wiki["wiki"]].rc_active = db_wiki["rcid"]
 
 queue_limit = settings.get("queue_limit", 30)
+QueuedWiki = namedtuple("QueuedWiki", ['url', 'amount'])
 
 class LimitedList(list):
 	def __init__(self, *args):
@@ -68,14 +68,14 @@ class RcQueue:
 		"""Removes a wiki from query of given domain group"""
 		logger.debug(f"Removing {wiki} from group queue.")
 		group = get_domain(wiki)
-		self[group]["query"] = [x for x in self[group]["query"] if x["wiki"] == wiki]
+		self[group]["query"] = [x for x in self[group]["query"] if x.url == wiki]
 		if not self[group]["query"]:  # if there is no wiki left in the queue, get rid of the task
 			all_wikis[wiki].rc_active = -1
 			self[group]["task"].cancel()
 			del self.domain_list[group]
 
 	@asynccontextmanager
-	async def retrieve_next_queued(self, group):
+	async def retrieve_next_queued(self, group) -> Generator[QueuedWiki, None, None]:
 		"""Retrives next wiki in the queue for given domain"""
 		try:
 			yield self.domain_list[group]["query"][0]
@@ -113,7 +113,7 @@ class RcQueue:
 				try:
 					current_domain = self[domain]
 					if not db_wiki["ROWID"] < current_domain["last_rowid"]:
-						current_domain["query"].append(db_wiki)
+						current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20))
 					self.to_remove.remove(db_wiki["wiki"])
 				except KeyError:
 					await self.start_group(domain, db_wiki)
@@ -178,8 +178,7 @@ async def generate_domain_groups():
 	domain_wikis = defaultdict(list)
 	fetch_all = db_cursor.execute('SELECT ROWID, webhook, wiki, lang, display, wikiid, rcid FROM rcgcdw WHERE rcid != -1 GROUP BY wiki ORDER BY ROWID ASC')
 	for db_wiki in fetch_all.fetchall():
-		all_wikis[db_wiki["wiki"]].rc_active = db_wiki["rcid"]
-		domain_wikis[get_domain(db_wiki["wiki"])].append(db_wiki)
+		domain_wikis[get_domain(db_wiki["wiki"])].append(QueuedWiki(db_wiki["wiki"], 20))
 	for group, db_wikis in domain_wikis.items():
 		yield group, db_wikis
 
@@ -187,17 +186,17 @@ async def generate_domain_groups():
 async def scan_group(group: str):
 	rate_limiter = rcqueue[group]["rate_limiter"]
 	while True:
-		async with rcqueue.retrieve_next_queued(group) as db_wiki:  # acquire next wiki in queue
-			logger.debug("Wiki {}".format(db_wiki["wiki"]))
-			local_wiki = all_wikis[db_wiki["wiki"]]  # set a reference to a wiki object from memory
+		async with rcqueue.retrieve_next_queued(group) as queued_wiki:  # acquire next wiki in queue
+			logger.debug("Wiki {}".format(queued_wiki.url))
+			local_wiki = all_wikis[queued_wiki.url]  # set a reference to a wiki object from memory
 			extended = False
 			if local_wiki.mw_messages is None:
 				extended = True
 			async with aiohttp.ClientSession(headers=settings["header"],
 			                                 timeout=aiohttp.ClientTimeout(3.0)) as session:
 				try:
-					wiki_response = await local_wiki.fetch_wiki(extended, db_wiki["wiki"], session, rate_limiter)
-					await local_wiki.check_status(db_wiki["wiki"], wiki_response.status)
+					wiki_response = await local_wiki.fetch_wiki(extended, queued_wiki.url, session, rate_limiter, amount=queued_wiki.amount)
+					await local_wiki.check_status(queued_wiki.url, wiki_response.status)
 				except (WikiServerError, WikiError):
 					logger.error("Exeption when fetching the wiki")
 					continue  # ignore this wiki if it throws errors
@@ -206,52 +205,61 @@ async def scan_group(group: str):
 					if "error" in recent_changes_resp or "errors" in recent_changes_resp:
 						error = recent_changes_resp.get("error", recent_changes_resp["errors"])
 						if error["code"] == "readapidenied":
-							await local_wiki.fail_add(db_wiki["wiki"], 410)
+							await local_wiki.fail_add(queued_wiki.url, 410)
 							continue
 						raise WikiError
 					recent_changes = recent_changes_resp['query']['recentchanges']
 					recent_changes.reverse()
 				except aiohttp.ContentTypeError:
 					logger.exception("Wiki seems to be resulting in non-json content.")
-					await local_wiki.fail_add(db_wiki["wiki"], 410)
+					await local_wiki.fail_add(queued_wiki.url, 410)
 					continue
 				except:
 					logger.exception("On loading json of response.")
 					continue
 			if extended:
 				await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
-			if local_wiki.active_rc is 0:  # new wiki, just get the last rc to not spam the channel
+			if local_wiki.rc_active == 0:  # new wiki, just get the last rc to not spam the channel
 				if len(recent_changes) > 0:
-					local_wiki.active_rc = recent_changes[-1]["rcid"]
-					DBHandler.add(db_wiki["wiki"], recent_changes[-1]["rcid"])
+					local_wiki.rc_active = recent_changes[-1]["rcid"]
+					DBHandler.add(queued_wiki.url, recent_changes[-1]["rcid"])
 				else:
-					local_wiki.active_rc = 0
-					DBHandler.add(db_wiki["wiki"], 0)
+					local_wiki.rc_active = 0
+					DBHandler.add(queued_wiki.url, 0)
 				DBHandler.update_db()
 				continue
 			categorize_events = {}
-			targets = generate_targets(db_wiki["wiki"])
-			paths = get_paths(db_wiki["wiki"], recent_changes_resp)
+			targets = generate_targets(queued_wiki.url)
+			paths = get_paths(queued_wiki.url, recent_changes_resp)
+			new_events = 0
 			for change in recent_changes:
+				if change["rcid"] > local_wiki.rc_active and queued_wiki.amount != 450:
+					new_events += 1
+					if new_events == 20:
+						# call the function again with max limit for more results, ignore the ones in this request
+						logger.debug("There were too many new events, queuing wiki with 450 limit.")
+						rcqueue[group]["query"].insert(1, QueuedWiki(queued_wiki.url, 450))
+						break
 				await process_cats(change, local_wiki, mw_msgs, categorize_events)
-			for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
-				if change["rcid"] > local_wiki.active_rc:
-					for target in targets.items():
-						try:
-							await essential_info(change, categorize_events, local_wiki, target, paths,
-							                     recent_changes_resp, rate_limiter)
-						except asyncio.CancelledError:
-							raise
-						except:
-							if command_line_args.debug:
-								logger.exception("Exception on RC formatter")
+			else:  # If we broke from previous loop (too many changes) don't execute sending messages here
+				for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
+					if change["rcid"] > local_wiki.rc_active:
+						for target in targets.items():
+							try:
+								await essential_info(change, categorize_events, local_wiki, target, paths,
+								                     recent_changes_resp, rate_limiter)
+							except asyncio.CancelledError:
 								raise
-							else:
-								logger.exception("Exception on RC formatter")
-								await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in RC formatter", Wiki=db_wiki["wiki"], Change=str(change)[0:1000])
-			if recent_changes:
-				local_wiki.active_rc = change["rcid"]
-				DBHandler.add(db_wiki["wiki"], change["rcid"])
+							except:
+								if command_line_args.debug:
+									logger.exception("Exception on RC formatter")
+									raise
+								else:
+									logger.exception("Exception on RC formatter")
+									await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in RC formatter", Wiki=queued_wiki.url, Change=str(change)[0:1000])
+				if recent_changes:
+					local_wiki.rc_active = change["rcid"]
+					DBHandler.add(queued_wiki.url, change["rcid"])
 		delay_between_wikis = calculate_delay_for_group(len(rcqueue[group]["query"]))  # TODO Find a way to not execute it every wiki
 		await asyncio.sleep(delay_between_wikis)
 		DBHandler.update_db()
@@ -394,13 +402,13 @@ async def main_loop():
 		signals = (signal.SIGBREAK, signal.SIGTERM, signal.SIGINT)
 	# loop.set_exception_handler(global_exception_handler)
 	try:
-		task1 = asyncio.create_task(wiki_scanner())
-		task2 = asyncio.create_task(message_sender())
-		task3 = asyncio.create_task(discussion_handler())
+		task1 = asyncio.create_task(wiki_scanner(), name="Wiki RC scanner")
+		task2 = asyncio.create_task(message_sender(), name="Discord message sender")
+		task3 = asyncio.create_task(discussion_handler(), name="Discussion handler")
 		await task1
 		await task2
 		await task3
 	except KeyboardInterrupt:
 		shutdown(loop)
 
-asyncio.run(main_loop(), debug=command_line_args.debug)
+asyncio.run(main_loop(), debug=False)
