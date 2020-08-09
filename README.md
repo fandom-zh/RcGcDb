@@ -3,7 +3,6 @@ RcGcDb is a backend for handling webhooks to which recent changes of MediaWiki w
 
 ### Dependencies ###
 * **Python 3.6>**
-* requests 2.18.4>
 * beautifulsoup 4.6.0>
 * aiohttp 3.6.2>
 * lxml 4.2.1>

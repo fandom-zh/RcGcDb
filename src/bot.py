@@ -111,10 +111,10 @@ class RcQueue:
 					all_wikis[db_wiki["wiki"]] = Wiki()
 					all_wikis[db_wiki["wiki"]].rc_active = db_wiki["rcid"]
 				try:
+					self.to_remove.remove(db_wiki["wiki"])
 					current_domain = self[domain]
 					if not db_wiki["ROWID"] < current_domain["last_rowid"]:
 						current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20))
-					self.to_remove.remove(db_wiki["wiki"])
 				except KeyError:
 					await self.start_group(domain, db_wiki)
 					logger.info("A new domain group has been added since last time, adding it to the domain_list and starting a task...")
