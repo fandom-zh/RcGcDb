@@ -1,0 +1,9 @@
+rc -> wiki   000
+misc -> misc
+*new* -> discord   000
+discussion_formatters -> discussion_formatters
+rc_formatters, rcgcdw -> rc_formatters   000
+
+msgcat -o locale/de/LC_MESSAGES/rc_formatters.po ~/PycharmProjects/RcGcDw/locale/de/LC_MESSAGES/rcgcdw.po locale/de/LC_MESSAGES/rc_formatters.po
+mv locale/pl/LC_MESSAGES/rc.po locale/pl/LC_MESSAGES/wiki.po
+xgettext -L Python --package-name=RcGcDd -o "locale/templates/discord.pot" src/discord.py

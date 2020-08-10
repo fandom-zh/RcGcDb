@@ -81,7 +81,7 @@ class Wiki:
 					json_request = json_request[item]
 			except KeyError:
 				logger.warning(
-					"Failure while extracting data from request on key {key} in {change}".format(key=item, change=request))
+					"Failure while extracting data from request on key {key} in {change}".format(key=item, change=json_request))
 				return None
 			return json_request
 
