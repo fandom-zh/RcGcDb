@@ -21,9 +21,7 @@ default_header["X-RateLimit-Precision"] = "millisecond"
 # User facing webhook functions
 async def wiki_removal(wiki_url, status):
 	for observer in db_cursor.execute('SELECT webhook, lang FROM rcgcdw WHERE wiki = ?', (wiki_url,)):
-		def _(string: str) -> str:
-			"""Our own translation string to make it compatible with async"""
-			return langs[observer["lang"]].gettext(string)
+		_ = langs[observer["lang"]]["discord"].gettext
 		reasons = {410: _("wiki deletion"), 404: _("wiki deletion"), 401: _("wiki becoming inaccessible"),
 		           402: _("wiki becoming inaccessible"), 403: _("wiki becoming inaccessible")}
 		reason = reasons.get(status, _("unknown error"))
@@ -110,23 +108,13 @@ async def wiki_removal_monitor(wiki_url, status):
 	await send_to_discord_webhook_monitoring(DiscordMessage("compact", "webhook/remove", content="Removing {} because {}.".format(wiki_url, status), webhook_url=[None], wiki=None))
 
 
-async def formatter_exception_logger(wiki_url, change, exception):
-	"""Creates a Discord message reporting a crash in RC formatter area"""
+async def generic_msg_sender_exception_logger(exception: str, title: str, **kwargs):
+	"""Creates a Discord message reporting a crash"""
 	message = DiscordMessage("embed", "bot/exception", [None], wiki=None)
 	message["description"] = exception
-	message["title"] = "RC Exception Report"
-	change = str(change)[0:1000]
-	message.add_field("Wiki URL", wiki_url)
-	message.add_field("Change", change)
-	message.finish_embed()
-	await send_to_discord_webhook_monitoring(message)
-
-
-async def msg_sender_exception_logger(exception):
-	"""Creates a Discord message reporting a crash in RC formatter area"""
-	message = DiscordMessage("embed", "bot/exception", [None], wiki=None)
-	message["description"] = exception
-	message["title"] = "MSGSENDER Exception Report"
+	message["title"] = title
+	for key, value in kwargs:
+		message.add_field(key, value)
 	message.finish_embed()
 	await send_to_discord_webhook_monitoring(message)
 

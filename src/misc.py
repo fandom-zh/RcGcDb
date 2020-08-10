@@ -3,6 +3,7 @@ import base64, re
 
 import logging
 from urllib.parse import urlparse, urlunparse
+from src.i18n import langs
 
 logger = logging.getLogger("rcgcdw.misc")
 
@@ -15,6 +16,12 @@ def get_paths(wiki: str, request) -> tuple:
 	WIKI_ARTICLE_PATH = urlunparse((*parsed_url[0:2], "", "", "", "")) + request["query"]["general"]["articlepath"]
 	WIKI_JUST_DOMAIN = urlunparse((*parsed_url[0:2], "", "", "", ""))
 	return WIKI_API_PATH, WIKI_SCRIPT_PATH, WIKI_ARTICLE_PATH, WIKI_JUST_DOMAIN
+
+
+def get_domain(url: str) -> str:
+	"""Get domain of given URL"""
+	parsed_url = urlparse(url)
+	return ".".join(urlunparse((*parsed_url[0:2], "", "", "", "")).split(".")[-2:])  # something like gamepedia.com, fandom.com
 
 
 class LinkParser(HTMLParser):
@@ -84,7 +91,8 @@ def create_article_path(article: str, WIKI_ARTICLE_PATH: str) -> str:
 	return WIKI_ARTICLE_PATH.replace("$1", article)
 
 
-def profile_field_name(name, embed, _):
+def profile_field_name(name, embed, lang):
+	_ = langs[lang]["misc"].gettext
 	profile_fields = {"profile-location": _("Location"), "profile-aboutme": _("About me"),
 	                  "profile-link-google": _("Google link"), "profile-link-facebook": _("Facebook link"),
 	                  "profile-link-twitter": _("Twitter link"), "profile-link-reddit": _("Reddit link"),
@@ -108,9 +116,9 @@ class ContentParser(HTMLParser):
 	small_prev_del = ""
 	added = False
 
-	def __init__(self, _):
+	def __init__(self, lang):
 		super().__init__()
-		self.more = _("\n__And more__")
+		self.more = langs[lang]["misc"].gettext("\n__And more__")
 		self.ins_length = len(self.more)
 		self.del_length = len(self.more)
 
