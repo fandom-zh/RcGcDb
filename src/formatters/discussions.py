@@ -18,12 +18,12 @@ async def feeds_compact_formatter(post_type, post, message_target, wiki):
 	if post_type == "FORUM":
 		if not post["isReply"]:
 			thread_funnel = post.get("funnel")
-			msg_text = "[{author}](<{url}f/u/{creatorId}>) created [{title}](<{url}f/p/{threadId}>) in {forumName}"
+			msg_text = _("[{author}](<{url}f/u/{creatorId}>) created [{title}](<{url}f/p/{threadId}>) in {forumName}")
 			if thread_funnel == "POLL":
-				msg_text = "[{author}](<{url}f/u/{creatorId}>) created a poll [{title}](<{url}f/p/{threadId}>) in {forumName}"
+				msg_text = _("[{author}](<{url}f/u/{creatorId}>) created a poll [{title}](<{url}f/p/{threadId}>) in {forumName}")
 			elif thread_funnel != "TEXT":
 				logger.warning("No entry for {event} with params: {params}".format(event=thread_funnel, params=post))
-			message = _(msg_text).format(author=post["createdBy"]["name"], url=wiki, creatorId=post["creatorId"], title=post["title"], threadId=post["threadId"], forumName=post["forumName"])
+			message = msg_text.format(author=post["createdBy"]["name"], url=wiki, creatorId=post["creatorId"], title=post["title"], threadId=post["threadId"], forumName=post["forumName"])
 		else:
 			message = _("[{author}](<{url}f/u/{creatorId}>) created a [reply](<{url}f/p/{threadId}/r/{postId}>) to [{title}](<{url}f/p/{threadId}>) in {forumName}").format(author=post["createdBy"]["name"], url=wiki, creatorId=post["creatorId"], threadId=post["threadId"], postId=post["id"], title=post["_embedded"]["thread"][0]["title"], forumName=post["forumName"])
 	elif post_type == "WALL":

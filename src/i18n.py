@@ -14,7 +14,4 @@ try:
 		langs["en"][file] = gettext.NullTranslations()
 except FileNotFoundError:
 	logger.critical("No language files have been found. Make sure locale folder is located in the directory.")
-	raise
 	sys.exit(1)
-
-#ngettext = en.ngettext
