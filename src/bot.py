@@ -72,12 +72,18 @@ class RcQueue:
 		if not self[group]["query"]:  # if there is no wiki left in the queue, get rid of the task
 			logger.debug(f"{group} no longer has any wikis queued!")
 			all_wikis[wiki].rc_active = -1
-			self[group]["task"].cancel()
-			del self.domain_list[group]
+			await self.stop_task_group(group)
+
+	async def stop_task_group(self, group):
+		self[group]["task"].cancel()
+		del self.domain_list[group]
 
 	@asynccontextmanager
 	async def retrieve_next_queued(self, group) -> Generator[QueuedWiki, None, None]:
 		"""Retrives next wiki in the queue for given domain"""
+		if len(self.domain_list[group]["query"]) == 0:
+			await self.stop_task_group(group)
+			return
 		try:
 			yield self.domain_list[group]["query"][0]
 		except asyncio.CancelledError:
