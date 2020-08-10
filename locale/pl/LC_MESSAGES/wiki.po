@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RcGcDw\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-08-08 17:22+0200\n"
-"PO-Revision-Date: 2020-08-10 01:55+0200\n"
+"POT-Creation-Date: 2020-08-10 01:01+0200\n"
+"PO-Revision-Date: 2020-03-17 20:57+0100\n"
 "Last-Translator: Frisk <piotrex43@protonmail.ch>\n"
 "Language-Team: \n"
 "Language: pl\n"
@@ -15,28 +15,25 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: pygettext.py 1.5\n"
-"X-Generator: Poedit 2.3.1\n"
+"X-Generator: Poedit 2.3\n"
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
 "|| n%100>=20) ? 1 : 2);\n"
 
-#: src/rc.py:150
-#, python-brace-format
-msgid "Connection to {wiki} seems to be stable now."
-msgstr "Połączenie z {wiki} wygląda na stabilne."
-
-#: src/rc.py:151 src/rc.py:266
-msgid "Connection status"
-msgstr "Problem z połączeniem"
-
-#: src/rc.py:265
-#, python-brace-format
-msgid "{wiki} seems to be down or unreachable."
-msgstr "{wiki} nie działa lub jest nieosiągalna."
-
-#: src/rc.py:334
+#: src/wiki.py:207
 msgid "~~hidden~~"
 msgstr "~~ukryte~~"
 
-#: src/rc.py:340
+#: src/wiki.py:212
 msgid "hidden"
 msgstr "ukryte"
+
+#, python-brace-format
+#~ msgid "Connection to {wiki} seems to be stable now."
+#~ msgstr "Połączenie z {wiki} wygląda na stabilne."
+
+#~ msgid "Connection status"
+#~ msgstr "Problem z połączeniem"
+
+#, python-brace-format
+#~ msgid "{wiki} seems to be down or unreachable."
+#~ msgstr "{wiki} nie działa lub jest nieosiągalna."

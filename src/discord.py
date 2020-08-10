@@ -21,9 +21,7 @@ default_header["X-RateLimit-Precision"] = "millisecond"
 # User facing webhook functions
 async def wiki_removal(wiki_url, status):
 	for observer in db_cursor.execute('SELECT webhook, lang FROM rcgcdw WHERE wiki = ?', (wiki_url,)):
-		def _(string: str) -> str:
-			"""Our own translation string to make it compatible with async"""
-			return langs[observer["lang"]]["discord"].gettext(string)
+		_ = langs[observer["lang"]]["discord"].gettext
 		reasons = {410: _("wiki deletion"), 404: _("wiki deletion"), 401: _("wiki becoming inaccessible"),
 		           402: _("wiki becoming inaccessible"), 403: _("wiki becoming inaccessible")}
 		reason = reasons.get(status, _("unknown error"))
