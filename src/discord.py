@@ -33,8 +33,8 @@ async def wiki_removal(wiki_url, status):
 			await session.delete("https://discord.com/api/webhooks/"+observer["webhook"])
 
 
-async def webhook_removal_monitor(webhook_url: list, reason: int):
-	await send_to_discord_webhook_monitoring(DiscordMessage("compact", "webhook/remove", None, content="The webhook {} has been removed due to {}.".format("https://discord.com/api/webhooks/" + webhook_url[0], reason), wiki=None))
+async def webhook_removal_monitor(webhook_url: str, reason: int):
+	await send_to_discord_webhook_monitoring(DiscordMessage("compact", "webhook/remove", None, content="The webhook {} has been removed due to {}.".format("https://discord.com/api/webhooks/" + webhook_url, reason), wiki=None))
 
 
 class DiscordMessage:
@@ -141,14 +141,14 @@ async def send_to_discord_webhook(data: DiscordMessage, webhook_url: str) -> tup
 		except (aiohttp.ClientConnectionError, aiohttp.ServerConnectionError, TimeoutError):
 			logger.exception("Could not send the message to Discord")
 			return 3, None
-		status = await handle_discord_http(result.status, repr(data), result, data)
+		status = await handle_discord_http(result.status, repr(data), result, webhook_url)
 		if status == 5:
 			return 5, await result.json()
 		else:
 			return status, rate_limit
 
 
-async def handle_discord_http(code: int, formatted_embed: str, result: aiohttp.ClientResponse, dmsg: DiscordMessage):
+async def handle_discord_http(code: int, formatted_embed: str, result: aiohttp.ClientResponse, webhook_url: str):
 	if 300 > code > 199:  # message went through
 		return 0
 	elif code == 400:  # HTTP BAD REQUEST result.status_code, data, result, header
@@ -159,8 +159,8 @@ async def handle_discord_http(code: int, formatted_embed: str, result: aiohttp.C
 		return 1
 	elif code == 401 or code == 404:  # HTTP UNAUTHORIZED AND NOT FOUND
 		logger.error("Webhook URL is invalid or no longer in use, please replace it with proper one.")
-		db_cursor.execute("DELETE FROM rcgcdw WHERE webhook = ?", (dmsg.webhook_url[0],))
-		await webhook_removal_monitor(dmsg.webhook_url, code)
+		db_cursor.execute("DELETE FROM rcgcdw WHERE webhook = ?", (webhook_url,))
+		await webhook_removal_monitor(webhook_url, code)
 		return 1
 	elif code == 429:
 		logger.error("We are sending too many requests to the Discord, slowing down...")
