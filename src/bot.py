@@ -45,9 +45,9 @@ class LimitedList(list):
 	def __init__(self, *args):
 		list.__init__(self, *args)
 
-	def append(self, object) -> None:
+	def append(self, obj: QueuedWiki) -> None:
 		if len(self) < queue_limit:
-			self.insert(len(self), object)
+			self.insert(len(self), obj)
 			return
 		raise ListFull
 
@@ -68,7 +68,11 @@ class RcQueue:
 		"""Removes a wiki from query of given domain group"""
 		logger.debug(f"Removing {wiki} from group queue.")
 		group = get_domain(wiki)
-		self[group]["query"] = [x for x in self[group]["query"] if x.url == wiki]
+		try:
+			self[group]["query"] = [x for x in self[group]["query"] if x.url == wiki]
+		except AttributeError:
+			logger.debug(self[group]["query"])
+			shutdown(asyncio.get_event_loop())  # trying to debug specific issue
 		if not self[group]["query"]:  # if there is no wiki left in the queue, get rid of the task
 			logger.debug(f"{group} no longer has any wikis queued!")
 			all_wikis[wiki].rc_active = -1
@@ -198,6 +202,7 @@ async def scan_group(group: str):
 	while True:
 		try:
 			async with rcqueue.retrieve_next_queued(group) as queued_wiki:  # acquire next wiki in queue
+				await asyncio.sleep(calculate_delay_for_group(len(rcqueue[group]["query"])))
 				logger.debug("Wiki {}".format(queued_wiki.url))
 				local_wiki = all_wikis[queued_wiki.url]  # set a reference to a wiki object from memory
 				extended = False
@@ -271,8 +276,6 @@ async def scan_group(group: str):
 					if recent_changes:
 						local_wiki.rc_active = change["rcid"]
 						DBHandler.add(queued_wiki.url, change["rcid"])
-				delay_between_wikis = calculate_delay_for_group(len(rcqueue[group]["query"]))  # TODO Find a way to not execute it every wiki
-				await asyncio.sleep(delay_between_wikis)
 				DBHandler.update_db()
 		except asyncio.CancelledError:
 			return
