@@ -51,6 +51,11 @@ class LimitedList(list):
 			return
 		raise ListFull
 
+	def insert(self, __index: int, __object) -> None:
+		if isinstance(__index, int):
+			raise TypeError
+
+
 
 class RcQueue:
 	def __init__(self):
