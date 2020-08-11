@@ -23,7 +23,7 @@ async def feeds_compact_formatter(post_type, post, message_target, wiki):
 		author_url = "<{url}wiki/Special:Contributions{creatorIp}>".format(url=wiki, creatorIp=post["creatorIp"])
 	else:
 		author = post["createdBy"]["name"]
-		author_url = "<{url}wiki/User:{author}>".format(url=wiki, author=author)
+		author_url = link_formatter(create_article_path("User:{user}".format(user=author), wiki + "wiki/$1"))
 	if post_type == "FORUM":
 		if not post["isReply"]:
 			thread_funnel = post.get("funnel")
@@ -110,6 +110,14 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki):
 				embed.event_type = "discussion/forum/post"
 			else:
 				logger.warning("No entry for {event} with params: {params}".format(event=thread_funnel, params=post))
+			if message_target[0][1] > 1 and post["_embedded"]["thread"][0]["tags"]:
+				tag_displayname = []
+				for tag in post["_embedded"]["thread"][0]["tags"]:
+					tag_displayname.append("[{title}]({url})".format(title=tag.articleTitle, url=create_article_path(tag.articleTitle, wiki + "wiki/$1")))
+				if len(", ".join(tag_displayname)) > 1000:
+					embed.add_field(_("Tags"), _("{} tags").format(len(post["_embedded"]["thread"][0]["tags"])))
+				else:
+					embed.add_field(_("Tags"), ", ".join(tag_displayname))
 		else:
 			embed.event_type = "discussion/forum/reply"
 			embed["title"] = _("Replied to \"{title}\"").format(title=post["_embedded"]["thread"][0]["title"])
