@@ -105,7 +105,7 @@ class RcQueue:
 
 	@staticmethod
 	def filter_rc_active(wiki_obj):
-		return wiki_obj[1].rc_active > -1
+		return wiki_obj[1].rc_active is None or wiki_obj[1].rc_active > -1
 
 	async def update_queues(self):
 		"""Makes a round on rcgcdw DB and looks for updates to the queues in self.domain_list"""
@@ -235,7 +235,7 @@ async def scan_group(group: str):
 						continue
 				if extended:
 					await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
-				if local_wiki.rc_active == 0:  # new wiki, just get the last rc to not spam the channel
+				if local_wiki.rc_active in (0, None):  # new wiki, just get the last rc to not spam the channel
 					if len(recent_changes) > 0:
 						local_wiki.rc_active = recent_changes[-1]["rcid"]
 						DBHandler.add(queued_wiki.url, recent_changes[-1]["rcid"])
