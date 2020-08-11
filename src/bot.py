@@ -233,7 +233,7 @@ async def scan_group(group: str):
 						continue
 				if extended:
 					await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
-				if local_wiki.rc_active in (0, None):  # new wiki, just get the last rc to not spam the channel
+				if local_wiki.rc_active in (0, None, -1):  # new wiki, just get the last rc to not spam the channel, -1 for -1 to NULL changes
 					if len(recent_changes) > 0:
 						local_wiki.rc_active = recent_changes[-1]["rcid"]
 						DBHandler.add(queued_wiki.url, recent_changes[-1]["rcid"])
