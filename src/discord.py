@@ -22,10 +22,10 @@ default_header["X-RateLimit-Precision"] = "millisecond"
 async def wiki_removal(wiki_url, status):
 	for observer in db_cursor.execute('SELECT webhook, lang FROM rcgcdw WHERE wiki = ?', (wiki_url,)):
 		_ = langs[observer["lang"]]["discord"].gettext
-		reasons = {410: _("wiki deletion"), 404: _("wiki deletion"), 401: _("wiki becoming inaccessible"),
-		           402: _("wiki becoming inaccessible"), 403: _("wiki becoming inaccessible")}
+		reasons = {410: _("wiki deleted"), 404: _("wiki deleted"), 401: _("wiki inaccessible"),
+		           402: _("wiki inaccessible"), 403: _("wiki inaccessible")}
 		reason = reasons.get(status, _("unknown error"))
-		await send_to_discord_webhook(DiscordMessage("compact", "webhook/remove", webhook_url=[], content=_("The webhook for {} has been removed due to {}.".format(wiki_url, reason)), wiki=None), webhook_url=observer["webhook"])
+		await send_to_discord_webhook(DiscordMessage("compact", "webhook/remove", webhook_url=[], content=_("This recent changes webhook has been removed for `{reason}`!").format(reason=reason), wiki=None), webhook_url=observer["webhook"])
 		header = settings["header"]
 		header['Content-Type'] = 'application/json'
 		header['X-Audit-Log-Reason'] = "Wiki becoming unavailable"
