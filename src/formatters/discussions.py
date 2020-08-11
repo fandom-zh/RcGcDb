@@ -113,7 +113,7 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki):
 			if message_target[0][1] > 1 and post["_embedded"]["thread"][0]["tags"]:
 				tag_displayname = []
 				for tag in post["_embedded"]["thread"][0]["tags"]:
-					tag_displayname.append("[{title}]({url})".format(title=tag.articleTitle, url=create_article_path(tag.articleTitle, wiki + "wiki/$1")))
+					tag_displayname.append("[{title}]({url})".format(title=tag["articleTitle"], url=create_article_path(tag["articleTitle"], wiki + "wiki/$1")))
 				if len(", ".join(tag_displayname)) > 1000:
 					embed.add_field(_("Tags"), _("{} tags").format(len(post["_embedded"]["thread"][0]["tags"])))
 				else:
