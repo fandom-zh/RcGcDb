@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RcGcDd\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-08-10 16:46+0200\n"
+"POT-Creation-Date: 2020-08-11 23:14+0200\n"
 "PO-Revision-Date: 2020-08-11 20:56+0000\n"
 "Last-Translator: Eduaddad <duduaddad@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://weblate.frisk.space/projects/"
@@ -32,5 +32,6 @@ msgid "unknown error"
 msgstr "erro desconhecido"
 
 #: src/discord.py:28
+#, python-brace-format
 msgid "This recent changes webhook has been removed for `{reason}`!"
 msgstr "Este webhook de mudanças recentes foi removido por `{reason}`!"
