@@ -386,7 +386,7 @@ def shutdown(loop, signal=None):
 	if len(messagequeue) > 0:
 		logger.warning("Some messages are still queued!")
 	for task in asyncio.all_tasks(loop):
-		logger.debug("Killing task {}".format(task.get_name()))
+		logger.debug("Killing task")
 		task.cancel()
 	loop.run_until_complete(asyncio.gather(*asyncio.all_tasks(loop)))
 	loop.stop()
