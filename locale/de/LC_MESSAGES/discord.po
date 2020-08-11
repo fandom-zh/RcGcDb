@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: RcGcDd\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-08-11 23:14+0200\n"
-"PO-Revision-Date: 2020-08-11 20:56+0000\n"
+"PO-Revision-Date: 2020-08-12 22:13+0000\n"
 "Last-Translator: MarkusRost <sukramxro@gmail.com>\n"
 "Language-Team: German <https://weblate.frisk.space/projects/wiki-bot/rcgcdb/"
 "de/>\n"
@@ -32,6 +32,6 @@ msgid "unknown error"
 msgstr "unbekannter Fehler"
 
 #: src/discord.py:28
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "This recent changes webhook has been removed for `{reason}`!"
-msgstr "Dieser Letzte Änderungen-Webhook wurde entfernt wegen `$1`!"
+msgstr "Dieser Letzte Änderungen-Webhook wurde entfernt wegen `{reason}`!"
