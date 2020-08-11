@@ -51,10 +51,6 @@ class LimitedList(list):
 			return
 		raise ListFull
 
-	def insert(self, __index: int, __object) -> None:
-		if isinstance(__index, int):
-			raise TypeError
-
 
 
 class RcQueue:
@@ -66,6 +62,7 @@ class RcQueue:
 		"""Starts a task for given domain group"""
 		if group not in self.domain_list:
 			self.domain_list[group] = {"task": asyncio.create_task(scan_group(group), name=group), "last_rowid": 0, "query": LimitedList(initial_wikis), "rate_limiter": RateLimiter()}
+			logger.debug(self.domain_list[group])
 		else:
 			raise KeyError
 
@@ -73,11 +70,7 @@ class RcQueue:
 		"""Removes a wiki from query of given domain group"""
 		logger.debug(f"Removing {wiki} from group queue.")
 		group = get_domain(wiki)
-		try:
-			self[group]["query"] = [x for x in self[group]["query"] if x.url == wiki]
-		except AttributeError:
-			logger.debug(self[group]["query"])
-			shutdown(asyncio.get_event_loop())  # trying to debug specific issue
+		self[group]["query"] = [x for x in self[group]["query"] if x.url == wiki]
 		if not self[group]["query"]:  # if there is no wiki left in the queue, get rid of the task
 			logger.debug(f"{group} no longer has any wikis queued!")
 			all_wikis[wiki].rc_active = -1
@@ -116,7 +109,7 @@ class RcQueue:
 		"""Makes a round on rcgcdw DB and looks for updates to the queues in self.domain_list"""
 		try:
 			fetch_all = db_cursor.execute(
-				'SELECT ROWID, webhook, wiki, lang, display, wikiid, rcid FROM rcgcdw WHERE rcid != -1 GROUP BY wiki ORDER BY ROWID')
+				'SELECT ROWID, webhook, wiki, lang, display, wikiid, rcid FROM rcgcdw WHERE rcid != -1 OR rcid IS NULL GROUP BY wiki ORDER BY ROWID ASC')
 			self.to_remove = [x[0] for x in filter(self.filter_rc_active, all_wikis.items())]  # first populate this list and remove wikis that are still in the db, clean up the rest
 			full = []
 			for db_wiki in fetch_all.fetchall():
@@ -135,7 +128,7 @@ class RcQueue:
 					if not db_wiki["ROWID"] < current_domain["last_rowid"]:
 						current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20))
 				except KeyError:
-					await self.start_group(domain, db_wiki)
+					await self.start_group(domain, [QueuedWiki(db_wiki["wiki"], 20)])
 					logger.info("A new domain group has been added since last time, adding it to the domain_list and starting a task...")
 				except ListFull:
 					full.append(domain)
@@ -195,7 +188,7 @@ def generate_targets(wiki_url: str) -> defaultdict:
 async def generate_domain_groups():
 	"""Generate a list of wikis per domain (fandom.com, wikipedia.org etc.)"""
 	domain_wikis = defaultdict(list)
-	fetch_all = db_cursor.execute('SELECT ROWID, webhook, wiki, lang, display, wikiid, rcid FROM rcgcdw WHERE rcid != -1 GROUP BY wiki ORDER BY ROWID ASC')
+	fetch_all = db_cursor.execute('SELECT ROWID, webhook, wiki, lang, display, wikiid, rcid FROM rcgcdw WHERE rcid != -1 OR rcid IS NULL GROUP BY wiki ORDER BY ROWID ASC')
 	for db_wiki in fetch_all.fetchall():
 		domain_wikis[get_domain(db_wiki["wiki"])].append(QueuedWiki(db_wiki["wiki"], 20))
 	for group, db_wikis in domain_wikis.items():
