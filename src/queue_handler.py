@@ -17,7 +17,7 @@ class UpdateDB:
 	def update_db(self):
 		for update in self.updated:
 			if update[2] is None:
-				sql = "UPDATE rcgcdw SET rcid = ? WHERE wiki = ? AND rcid != -1"
+				sql = "UPDATE rcgcdw SET rcid = ? WHERE wiki = ? AND ( rcid != -1 OR rcid IS NULL )"
 			else:
 				sql = "UPDATE rcgcdw SET postid = ? WHERE wikiid = ?"
 			db_cursor.execute(sql, (update[1], update[0],))
