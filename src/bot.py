@@ -61,7 +61,7 @@ class RcQueue:
 	async def start_group(self, group, initial_wikis):
 		"""Starts a task for given domain group"""
 		if group not in self.domain_list:
-			self.domain_list[group] = {"task": asyncio.create_task(scan_group(group), name=group), "last_rowid": 0, "query": LimitedList(initial_wikis), "rate_limiter": RateLimiter()}
+			self.domain_list[group] = {"task": asyncio.create_task(scan_group(group)), "last_rowid": 0, "query": LimitedList(initial_wikis), "rate_limiter": RateLimiter()}
 			logger.debug(self.domain_list[group])
 		else:
 			raise KeyError
@@ -416,9 +416,9 @@ async def main_loop():
 		signals = (signal.SIGBREAK, signal.SIGTERM, signal.SIGINT)
 	# loop.set_exception_handler(global_exception_handler)
 	try:
-		task1 = asyncio.create_task(wiki_scanner(), name="Wiki RC scanner")
-		task2 = asyncio.create_task(message_sender(), name="Discord message sender")
-		task3 = asyncio.create_task(discussion_handler(), name="Discussion handler")
+		task1 = asyncio.create_task(wiki_scanner())
+		task2 = asyncio.create_task(message_sender())
+		task3 = asyncio.create_task(discussion_handler())
 		await task1
 		await task2
 		await task3
