@@ -173,13 +173,13 @@ def calculate_delay_for_group(group_length: int) -> float:
 		return 0.0
 
 
-def generate_targets(wiki_url: str) -> defaultdict:
+def generate_targets(wiki_url: str, additional_requirements: str) -> defaultdict:
 	"""To minimize the amount of requests, we generate a list of language/display mode combinations to create messages for
 	this way we can send the same message to multiple webhooks which have the same wiki and settings without doing another
 	request to the wiki just to duplicate the message.
 	"""
 	combinations = defaultdict(list)
-	for webhook in db_cursor.execute('SELECT webhook, lang, display FROM rcgcdw WHERE wiki = ?', (wiki_url,)):
+	for webhook in db_cursor.execute('SELECT webhook, lang, display FROM rcgcdw WHERE wiki = ? {}'.format(additional_requirements), (wiki_url,)):
 		combination = (webhook["lang"], webhook["display"])
 		combinations[combination].append(webhook["webhook"])
 	return combinations
@@ -243,7 +243,7 @@ async def scan_group(group: str):
 					DBHandler.update_db()
 					continue
 				categorize_events = {}
-				targets = generate_targets(queued_wiki.url)
+				targets = generate_targets(queued_wiki.url, "AND rcid != -1 OR rcid IS NULL")
 				paths = get_paths(queued_wiki.url, recent_changes_resp)
 				new_events = 0
 				for change in recent_changes:
@@ -321,6 +321,7 @@ async def discussion_handler():
 						local_wiki = all_wikis[db_wiki["wiki"]]  # set a reference to a wiki object from memory
 					except KeyError:
 						local_wiki = all_wikis[db_wiki["wiki"]] = Wiki()
+						local_wiki.rc_active = db_wiki["rcid"]
 					try:
 						feeds_response = await local_wiki.fetch_feeds(db_wiki["wikiid"], session)
 					except (WikiServerError, WikiError):
@@ -351,7 +352,7 @@ async def discussion_handler():
 						DBHandler.add(db_wiki["wikiid"], "0", True)
 					DBHandler.update_db()
 					continue
-				targets = generate_targets(db_wiki["wiki"])
+				targets = generate_targets(db_wiki["wiki"], "AND NOT wikiid IS NULL")
 				for post in discussion_feed:
 					if post["id"] > db_wiki["postid"]:
 						for target in targets.items():
