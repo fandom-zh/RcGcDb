@@ -384,6 +384,7 @@ async def discussion_handler():
 
 def shutdown(loop, signal=None):
 	DBHandler.update_db()
+	db_cursor.close()
 	if len(messagequeue) > 0:
 		logger.warning("Some messages are still queued!")
 	for task in asyncio.all_tasks(loop):

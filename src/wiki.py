@@ -194,7 +194,6 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, tar
                          rate_limiter: RateLimiter):
 	"""Prepares essential information for both embed and compact message format."""
 	_ = langs[target[0][0]]["wiki"].gettext
-	# recent_changes = RecentChangesClass()  # TODO Look into replacing RecentChangesClass with local_wiki
 	changed_categories = changed_categories.get(change["revid"], None)
 	logger.debug("List of categories in essential_info: {}".format(changed_categories))
 	appearance_mode = embed_formatter if target[0][1] > 0 else compact_formatter
