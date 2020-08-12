@@ -68,10 +68,10 @@ class MessageQueue:
 				"{} messages waiting to be delivered to Discord.".format(len(self._queue)))
 			tasks_to_run = []
 			for set_msgs in await self.group_by_webhook():
-				logger.debug(set_msgs)
+				# logger.debug(set_msgs)
 				tasks_to_run.append(self.send_msg_set(set_msgs))
 			await asyncio.gather(*tasks_to_run)
-			logger.debug(self._queue)
+			# logger.debug(self._queue)
 		else:
 			await asyncio.sleep(0.5)
 
