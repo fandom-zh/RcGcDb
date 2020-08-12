@@ -9,7 +9,7 @@ from typing import Generator
 from contextlib import asynccontextmanager
 from src.argparser import command_line_args
 from src.config import settings
-from src.database import db_cursor
+from src.database import db_cursor, db_connection
 from src.exceptions import *
 from src.misc import get_paths, get_domain
 from src.msgqueue import messagequeue
@@ -384,7 +384,7 @@ async def discussion_handler():
 
 def shutdown(loop, signal=None):
 	DBHandler.update_db()
-	db_cursor.close()
+	db_connection.close()
 	if len(messagequeue) > 0:
 		logger.warning("Some messages are still queued!")
 	for task in asyncio.all_tasks(loop):
