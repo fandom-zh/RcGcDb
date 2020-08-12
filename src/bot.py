@@ -129,7 +129,7 @@ class RcQueue:
 						current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20))
 				except KeyError:
 					await self.start_group(domain, [QueuedWiki(db_wiki["wiki"], 20)])
-					logger.info("A new domain group has been added since last time, adding it to the domain_list and starting a task...")
+					logger.info("A new domain group ({}) has been added since last time, adding it to the domain_list and starting a task...".format(domain))
 				except ListFull:
 					full.append(domain)
 					current_domain["last_rowid"] = db_wiki["ROWID"]
@@ -325,7 +325,6 @@ async def discussion_handler():
 					try:
 						feeds_response = await local_wiki.fetch_feeds(db_wiki["wikiid"], session)
 					except (WikiServerError, WikiError):
-						logger.error("Exeption when fetching the wiki")
 						continue  # ignore this wiki if it throws errors
 					try:
 						discussion_feed_resp = await feeds_response.json(encoding="UTF-8")
