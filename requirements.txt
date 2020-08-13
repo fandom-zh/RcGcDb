@@ -1,3 +1,4 @@
 beautifulsoup4 >= 4.6.0; python_version >= '3.6'
 aiohttp >= 3.6.2
 lxml >= 4.2.1
+nest-asyncio >= 1.4.0

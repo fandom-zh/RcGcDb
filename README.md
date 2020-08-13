@@ -6,6 +6,7 @@ RcGcDb is a backend for handling webhooks to which recent changes of MediaWiki w
 * beautifulsoup 4.6.0>
 * aiohttp 3.6.2>
 * lxml 4.2.1>
+* nest-asyncio 1.4.0>
 
 #### Installation
 ```
