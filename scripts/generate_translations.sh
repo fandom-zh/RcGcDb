@@ -16,3 +16,9 @@ do
   msgmerge -o locale/$language/LC_MESSAGES/wiki.po ~/PycharmProjects/RcGcDw/locale/$language/LC_MESSAGES/rc.po locale/$language/LC_MESSAGES/wiki.po
   msgmerge -o locale/$language/LC_MESSAGES/misc.po ~/PycharmProjects/RcGcDw/locale/$language/LC_MESSAGES/misc.po locale/$language/LC_MESSAGES/misc.po
 done
+for language in en fr de pl pt_BR ru es tr nl zh_Hans zh_Hant
+do
+  wget https://weblate.frisk.space/widgets/wiki-bot/$language/discord/svg-badge.svg
+  convert -size 111x20 svg-badge.svg translation-pngs/wiki-bot-${language//_/-}.png
+  rm svg-badge.svg
+done

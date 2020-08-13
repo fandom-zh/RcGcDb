@@ -6,9 +6,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RcGcDw\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-08-11 23:23+0200\n"
-"PO-Revision-Date: 2020-08-10 16:41+0000\n"
-"Last-Translator: Frisk The Evil Goat Overlord <piotrex43@protonmail.ch>\n"
+"POT-Creation-Date: 2020-08-13 21:09+0200\n"
+"PO-Revision-Date: 2020-08-13 19:07+0000\n"
+"Last-Translator: Rail <rail01@protonmail.com>\n"
 "Language-Team: Polish <https://weblate.frisk.space/projects/rcgcdw/"
 "rc_formatters/pl/>\n"
 "Language: pl\n"
@@ -136,7 +136,7 @@ msgid ""
 "[{author}]({author_url}) edited [{article}]({edit_link}){comment} ({sign}"
 "{edit_size})"
 msgstr ""
-"[{author}]({author_url}) editował(-a) [{article}]({edit_link}){comment} "
+"[{author}]({author_url}) edytował(-a) [{article}]({edit_link}){comment} "
 "({sign}{edit_size})"
 
 #: src/formatters/rc.py:54
@@ -172,7 +172,7 @@ msgstr ""
 #: src/formatters/rc.py:71
 #, python-brace-format
 msgid "[{author}]({author_url}) deleted [{page}]({page_link}){comment}"
-msgstr "[{author}]({author_url}) usunął/usunęła [{page}]({page_link}){comment}"
+msgstr "[{author}]({author_url}) skasował(a) [{page}]({page_link}){comment}"
 
 #: src/formatters/rc.py:75
 #, python-brace-format
