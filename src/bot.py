@@ -325,7 +325,7 @@ async def discussion_handler():
 				header = settings["header"]
 				header["Accept"] = "application/hal+json"
 				async with aiohttp.ClientSession(headers=header,
-													timeout=aiohttp.ClientTimeout(3.0)) as session:
+													timeout=aiohttp.ClientTimeout(4.0)) as session:
 					try:
 						local_wiki = all_wikis[db_wiki["wiki"]]  # set a reference to a wiki object from memory
 					except KeyError:
