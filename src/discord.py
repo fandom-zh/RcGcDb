@@ -113,7 +113,7 @@ async def generic_msg_sender_exception_logger(exception: str, title: str, **kwar
 	message = DiscordMessage("embed", "bot/exception", [None], wiki=None)
 	message["description"] = exception
 	message["title"] = title
-	for key, value in kwargs:
+	for key, value in kwargs.items():
 		message.add_field(key, value)
 	message.finish_embed()
 	await send_to_discord_webhook_monitoring(message)

@@ -320,7 +320,7 @@ async def discussion_handler():
 	try:
 		while True:
 			fetch_all = db_cursor.execute(
-				'SELECT wiki, wikiid, postid FROM rcgcdw WHERE wikiid IS NOT NULL')
+				'SELECT wiki, wikiid, rcid, postid FROM rcgcdw WHERE wikiid IS NOT NULL')
 			for db_wiki in fetch_all.fetchall():
 				header = settings["header"]
 				header["Accept"] = "application/hal+json"
@@ -441,7 +441,7 @@ async def main_loop():
 		await asyncio.gather(main_tasks["wiki_scanner"], main_tasks["discussion_handler"], main_tasks["message_sender"])
 	except KeyboardInterrupt:
 		shutdown(loop)
-	except asyncio.exceptions.CancelledError:
+	except asyncio.CancelledError:
 		return
 
 asyncio.run(main_loop(), debug=False)
