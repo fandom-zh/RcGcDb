@@ -48,7 +48,7 @@ class Wiki:
 			response = await session.get(url_path, params=params)
 			ratelimiter.timeout_add(1.0)
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
-			logger.exception("A connection error occurred while requesting {}".format(url_path))
+			logger.error("A connection error occurred while requesting {}".format(url_path))
 			raise WikiServerError
 		return response
 
@@ -74,7 +74,7 @@ class Wiki:
 				request.raise_for_status()
 				json_request = await request.json(encoding="UTF-8")
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
-			logger.exception("Reached connection error for request on link {url}".format(url=url))
+			logger.error("Reached connection error for request on link {url}".format(url=url))
 		else:
 			try:
 				for item in keys:
