@@ -19,6 +19,6 @@ done
 for language in locale/*/LC_MESSAGES
 do
   wget https://weblate.frisk.space/widgets/rcgcdw/$(basename ${language//\/LC_MESSAGES/})/-/svg-badge.svg
-  convert svg-badge.svg locale/widgets/$(basename ${language//\/LC_MESSAGES/}).png
+  convert -background none svg-badge.svg locale/widgets/$(basename ${language//\/LC_MESSAGES/}).png
   rm svg-badge.svg
 done
