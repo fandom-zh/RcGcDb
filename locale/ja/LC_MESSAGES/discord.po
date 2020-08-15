@@ -8,27 +8,30 @@ msgstr ""
 "Project-Id-Version: RcGcDb\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-08-13 21:09+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2020-08-15 18:03+0000\n"
+"Last-Translator: 7yultukuri7 <rfxs9263@yahoo.co.jp>\n"
+"Language-Team: Japanese <https://weblate.frisk.space/projects/wiki-bot/"
+"rcgcdb/ja/>\n"
 "Language: ja\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.1.1\n"
 
 #: src/discord.py:25
 msgid "wiki deleted"
-msgstr ""
+msgstr "ウィキを削除しました"
 
 #: src/discord.py:25 src/discord.py:26
 msgid "wiki inaccessible"
-msgstr ""
+msgstr "ウィキにアクセスできません"
 
 #: src/discord.py:27
 msgid "unknown error"
-msgstr ""
+msgstr "不明なエラー"
 
 #: src/discord.py:28
 #, python-brace-format
 msgid "This recent changes webhook has been removed for `{reason}`!"
-msgstr ""
+msgstr "最近の変更を表示するためのwebhookは `{reason}`により削除されました！"
