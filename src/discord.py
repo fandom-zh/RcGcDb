@@ -23,7 +23,7 @@ async def wiki_removal(wiki_url, status):
 	for observer in db_cursor.execute('SELECT webhook, lang FROM rcgcdw WHERE wiki = ?', (wiki_url,)):
 		_ = langs[observer["lang"]]["discord"].gettext
 		reasons = {410: _("wiki deleted"), 404: _("wiki deleted"), 401: _("wiki inaccessible"),
-		           402: _("wiki inaccessible"), 403: _("wiki inaccessible")}
+		           402: _("wiki inaccessible"), 403: _("wiki inaccessible"), 1000: _("discussions disabled")}
 		reason = reasons.get(status, _("unknown error"))
 		await send_to_discord_webhook(DiscordMessage("compact", "webhook/remove", webhook_url=[], content=_("This recent changes webhook has been removed for `{reason}`!").format(reason=reason), wiki=None), webhook_url=observer["webhook"])
 		header = settings["header"]
