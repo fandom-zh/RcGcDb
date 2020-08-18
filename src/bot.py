@@ -218,8 +218,11 @@ async def scan_group(group: str):
 						continue  # ignore this wiki if it throws errors
 					try:
 						recent_changes_resp = await wiki_response.json()
-						if "error" in recent_changes_resp or "errors" in recent_changes_resp:
-							error = recent_changes_resp.get("error", recent_changes_resp["errors"])
+						if not isinstance(recent_changes_resp, dict):
+							logger.error(f"recent_changes_resp has a bad type, found {type(recent_changes_resp)}, __repr__ here: {recent_changes_resp}.")
+							raise TypeError
+						if "errors" in recent_changes_resp:
+							error = recent_changes_resp.get('errors')
 							if error["code"] == "readapidenied":
 								await local_wiki.fail_add(queued_wiki.url, 410)
 								continue
@@ -352,6 +355,9 @@ async def discussion_handler():
 						discussion_feed.reverse()
 					except aiohttp.ContentTypeError:
 						logger.exception("Wiki seems to be resulting in non-json content.")
+						continue
+					except asyncio.TimeoutError:
+						logger.debug("Timeout on reading JSON of discussion post feeed.")
 						continue
 					except:
 						logger.exception("On loading json of response.")
