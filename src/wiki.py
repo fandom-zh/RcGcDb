@@ -8,6 +8,7 @@ from src.formatters.discussions import feeds_embed_formatter, feeds_compact_form
 from src.misc import parse_link
 from src.i18n import langs
 from src.wiki_ratelimiter import RateLimiter
+import sqlite3
 import src.discord
 import asyncio
 from src.config import settings
@@ -225,7 +226,7 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, tar
 	await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, paths, rate_limiter, additional_data=additional_data)
 
 
-async def essential_feeds(change: dict, comment_pages, db_wiki: tuple, target: tuple):
+async def essential_feeds(change: dict, comment_pages: dict, db_wiki: sqlite3.Row, target: tuple):
 	"""Prepares essential information for both embed and compact message format."""
 	appearance_mode = feeds_embed_formatter if target[0][1] > 0 else feeds_compact_formatter
 	identification_string = change["_embedded"]["thread"][0]["containerType"]
