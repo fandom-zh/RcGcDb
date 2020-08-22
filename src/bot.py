@@ -369,12 +369,22 @@ async def discussion_handler():
 						DBHandler.add(db_wiki["wikiid"], "0", True)
 					DBHandler.update_db()
 					continue
+				comment_events = []
 				targets = generate_targets(db_wiki["wiki"], "AND NOT wikiid IS NULL")
 				for post in discussion_feed:
+					if post["_embedded"]["thread"][0]["containerType"] == "ARTICLE_COMMENT" and post["id"] > db_wiki["postid"]:
+						comment_events.append(post["forumId"])
+				comment_pages: dict = {}
+				if comment_events:
+					comment_pages = await local_wiki.safe_request(
+						"{wiki}wikia.php?controller=FeedsAndPosts&method=getArticleNamesAndUsernames&stablePageIds={pages}&format=json".format(
+							wiki=db_wiki["wiki"], pages=",".join(comment_events)
+						), RateLimiter(), "articleNames")
+				for post in discussion_feed:  # Yeah, second loop since the comments require an extra request
 					if post["id"] > db_wiki["postid"]:
 						for target in targets.items():
 							try:
-								await essential_feeds(post, db_wiki, target)
+								await essential_feeds(post, comment_pages, db_wiki, target)
 							except asyncio.CancelledError:
 								raise
 							except:

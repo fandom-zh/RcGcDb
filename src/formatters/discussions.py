@@ -11,7 +11,7 @@ from src.i18n import langs
 
 logger = logging.getLogger("rcgcdw.discussion_formatters")
 
-async def feeds_compact_formatter(post_type, post, message_target, wiki):
+async def feeds_compact_formatter(post_type, post, message_target, wiki, article_page=None):
 	"""Compact formatter for Fandom discussions."""
 	_ = langs[message_target[0][0]]["discussion_formatters"].gettext
 	message = None
@@ -46,11 +46,12 @@ async def feeds_compact_formatter(post_type, post, message_target, wiki):
 		else:
 			message = _("[{author}]({author_url}) created a [reply](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}#{replyId}>) to [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(author=author, author_url=author_url, url=wiki, title=post["_embedded"]["thread"][0]["title"], user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"], replyId=post["id"])
 	elif post_type == "ARTICLE_COMMENT":
-		article_page = _("unknown")  # No page known
+		if article_page is None:
+			article_page = {"title": _("unknown"), "fullUrl": "{wiki}wiki/{article}".format(wiki=wiki, article=_("unknown").replace(" ", "_"))}  # No page known
 		if not post["isReply"]:
-			message = _("[{author}]({author_url}) created a [comment](<{url}wiki/{article}?commentId={commentId}>) on [{article}](<{url}wiki/{article}>)").format(author=author, author_url=author_url, url=wiki, article=article_page, commentId=post["threadId"])
+			message = _("[{author}]({author_url}) created a [comment](<{url}?commentId={commentId}>) on [{article}](<{url}>)").format(author=author, author_url=author_url, url=article_page["fullUrl"], article=article_page["title"], commentId=post["threadId"])
 		else:
-			message = _("[{author}]({author_url}) created a [reply](<{url}wiki/{article}?threadId={threadId}) to a [comment](<{url}wiki/{article}?commentId={commentId}&replyId={replyId}>) on [{article}](<{url}wiki/{article}>)").format(author=author, author_url=author_url, url=wiki, article=article_page, commentId=post["threadId"], replyId=post["id"])
+			message = _("[{author}]({author_url}) created a [reply](<{url}?commentId={commentId}&replyId={replyId}>) to a [comment](<{url}?commentId={commentId}>) on [{article}](<{url}>)").format(author=author, author_url=author_url, url=article_page["fullUrl"], article=article_page["title"], commentId=post["threadId"], replyId=post["id"])
 	else:
 		logger.warning("No entry for {event} with params: {params}".format(event=post_type, params=post))
 		if not settings["support"]:
@@ -60,7 +61,7 @@ async def feeds_compact_formatter(post_type, post, message_target, wiki):
 	await send_to_discord(DiscordMessage("compact", "discussion", message_target[1], content=message, wiki=wiki))
 
 
-async def feeds_embed_formatter(post_type, post, message_target, wiki):
+async def feeds_embed_formatter(post_type, post, message_target, wiki, article_page=None):
 	"""Embed formatter for Fandom discussions."""
 	_ = langs[message_target[0][0]]["discussion_formatters"].gettext
 	embed = DiscordMessage("embed", "discussion", message_target[1], wiki=wiki)
@@ -135,16 +136,17 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki):
 			embed["url"] = "{url}wiki/Message_Wall:{user_wall}?threadId={threadId}#{replyId}".format(url=wiki, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"], replyId=post["id"])
 			embed["title"] = _("Replied to \"{title}\" on {user}'s Message Wall").format(title=post["_embedded"]["thread"][0]["title"], user=user_wall)
 	elif post_type == "ARTICLE_COMMENT":
-		article_page = _("unknown")  # No page known
+		if article_page is None:
+			article_page = {"title": _("unknown"), "fullUrl": "{wiki}wiki/{article}".format(wiki=wiki, article=_("unknown").replace(" ", "_"))}  # No page known
 		if not post["isReply"]:
 			embed.event_type = "discussion/comment/post"
-			# embed["url"] = "{url}wiki/{article}?commentId={commentId}".format(url=wiki, article=quote_plus(article_page.replace(" ", "_")), commentId=post["threadId"])
-			embed["title"] = _("Commented on {article}").format(article=article_page)
+			embed["url"] = "{url}?commentId={commentId}".format(url=article_page["fullUrl"], commentId=post["threadId"])
+			embed["title"] = _("Commented on {article}").format(article=article_page["title"])
 		else:
 			embed.event_type = "discussion/comment/reply"
-			# embed["url"] = "{url}wiki/{article}?commentId={commentId}&replyId={replyId}".format(url=wiki, article=quote_plus(article_page.replace(" ", "_")), commentId=post["threadId"], replyId=post["id"])
-			embed["title"] = _("Replied to a comment on {article}").format(article=article_page)
-		embed["footer"]["text"] = article_page
+			embed["url"] = "{url}?commentId={commentId}&replyId={replyId}".format(url=article_page["fullUrl"], commentId=post["threadId"], replyId=post["id"])
+			embed["title"] = _("Replied to a comment on {article}").format(article=article_page["title"])
+		embed["footer"]["text"] = article_page["title"]
 	else:
 		logger.warning("No entry for {event} with params: {params}".format(event=post_type, params=post))
 		embed["title"] = _("Unknown event `{event}`").format(event=post_type)
