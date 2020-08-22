@@ -51,7 +51,7 @@ async def feeds_compact_formatter(post_type, post, message_target, wiki, article
 		if not post["isReply"]:
 			message = _("[{author}]({author_url}) created a [comment](<{url}?commentId={commentId}>) on [{article}](<{url}>)").format(author=author, author_url=author_url, url=article_page["fullUrl"], article=article_page["title"], commentId=post["threadId"])
 		else:
-			message = _("[{author}]({author_url}) created a [reply](<{url}?threadId={threadId}) to a [comment](<{url}?commentId={commentId}&replyId={replyId}>) on [{article}](<{url}>)").format(author=author, author_url=author_url, url=article_page["fullUrl"], article=article_page["title"], commentId=post["threadId"], replyId=post["id"])
+			message = _("[{author}]({author_url}) created a [reply](<{url}?commentId={commentId}&replyId={replyId}>) to a [comment](<{url}?commentId={commentId}>) on [{article}](<{url}>)").format(author=author, author_url=author_url, url=article_page["fullUrl"], article=article_page["title"], commentId=post["threadId"], replyId=post["id"])
 	else:
 		logger.warning("No entry for {event} with params: {params}".format(event=post_type, params=post))
 		if not settings["support"]:
