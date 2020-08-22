@@ -225,8 +225,12 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, tar
 	await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, paths, rate_limiter, additional_data=additional_data)
 
 
-async def essential_feeds(change: dict, db_wiki: tuple, target: tuple):
+async def essential_feeds(change: dict, comment_pages, db_wiki: tuple, target: tuple):
 	"""Prepares essential information for both embed and compact message format."""
 	appearance_mode = feeds_embed_formatter if target[0][1] > 0 else feeds_compact_formatter
 	identification_string = change["_embedded"]["thread"][0]["containerType"]
-	await appearance_mode(identification_string, change, target, db_wiki["wiki"])
+	comment_page = None
+	if identification_string == "ARTICLE_COMMENT":
+		comment_page = comment_pages[change["forumId"]]
+		comment_page["fullUrl"] = "/".join(db_wiki["wiki"].split("/", 3)[:3]) + comment_page["relativeUrl"]
+	await appearance_mode(identification_string, change, target, db_wiki["wiki"], article_page=comment_page)
