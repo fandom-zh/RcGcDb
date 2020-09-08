@@ -227,14 +227,18 @@ async def scan_group(group: str):
 								await local_wiki.fail_add(queued_wiki.url, 410)
 								continue
 							raise WikiError
-						recent_changes = recent_changes_resp['query']['recentchanges']
-						recent_changes.reverse()
 					except aiohttp.ContentTypeError:
 						logger.exception("Wiki seems to be resulting in non-json content.")
 						await local_wiki.fail_add(queued_wiki.url, 410)
 						continue
 					except:
 						logger.exception("On loading json of response.")
+						continue
+					try:
+						recent_changes = recent_changes_resp['query']['recentchanges']
+						recent_changes.reverse()
+					except KeyError:
+						logger.error("recent_changes_resp returned KeyError. skipping this check. (usually this happens when the wiki doesn't respond properly, it's pretty normal)")
 						continue
 				if extended:
 					await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
