@@ -46,7 +46,11 @@ class MessageQueue:
 			status = await send_to_discord_webhook(msg, webhook_url)
 			if status[0] < 2:
 				logger.debug("Sending message succeeded")
-				self._queue.remove(msg)
+				try:
+					self._queue.remove(msg)
+				except ValueError:
+					#  For the love of god I cannot figure why can it return ValueError: list.remove(x): x not in list, however considering it's not in the list, somehow, anymore we can just not care about it I guess
+					pass
 				logger.debug("Current rate limit time: {}".format(status[1]))
 				if status[1] is not None:
 					await asyncio.sleep(float(status[1]))  # note, the timer on the last request won't matter that much since it's separate task and for the time of sleep it will give control to other tasks
