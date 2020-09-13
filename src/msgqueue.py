@@ -85,4 +85,7 @@ messagequeue = MessageQueue()
 
 
 async def send_to_discord(msg):
-	messagequeue.add_message(msg)
+	webhooks = msg.webhook_url.copy()
+	for webhook in webhooks:
+		msg.webhook_url = [webhook]
+		messagequeue.add_message(msg)
