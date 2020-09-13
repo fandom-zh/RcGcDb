@@ -108,7 +108,7 @@ class RcQueue:
 		return wiki_obj[1].rc_active is None or wiki_obj[1].rc_active > -1
 
 	async def update_queues(self):
-		"""Makes a round on rcgcdw DB and looks for updates to the queues in self.domain_list"""
+		"""Makes a round on rcgcdb DB and looks for updates to the queues in self.domain_list"""
 		try:
 			fetch_all = db_cursor.execute(
 				'SELECT ROWID, webhook, wiki, lang, display, wikiid, rcid FROM rcgcdw WHERE rcid != -1 OR rcid IS NULL GROUP BY wiki ORDER BY ROWID ASC')
@@ -252,7 +252,7 @@ async def scan_group(group: str):
 					DBHandler.update_db()
 					continue
 				categorize_events = {}
-				targets = generate_targets(queued_wiki.url, "AND rcid != -1 OR rcid IS NULL")
+				targets = generate_targets(queued_wiki.url, "AND (rcid != -1 OR rcid IS NULL)")
 				paths = get_paths(queued_wiki.url, recent_changes_resp)
 				new_events = 0
 				for change in recent_changes:

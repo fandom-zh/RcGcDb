@@ -34,12 +34,14 @@ class MessageQueue:
 		webhooks at the same time avoiding ratelimits per Discord webhook route."""
 		message_dict = defaultdict(list)
 		for msg in self._queue:
+			if not isinstance(msg.webhook_url, list):
+				raise TypeError('msg.webhook_url in _queue is not a list')
 			for webhook in msg.webhook_url:
-				message_dict[webhook].append(msg)
-		return message_dict.items()
+				message_dict[webhook].append(msg)  # defaultdict{"dadibadyvbdmadgqueh23/dihjd8agdandashd": [DiscordMessage, DiscordMessage]}
+		return message_dict.items()  # dict_items([('daosdkosakda/adkahfwegr34', [DiscordMessage]), ('daosdkosakda/adkahfwegr33', [DiscordMessage, DiscordMessage])])
 
 	async def send_msg_set(self, msg_set: tuple):
-		webhook_url, messages = msg_set
+		webhook_url, messages = msg_set  #  str("daosdkosakda/adkahfwegr34", list(DiscordMessage, DiscordMessage, DiscordMessage)
 		for msg in messages:
 			if self.global_rate_limit:
 				return  # if we are globally rate limited just wait for first gblocked request to finish
@@ -74,8 +76,7 @@ class MessageQueue:
 			for set_msgs in await self.group_by_webhook():
 				# logger.debug(set_msgs)
 				tasks_to_run.append(self.send_msg_set(set_msgs))
-			await asyncio.gather(*tasks_to_run)
-			# logger.debug(self._queue)
+			await asyncio.gather(*tasks_to_run)  # we wait for all send_msg_set functions to finish
 		else:
 			await asyncio.sleep(0.5)
 
