@@ -322,6 +322,10 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 	elif action == "managetags/deactivate":
 		link = link_formatter(create_article_path("Special:Tags", WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) deactivated a [tag]({tag_url}) \"{tag}\"").format(author=author, author_url=author_url, tag=change["logparams"]["tag"], tag_url=link)
+	elif action == "managewiki/settings":  # Miraheze's ManageWiki extension https://github.com/miraheze/ManageWiki
+		content = _(
+			"[{author}]({author_url}) changed wiki settings ({reason})".format(author=author, author_url=author_url,
+			                                                                   reason=parsed_comment))
 	elif action == "suppressed":
 		content = _("An action has been hidden by administration.")
 	else:
@@ -708,6 +712,11 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 	elif action == "managetags/deactivate":
 		link = create_article_path("Special:Tags", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Deactivated a tag \"{tag}\"").format(tag=change["logparams"]["tag"])
+	elif action == "managewiki/settings":  # Miraheze's ManageWiki extension https://github.com/miraheze/ManageWiki
+		link = create_article_path("")
+		embed["title"] = _("Changed wiki settings")
+		if change["logparams"].get("changes", ""):
+			embed.add_field("Setting", change["logparams"].get("changes"))
 	elif action == "suppressed":
 		link = create_article_path("", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Action has been hidden by administration.")
