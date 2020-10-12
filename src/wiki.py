@@ -231,7 +231,7 @@ async def essential_feeds(change: dict, comment_pages: dict, db_wiki: sqlite3.Ro
 	appearance_mode = feeds_embed_formatter if target[0][1] > 0 else feeds_compact_formatter
 	identification_string = change["_embedded"]["thread"][0]["containerType"]
 	comment_page = None
-	if identification_string == "ARTICLE_COMMENT":
+	if identification_string == "ARTICLE_COMMENT" and comment_pages is not None:
 		comment_page = comment_pages[change["forumId"]]
 		comment_page["fullUrl"] = "/".join(db_wiki["wiki"].split("/", 3)[:3]) + comment_page["relativeUrl"]
 	await appearance_mode(identification_string, change, target, db_wiki["wiki"], article_page=comment_page)
