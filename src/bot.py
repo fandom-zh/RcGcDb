@@ -380,10 +380,22 @@ async def discussion_handler():
 						comment_events.append(post["forumId"])
 				comment_pages: dict = {}
 				if comment_events:
-					comment_pages = await local_wiki.safe_request(
-						"{wiki}wikia.php?controller=FeedsAndPosts&method=getArticleNamesAndUsernames&stablePageIds={pages}&format=json".format(
-							wiki=db_wiki["wiki"], pages=",".join(comment_events)
-						), RateLimiter(), "articleNames")
+					try:
+						comment_pages = await local_wiki.safe_request(
+							"{wiki}wikia.php?controller=FeedsAndPosts&method=getArticleNamesAndUsernames&stablePageIds={pages}&format=json".format(
+								wiki=db_wiki["wiki"], pages=",".join(comment_events)
+							), RateLimiter(), "articleNames")
+					except aiohttp.ClientResponseError:  # Fandom can be funny sometimes... See #30
+						comment_pages = None
+					except:
+						if command_line_args.debug:
+							logger.exception("Exception on Feeds article comment request")
+							shutdown(loop=asyncio.get_event_loop())
+						else:
+							logger.exception("Exception on Feeds article comment request")
+							await generic_msg_sender_exception_logger(traceback.format_exc(),
+							                                          "Exception on Feeds article comment request",
+							                                          Post=str(post)[0:1000], Wiki=db_wiki["wiki"])
 				for post in discussion_feed:  # Yeah, second loop since the comments require an extra request
 					if post["id"] > db_wiki["postid"]:
 						for target in targets.items():
