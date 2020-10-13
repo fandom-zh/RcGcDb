@@ -98,7 +98,7 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 			link = link_formatter(create_article_path("Special:Contributions/{user}".format(user=user), WIKI_ARTICLE_PATH))
 		except ValueError:
 			link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
-		if change["logparams"]["duration"] in ["infinite", "infinity"]:
+		if change["logparams"]["duration"] in ["infinite", "indefinite", "infinity", "never"]:
 			block_time = _("for infinity and beyond")
 		else:
 			english_length = re.sub(r"(\d+)", "", change["logparams"][
@@ -481,7 +481,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 			link = create_article_path("Special:Contributions/{user}".format(user=user), WIKI_ARTICLE_PATH)
 		except ValueError:
 			link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
-		if change["logparams"]["duration"] in ["infinite", "infinity"]:
+		if change["logparams"]["duration"] in ["infinite", "indefinite", "infinity", "never"]:
 			block_time = _("for infinity and beyond")
 		else:
 			english_length = re.sub(r"(\d+)", "", change["logparams"]["duration"])  # note that translation won't work for millenia and century yet
