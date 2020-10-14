@@ -370,8 +370,6 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 				embed["color"] = 9175040 + (math.floor((editsize * -1) / 52)) * 65536
 		elif editsize == 0:
 			embed["color"] = 8750469
-		if change["title"].startswith("MediaWiki:Tag-"):  # Refresh tag list when tag display name is edited
-			recent_changes.init_info()
 		link = "{wiki}index.php?title={article}&curid={pageid}&diff={diff}&oldid={oldrev}".format(
 			wiki=WIKI_SCRIPT_PATH, pageid=change["pageid"], diff=change["revid"], oldrev=change["old_revid"],
 			article=change["title"].replace(" ", "_").replace("%", "%25").replace("\\", "%5C").replace("&", "%26"))
