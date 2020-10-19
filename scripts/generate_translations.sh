@@ -15,6 +15,9 @@ do
   msgmerge -o locale/$language/LC_MESSAGES/rc_formatters.po ~/PycharmProjects/RcGcDw/locale/$language/LC_MESSAGES/rc_formatters.po locale/$language/LC_MESSAGES/rc_formatters.po
   msgmerge -o locale/$language/LC_MESSAGES/wiki.po ~/PycharmProjects/RcGcDw/locale/$language/LC_MESSAGES/rc.po locale/$language/LC_MESSAGES/wiki.po
   msgmerge -o locale/$language/LC_MESSAGES/misc.po ~/PycharmProjects/RcGcDw/locale/$language/LC_MESSAGES/misc.po locale/$language/LC_MESSAGES/misc.po
+  for file in ${StringArray[@]}; do
+    msgfmt -o locale/$language/LC_MESSAGES/$file.mo locale/$language/LC_MESSAGES/$file.po
+  done
 done
 for language in locale/*/LC_MESSAGES
 do

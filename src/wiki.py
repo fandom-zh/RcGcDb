@@ -69,7 +69,7 @@ class Wiki:
 	async def safe_request(url, ratelimiter, *keys):
 		await ratelimiter.timeout_wait()
 		try:
-			async with aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(3.0)) as session:
+			async with aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(6.0)) as session:
 				request = await session.get(url, allow_redirects=False)
 				ratelimiter.timeout_add(1.0)
 				request.raise_for_status()

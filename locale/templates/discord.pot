@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RcGcDb\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-08-13 21:09+0200\n"
+"POT-Creation-Date: 2020-10-14 21:05+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,6 +23,10 @@ msgstr ""
 
 #: src/discord.py:25 src/discord.py:26
 msgid "wiki inaccessible"
+msgstr ""
+
+#: src/discord.py:26
+msgid "discussions disabled"
 msgstr ""
 
 #: src/discord.py:27

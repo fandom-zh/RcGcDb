@@ -209,7 +209,7 @@ async def scan_group(group: str):
 				if local_wiki.mw_messages is None:
 					extended = True
 				async with aiohttp.ClientSession(headers=settings["header"],
-				                                 timeout=aiohttp.ClientTimeout(3.0)) as session:
+				                                 timeout=aiohttp.ClientTimeout(6.0)) as session:
 					try:
 						wiki_response = await local_wiki.fetch_wiki(extended, queued_wiki.url, session, rate_limiter, amount=queued_wiki.amount)
 						await local_wiki.check_status(queued_wiki.url, wiki_response.status)
@@ -332,7 +332,7 @@ async def discussion_handler():
 				header = settings["header"]
 				header["Accept"] = "application/hal+json"
 				async with aiohttp.ClientSession(headers=header,
-													timeout=aiohttp.ClientTimeout(4.0)) as session:
+													timeout=aiohttp.ClientTimeout(6.0)) as session:
 					try:
 						local_wiki = all_wikis[db_wiki["wiki"]]  # set a reference to a wiki object from memory
 					except KeyError:
