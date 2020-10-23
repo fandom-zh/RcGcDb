@@ -47,7 +47,7 @@ async def feeds_compact_formatter(post_type, post, message_target, wiki, article
 			message = "📩 "+_("[{author}]({author_url}) created a [reply](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}#{replyId}>) to [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(author=author, author_url=author_url, url=wiki, title=post["_embedded"]["thread"][0]["title"], user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"], replyId=post["id"])
 	elif post_type == "ARTICLE_COMMENT":
 		if article_page is None:
-			article_page = {"title": _("unknown"), "fullUrl": "{wiki}wiki/{article}".format(wiki=wiki, article=_("unknown").replace(" ", "_"))}  # No page known
+			article_page = {"title": _("unknown"), "fullUrl": wiki}  # No page known
 		if not post["isReply"]:
 			message = "🗒️ "+_("[{author}]({author_url}) created a [comment](<{url}?commentId={commentId}>) on [{article}](<{url}>)").format(author=author, author_url=author_url, url=article_page["fullUrl"], article=article_page["title"], commentId=post["threadId"])
 		else:
@@ -137,7 +137,7 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 			embed["title"] = _("Replied to \"{title}\" on {user}'s Message Wall").format(title=post["_embedded"]["thread"][0]["title"], user=user_wall)
 	elif post_type == "ARTICLE_COMMENT":
 		if article_page is None:
-			article_page = {"title": _("unknown"), "fullUrl": "{wiki}wiki/{article}".format(wiki=wiki, article=_("unknown").replace(" ", "_"))}  # No page known
+			article_page = {"title": _("unknown"), "fullUrl": wiki}  # No page known
 		if not post["isReply"]:
 			embed.event_type = "discussion/comment/post"
 			embed["url"] = "{url}?commentId={commentId}".format(url=article_page["fullUrl"], commentId=post["threadId"])
