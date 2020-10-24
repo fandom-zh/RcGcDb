@@ -80,7 +80,8 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 				embed["description"] = embed["description"].replace(npost.image_last, "")
 		else:  # Fallback when model is not available
 			embed["description"] = post.get("rawContent", "")
-	embed["footer"]["text"] = post["forumName"].replace("_", " ")
+	if post["forumName"] is not None:
+		embed["footer"]["text"] = post["forumName"].replace("_", " ")
 	embed["timestamp"] = datetime.datetime.fromtimestamp(post["creationDate"]["epochSecond"], tz=datetime.timezone.utc).isoformat()
 	if post_type == "FORUM":
 		if not post["isReply"]:
@@ -126,7 +127,7 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 	elif post_type == "WALL":
 		user_wall = _("unknown")  # Fail safe
 		if post["forumName"].endswith(' Message Wall'):
-			user_wall = post["forumName"][:-13]
+			user_wall = post["forumName"][:-13].replace("_", " ")
 		if not post["isReply"]:
 			embed.event_type = "discussion/wall/post"
 			embed["url"] = "{url}wiki/Message_Wall:{user_wall}?threadId={threadId}".format(url=wiki, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"])
