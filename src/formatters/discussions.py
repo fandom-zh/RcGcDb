@@ -70,7 +70,7 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 	elif post["creatorIp"]:
 		embed.set_author(post["creatorIp"][1:], "{url}wiki/Special:Contributions{creatorIp}".format(url=wiki, creatorIp=post["creatorIp"]))
 	else:
-		embed.set_author(post["createdBy"]["name"], "{url}wiki/User:{creator}".format(url=wiki, creator=post["createdBy"]["name"]), icon_url=post["createdBy"]["avatarUrl"])
+		embed.set_author(post["createdBy"]["name"], "{url}wiki/User:{creator}".format(url=wiki, creator=post["createdBy"]["name"].replace(" ", "_")), icon_url=post["createdBy"]["avatarUrl"])
 	if message_target[0][1] == 3:
 		if post.get("jsonModel") is not None:
 			npost = DiscussionsFromHellParser(post, wiki)
@@ -80,7 +80,7 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 				embed["description"] = embed["description"].replace(npost.image_last, "")
 		else:  # Fallback when model is not available
 			embed["description"] = post.get("rawContent", "")
-	embed["footer"]["text"] = post["forumName"]
+	embed["footer"]["text"] = post["forumName"].replace("_", " ")
 	embed["timestamp"] = datetime.datetime.fromtimestamp(post["creationDate"]["epochSecond"], tz=datetime.timezone.utc).isoformat()
 	if post_type == "FORUM":
 		if not post["isReply"]:
