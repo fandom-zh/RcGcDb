@@ -17,7 +17,20 @@ from bs4 import BeautifulSoup
 
 logger = logging.getLogger("rcgcdb.wiki")
 
-supported_logs = ["protect/protect", "protect/modify", "protect/unprotect", "upload/overwrite", "upload/upload", "delete/delete", "delete/delete_redir", "delete/restore", "delete/revision", "delete/event", "import/upload", "import/interwiki", "merge/merge", "move/move", "move/move_redir", "protect/move_prot", "block/block", "block/unblock", "block/reblock", "rights/rights", "rights/autopromote", "abusefilter/modify", "abusefilter/create", "interwiki/iw_add", "interwiki/iw_edit", "interwiki/iw_delete", "curseprofile/comment-created", "curseprofile/comment-edited", "curseprofile/comment-deleted", "curseprofile/comment-purged", "curseprofile/profile-edited", "curseprofile/comment-replied", "contentmodel/change", "sprite/sprite", "sprite/sheet", "sprite/slice", "managetags/create", "managetags/delete", "managetags/activate", "managetags/deactivate", "tag/update", "cargo/createtable", "cargo/deletetable", "cargo/recreatetable", "cargo/replacetable", "upload/revert", "managewiki/settings"]
+supported_logs = {"protect/protect", "protect/modify", "protect/unprotect", "upload/overwrite", "upload/upload",
+                  "delete/delete", "delete/delete_redir", "delete/restore", "delete/revision", "delete/event",
+                  "import/upload", "import/interwiki", "merge/merge", "move/move", "move/move_redir",
+                  "protect/move_prot", "block/block", "block/unblock", "block/reblock", "rights/rights",
+                  "rights/autopromote", "abusefilter/modify", "abusefilter/create", "interwiki/iw_add",
+                  "interwiki/iw_edit", "interwiki/iw_delete", "curseprofile/comment-created",
+                  "curseprofile/comment-edited", "curseprofile/comment-deleted", "curseprofile/comment-purged",
+                  "curseprofile/profile-edited", "curseprofile/comment-replied", "contentmodel/change", "sprite/sprite",
+                  "sprite/sheet", "sprite/slice", "managetags/create", "managetags/delete", "managetags/activate",
+                  "managetags/deactivate", "tag/update", "cargo/createtable", "cargo/deletetable",
+                  "cargo/recreatetable", "cargo/replacetable", "upload/revert", "newusers/create",
+                  "newusers/autocreate", "newusers/create2", "newusers/byemail", "newusers/newusers",
+                  "managewiki/settings", "managewiki/delete", "managewiki/lock", "managewiki/unlock",
+                  "managewiki/namespaces", "managewiki/namespaces-delete", "managewiki/rights", "managewiki/undelete"}
 
 
 @dataclass
@@ -232,6 +245,7 @@ async def essential_feeds(change: dict, comment_pages: dict, db_wiki: sqlite3.Ro
 	identification_string = change["_embedded"]["thread"][0]["containerType"]
 	comment_page = None
 	if identification_string == "ARTICLE_COMMENT" and comment_pages is not None:
-		comment_page = comment_pages[change["forumId"]]
-		comment_page["fullUrl"] = "/".join(db_wiki["wiki"].split("/", 3)[:3]) + comment_page["relativeUrl"]
+		comment_page = comment_pages.get(change["forumId"], None)
+		if comment_page is not None:
+			comment_page["fullUrl"] = "/".join(db_wiki["wiki"].split("/", 3)[:3]) + comment_page["relativeUrl"]
 	await appearance_mode(identification_string, change, target, db_wiki["wiki"], article_page=comment_page)
