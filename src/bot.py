@@ -126,11 +126,9 @@ class RcQueue:
 			fetch_all = db_cursor.execute(
 				'SELECT ROWID, webhook, wiki, lang, display, wikiid, rcid FROM rcgcdw WHERE rcid != -1 OR rcid IS NULL GROUP BY wiki ORDER BY ROWID ASC')
 			self.to_remove = [x[0] for x in filter(self.filter_rc_active, all_wikis.items())]  # first populate this list and remove wikis that are still in the db, clean up the rest
-			full = []
+			full = set()
 			for db_wiki in fetch_all.fetchall():
 				domain = get_domain(db_wiki["wiki"])
-				if domain in full:
-					continue
 				try:
 					if db_wiki["wiki"] not in all_wikis:
 						raise AssertionError
@@ -140,6 +138,8 @@ class RcQueue:
 					all_wikis[db_wiki["wiki"]].rc_active = db_wiki["rcid"]
 				except ValueError:
 					pass
+				if domain in full:
+					continue
 				try:
 					current_domain: dict = self[domain]
 					if not db_wiki["ROWID"] < current_domain["last_rowid"]:
@@ -148,7 +148,7 @@ class RcQueue:
 					await self.start_group(domain, [QueuedWiki(db_wiki["wiki"], 20)])
 					logger.info("A new domain group ({}) has been added since last time, adding it to the domain_list and starting a task...".format(domain))
 				except ListFull:
-					full.append(domain)
+					full.add(domain)
 					current_domain["last_rowid"] = db_wiki["ROWID"]
 					continue
 			for wiki in self.to_remove:
