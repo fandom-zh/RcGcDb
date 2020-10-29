@@ -82,12 +82,25 @@ class RcQueue:
 		self[group]["task"].cancel()
 		del self.domain_list[group]
 
+	def check_if_domain_in_db(self, domain):
+		fetch_all = db_cursor.execute(
+			'SELECT ROWID, webhook, wiki, lang, display, wikiid, rcid FROM rcgcdw WHERE rcid != -1 GROUP BY wiki ORDER BY ROWID ASC')
+		for wiki in fetch_all.fetchall():
+			if get_domain(db_wiki["wiki"]) == domain:
+				return True
+		return False
+
 	@asynccontextmanager
 	async def retrieve_next_queued(self, group) -> Generator[QueuedWiki, None, None]:
 		"""Retrives next wiki in the queue for given domain"""
 		if len(self.domain_list[group]["query"]) == 0:
-			await self.stop_task_group(group)
-			return
+			# make sure we are not removing the group because entire domain group went down, it's expensive - yes, but could theoretically cause issues
+			if self.check_if_domain_in_db(group):
+				logger.warning("Domain group {} has 0 elements yet there are still wikis in the db of the same domain group! This may indicate we ran over the list too fast. We are waiting...".format(group))
+				raise QueueEmpty
+			else:
+				await self.stop_task_group(group)
+				return
 		try:
 			yield self.domain_list[group]["query"][0]
 		except asyncio.CancelledError:
@@ -286,6 +299,9 @@ async def scan_group(group: str):
 				DBHandler.update_db()
 		except asyncio.CancelledError:
 			return
+		except QueueEmpty:
+			await asyncio.sleep(21.0)
+			continue
 
 
 async def wiki_scanner():
