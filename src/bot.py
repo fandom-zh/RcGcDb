@@ -129,6 +129,8 @@ class RcQueue:
 			full = []
 			for db_wiki in fetch_all.fetchall():
 				domain = get_domain(db_wiki["wiki"])
+				if domain in full:
+					continue
 				try:
 					if db_wiki["wiki"] not in all_wikis:
 						raise AssertionError
