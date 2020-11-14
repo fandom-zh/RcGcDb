@@ -280,8 +280,11 @@ async def scan_group(group: str):
 							break
 					await process_cats(change, local_wiki, mw_msgs, categorize_events)
 				else:  # If we broke from previous loop (too many changes) don't execute sending messages here
+					highest_rc = None  # setup var for later use
 					for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
 						if change["rcid"] > local_wiki.rc_active:
+							if highest_rc is None or change["rcid"] > highest_rc:  # make sure that the highest_rc is really highest rcid but do allow other entries with potentially lesser rcids come after without breaking the cycle
+								highest_rc = change["rcid"]
 							for target in targets.items():
 								try:
 									await essential_info(change, categorize_events, local_wiki, target, paths,
@@ -295,9 +298,9 @@ async def scan_group(group: str):
 									else:
 										logger.exception("Exception on RC formatter")
 										await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in RC formatter", Wiki=queued_wiki.url, Change=str(change)[0:1000])
-					if recent_changes:
-						local_wiki.rc_active = change["rcid"]
-						DBHandler.add(queued_wiki.url, change["rcid"])
+					if recent_changes:  # we don't have to test for highest_rc being null, because if there are no RC entries recent_changes will be an empty list which will result in false in here and DO NOT save the value
+						local_wiki.rc_active = highest_rc
+						DBHandler.add(queued_wiki.url, highest_rc)
 				DBHandler.update_db()
 		except asyncio.CancelledError:
 			return
