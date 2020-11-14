@@ -23,17 +23,17 @@
                 "level": 15
             },
             "file": {
-               "formatter": "standard",
-               "class": "logging.handlers.TimedRotatingFileHandler",
-               "filename": "logs/error.log",
+                "formatter": "standard",
+                "class": "logging.handlers.TimedRotatingFileHandler",
+                "filename": "logs/error.log",
                 "interval": 7,
                 "when": "D",
                 "level": 25
             },
             "debug": {
-               "formatter": "standard",
-               "class": "logging.handlers.TimedRotatingFileHandler",
-               "filename": "debug.log",
+                "formatter": "standard",
+                "class": "logging.handlers.TimedRotatingFileHandler",
+                "filename": "logs/debug.log",
                 "interval": 7,
                 "when": "D",
                 "level": 0
@@ -53,16 +53,12 @@
             "rcgcdb.wiki": {}
         }
     },
-  "appearance": {
+    "appearance": {
         "mode": "embed",
         "embed": {
             "show_footer": true,
             "show_edit_changes": true,
             "embed_images": true,
-            "daily_overview": {
-                "color": 16312092,
-                "icon": ""
-            },
             "new": {
                 "icon": "https://i.imgur.com/6HIbEq8.png",
                 "color": "THIS COLOR DEPENDS ON EDIT SIZE, PLEASE DON'T CHANGE"
@@ -77,11 +73,11 @@
             },
             "upload/upload": {
                 "icon": "https://i.imgur.com/egJpa81.png",
-                "color": null
+                "color": 12390624
             },
             "upload/revert": {
                 "icon": "https://i.imgur.com/egJpa81.png",
-                "color": null
+                "color": 12390624
             },
             "delete/delete": {
                 "icon": "https://i.imgur.com/BU77GD3.png",
@@ -93,27 +89,27 @@
             },
             "delete/restore": {
                 "icon": "https://i.imgur.com/9MnROIU.png",
-                "color": null
+                "color": 1
             },
             "delete/revision": {
                 "icon": "https://i.imgur.com/1gps6EZ.png",
-                "color": null
+                "color": 1
             },
             "delete/event": {
                 "icon": "https://i.imgur.com/1gps6EZ.png",
-                "color": null
+                "color": 1
             },
             "merge/merge": {
                 "icon": "https://i.imgur.com/uQMK9XK.png",
-                "color": null
+                "color": 25600
             },
             "move/move": {
                 "icon": "https://i.imgur.com/eXz9dog.png",
-                "color": null
+                "color": 25600
             },
             "move/move_redir": {
                 "icon": "https://i.imgur.com/UtC3YX2.png",
-                "color": null
+                "color": 25600
             },
             "block/block": {
                 "icon": "https://i.imgur.com/g7KgZHf.png",
@@ -129,167 +125,219 @@
             },
             "protect/protect": {
                 "icon": "https://i.imgur.com/bzPt89Z.png",
-                "color": null
+                "color": 16312092
             },
             "protect/modify": {
                 "icon": "https://i.imgur.com/bzPt89Z.png",
-                "color": null
+                "color": 16312092
             },
             "protect/move_prot": {
                 "icon": "https://i.imgur.com/bzPt89Z.png",
-                "color": null
+                "color": 16312092
             },
             "protect/unprotect": {
                 "icon": "https://i.imgur.com/2wN3Qcq.png",
-                "color": null
+                "color": 16312092
             },
             "import/upload": {
                 "icon": "",
-                "color": null
+                "color": 65280
             },
             "import/interwiki": {
                 "icon": "https://i.imgur.com/sFkhghb.png",
-                "color": null
+                "color": 65280
             },
             "rights/rights": {
                 "icon": "",
-                "color": null
+                "color": 16711680
             },
             "abusefilter/abusefilter": {
                 "icon": "https://i.imgur.com/Sn2NzRJ.png",
-                "color": null
+                "color": 16711680
             },
             "abusefilter/modify": {
                 "icon": "https://i.imgur.com/Sn2NzRJ.png",
-                "color": null
+                "color": 16711680
             },
             "abusefilter/create": {
                 "icon": "https://i.imgur.com/Sn2NzRJ.png",
-                "color": null
+                "color": 16711680
             },
             "interwiki/iw_add": {
                 "icon": "https://i.imgur.com/sFkhghb.png",
-                "color": null
+                "color": 16711680
             },
             "interwiki/iw_edit": {
                 "icon": "https://i.imgur.com/sFkhghb.png",
-                "color": null
+                "color": 16711680
             },
             "interwiki/iw_delete": {
                 "icon": "https://i.imgur.com/sFkhghb.png",
-                "color": null
+                "color": 16711680
             },
             "curseprofile/comment-created": {
                 "icon": "https://i.imgur.com/Lvy5E32.png",
-                "color": null
+                "color": 16089376
             },
             "curseprofile/comment-edited": {
                 "icon": "https://i.imgur.com/Lvy5E32.png",
-                "color": null
+                "color": 16089376
             },
             "curseprofile/comment-deleted": {
                 "icon": "",
-                "color": null
+                "color": 16089376
             },
             "curseprofile/comment-purged":{
                 "icon":"",
-                "color":null
+                "color":16089376
             },
             "curseprofile/comment-replied": {
                 "icon": "https://i.imgur.com/hkyYsI1.png",
-                "color": null
+                "color": 16089376
             },
             "curseprofile/profile-edited": {
                 "icon": "",
-                "color": null
+                "color": 16089376
             },
             "contentmodel/change": {
                 "icon": "",
-                "color": null
+                "color": 25600
             },
             "cargo/deletetable": {
                 "icon": "",
-                "color": null
-             },
-             "cargo/createtable": {
+                "color": 16776960
+            },
+            "cargo/createtable": {
                 "icon": "",
-                "color": null
-             },
-             "cargo/replacetable": {
+                "color": 16776960
+            },
+            "cargo/replacetable": {
                 "icon": "",
-                "color": null
-             },
-             "cargo/recreatetable": {
+                "color": 16776960
+            },
+            "cargo/recreatetable": {
                 "icon": "",
-                "color": null
-             },
+                "color": 16776960
+            },
             "sprite/sprite": {
                 "icon": "",
-                "color": null
+                "color": 16776960
             },
             "sprite/sheet": {
                 "icon": "",
-                "color": null
+                "color": 16776960
             },
             "sprite/slice": {
                 "icon": "",
-                "color": null
+                "color": 16776960
             },
             "managetags/create": {
                 "icon": "",
-                "color": null
+                "color": 16776960
             },
             "managetags/delete": {
                 "icon": "",
-                "color": null
+                "color": 16776960
             },
             "managetags/activate": {
                 "icon": "",
-                "color": null
+                "color": 16776960
             },
             "managetags/deactivate": {
                 "icon": "",
-                "color": null
+                "color": 16776960
             },
             "tag/update": {
                 "icon": "",
-                "color": null
+                "color": 16776960
+            },
+            "newusers/autocreate": {
+                "icon": "",
+                "color": 65280
+            },
+            "newusers/byemail": {
+                "icon": "",
+                "color": 65280
+            },
+            "newusers/create": {
+                "icon": "",
+                "color": 65280
+            },
+            "newusers/create2": {
+                "icon": "",
+                "color": 65280
+            },
+            "newusers/newusers": {
+                "icon": "",
+                "color": 65280
+            },
+            "managewiki/delete": {
+                "icon": "",
+                "color": 8421504
+            },
+            "managewiki/lock": {
+                "icon": "",
+                "color": 8421504
+            },
+            "managewiki/namespaces": {
+                "icon": "",
+                "color": 8421504
+            },
+            "managewiki/namespaces-delete": {
+                "icon": "",
+                "color": 8421504
+            },
+            "managewiki/rights": {
+                "icon": "",
+                "color": 8421504
+            },
+            "managewiki/settings": {
+                "icon": "",
+                "color": 8421504
+            },
+            "managewiki/undelete": {
+                "icon": "",
+                "color": 8421504
+            },
+            "managewiki/unlock": {
+                "icon": "",
+                "color": 8421504
             },
             "suppressed": {
                 "icon": "https://i.imgur.com/1gps6EZ.png",
-                "color": 8092539
+                "color": 1
             },
              "discussion/forum/post": {
                "icon": "",
-               "color":null
+               "color": 54998
             },
              "discussion/forum/reply": {
                 "icon": "",
-                "color":null
-             },
+                "color": 54998
+            },
             "discussion/forum/poll": {
                 "icon": "",
-                "color":null
+                "color": 54998
             },
             "discussion/forum/quiz": {
                 "icon": "",
-                "color":null
+                "color": 54998
             },
             "discussion/wall/post": {
                 "icon": "",
-                "color":null
+                "color": 3752525
             },
             "discussion/wall/reply": {
                 "icon": "",
-                "color":null
+                "color": 3752525
             },
             "discussion/comment/post": {
                 "icon": "",
-                "color":null
+                "color": 10802
             },
             "discussion/comment/reply": {
                 "icon": "",
-                "color":null
+                "color": 10802
             }
         }
     }
