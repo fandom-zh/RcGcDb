@@ -348,7 +348,7 @@ async def discussion_handler():
 	try:
 		while True:
 			fetch_all = db_cursor.execute(
-				'SELECT wiki, wikiid, rcid, postid FROM rcgcdw WHERE wikiid IS NOT NULL')
+				'SELECT wiki, wikiid, rcid, postid FROM rcgcdw WHERE postid > -1')
 			for db_wiki in fetch_all.fetchall():
 				header = settings["header"]
 				header["Accept"] = "application/hal+json"
@@ -395,7 +395,7 @@ async def discussion_handler():
 					DBHandler.update_db()
 					continue
 				comment_events = []
-				targets = generate_targets(db_wiki["wiki"], "AND NOT wikiid IS NULL")
+				targets = generate_targets(db_wiki["wiki"], "AND NOT postid = -1")
 				for post in discussion_feed:
 					if post["_embedded"]["thread"][0]["containerType"] == "ARTICLE_COMMENT" and post["id"] > db_wiki["postid"]:
 						comment_events.append(post["forumId"])
