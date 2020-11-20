@@ -84,7 +84,7 @@ class RcQueue:
 
 	def check_if_domain_in_db(self, domain):
 		fetch_all = db_cursor.execute(
-			'SELECT ROWID, webhook, wiki, lang, display, wikiid, rcid FROM rcgcdw WHERE rcid != -1 GROUP BY wiki ORDER BY ROWID ASC')
+			'SELECT ROWID, webhook, wiki, lang, display, rcid FROM rcgcdw WHERE rcid != -1 GROUP BY wiki ORDER BY ROWID ASC')
 		for wiki in fetch_all.fetchall():
 			if get_domain(db_wiki["wiki"]) == domain:
 				return True
@@ -124,7 +124,7 @@ class RcQueue:
 		"""Makes a round on rcgcdb DB and looks for updates to the queues in self.domain_list"""
 		try:
 			fetch_all = db_cursor.execute(
-				'SELECT ROWID, webhook, wiki, lang, display, wikiid, rcid FROM rcgcdw WHERE rcid != -1 OR rcid IS NULL GROUP BY wiki ORDER BY ROWID ASC')
+				'SELECT ROWID, webhook, wiki, lang, display, rcid FROM rcgcdw WHERE rcid != -1 OR rcid IS NULL GROUP BY wiki ORDER BY ROWID ASC')
 			self.to_remove = [x[0] for x in filter(self.filter_rc_active, all_wikis.items())]  # first populate this list and remove wikis that are still in the db, clean up the rest
 			full = set()
 			for db_wiki in fetch_all.fetchall():
@@ -205,7 +205,7 @@ def generate_targets(wiki_url: str, additional_requirements: str) -> defaultdict
 async def generate_domain_groups():
 	"""Generate a list of wikis per domain (fandom.com, wikipedia.org etc.)"""
 	domain_wikis = defaultdict(list)
-	fetch_all = db_cursor.execute('SELECT ROWID, webhook, wiki, lang, display, wikiid, rcid FROM rcgcdw WHERE rcid != -1 OR rcid IS NULL GROUP BY wiki ORDER BY ROWID ASC')
+	fetch_all = db_cursor.execute('SELECT ROWID, webhook, wiki, lang, display, rcid FROM rcgcdw WHERE rcid != -1 OR rcid IS NULL GROUP BY wiki ORDER BY ROWID ASC')
 	for db_wiki in fetch_all.fetchall():
 		domain_wikis[get_domain(db_wiki["wiki"])].append(QueuedWiki(db_wiki["wiki"], 20))
 	for group, db_wikis in domain_wikis.items():
