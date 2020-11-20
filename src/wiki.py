@@ -247,5 +247,5 @@ async def essential_feeds(change: dict, comment_pages: dict, db_wiki: sqlite3.Ro
 	if identification_string == "ARTICLE_COMMENT" and comment_pages is not None:
 		comment_page = comment_pages.get(change["forumId"], None)
 		if comment_page is not None:
-			comment_page["fullUrl"] = "/".join(db_wiki["wiki"].split("/", 3)[:3]) + comment_page["relativeUrl"]
+			comment_page["fullUrl"] = "/".join(db_wiki["wiki"].split("/", 3)[:3]) + comment_page["relativeUrl"].replace(")", "\)").replace("()", "\(")
 	await appearance_mode(identification_string, change, target, db_wiki["wiki"], article_page=comment_page)
