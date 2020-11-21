@@ -5,6 +5,7 @@ from src.misc import logger
 from src.config import settings
 from src.database import db_cursor
 from src.i18n import langs
+from src.exceptions import EmbedListFull
 from asyncio import TimeoutError
 
 import aiohttp
@@ -66,16 +67,15 @@ class DiscordMessage:
 		return json.dumps(self.webhook_object)
 
 	def __setup_embed(self):
+		"""Setup another embed"""
 		self.embed = defaultdict(dict)
 		if "embeds" not in self.webhook_object:
 			self.webhook_object["embeds"] = [self.embed]
 		else:
+			if len(self.webhook_object["embeds"]) > 9:
+				raise EmbedListFull
 			self.webhook_object["embeds"].append(self.embed)
 		self.embed["color"] = None
-
-	def add_embed(self):
-		self.finish_embed()
-		self.__setup_embed()
 
 	def finish_embed(self):
 		if self.embed["color"] is None:
@@ -101,6 +101,22 @@ class DiscordMessage:
 
 	def set_name(self, name):
 		self.webhook_object["username"] = name
+
+
+class StackedDiscordMessage(DiscordMessage):
+	def __init__(self, discordmessage: DiscordMessage):
+		if isinstance(discordmessage, StackedDiscordMessage):
+			raise TypeError("Cannot transform StackedDiscordMessage")
+		self.__dict__ = discordmessage.__dict__
+
+	def stack(self, messages: list):
+		for message in messages:
+			self.add_embed(message.embed)
+
+	def add_embed(self, embed):
+		self.finish_embed()
+		self.__setup_embed()
+		self.embed = embed
 
 
 # Monitoring webhook functions

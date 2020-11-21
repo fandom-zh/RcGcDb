@@ -21,3 +21,6 @@ class QueueEmpty(Exception):
 
 class ListFull(Exception):
 	pass
+
+class EmbedListFull(Exception):
+	pass

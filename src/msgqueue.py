@@ -1,6 +1,7 @@
 import asyncio, logging, aiohttp
-from src.discord import send_to_discord_webhook
+from src.discord import send_to_discord_webhook, DiscordMessage, StackedDiscordMessage
 from src.config import settings
+from math import ceil
 from collections import defaultdict
 logger = logging.getLogger("rcgcdw.msgqueue")
 
@@ -42,6 +43,18 @@ class MessageQueue:
 
 	async def send_msg_set(self, msg_set: tuple):
 		webhook_url, messages = msg_set  #  str("daosdkosakda/adkahfwegr34", list(DiscordMessage, DiscordMessage, DiscordMessage)
+		if len(messages) > 1 and messages[0].message_type == "embed":
+			for i, msg in enumerate(messages):
+				if isinstance(msg, DiscordMessage):
+					break
+			for group_index in range(ceil(len(messages)/10)):
+				message_group_index = group_index*10+i
+				stackable = StackedDiscordMessage(messages[message_group_index])  #TODO Find a way to replace item on the list with stacked message
+				for message in messages[message_group_index+1:message_group_index+9]:
+					stackable.add_embed(message.embed)
+					self._queue.remove(message)
+					messages.remove(message)
+
 		for msg in messages:
 			if self.global_rate_limit:
 				return  # if we are globally rate limited just wait for first gblocked request to finish
