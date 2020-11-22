@@ -369,8 +369,8 @@ async def discussion_handler():
 							error = discussion_feed_resp["error"]
 							if error == "site doesn't exists":
 								if db_wiki["rcid"] != -1:
-									db_cursor.execute("UPDATE rcgcdw SET wikiid = ? WHERE wiki = ?",
-														(None, db_wiki["wiki"],))
+									db_cursor.execute("UPDATE rcgcdw SET postid = ? WHERE wiki = ?",
+														("-1", db_wiki["wiki"],))
 								else:
 									await local_wiki.remove(db_wiki["wiki"], 1000)
 								DBHandler.update_db()
