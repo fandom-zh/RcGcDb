@@ -1,5 +1,6 @@
 __pycache__/
 settings.json
+logs/
 *.log
 *.db
 *.code-workspace
