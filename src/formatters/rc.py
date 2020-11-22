@@ -311,11 +311,9 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 	elif action == "managetags/create":
 		link = link_formatter(create_article_path("Special:Tags", WIKI_ARTICLE_PATH))
 		content = "🏷️ "+_("[{author}]({author_url}) created a [tag]({tag_url}) \"{tag}\"").format(author=author, author_url=author_url, tag=change["logparams"]["tag"], tag_url=link)
-		recent_changes.init_info()
 	elif action == "managetags/delete":
 		link = link_formatter(create_article_path("Special:Tags", WIKI_ARTICLE_PATH))
 		content = "🏷️ "+_("[{author}]({author_url}) deleted a [tag]({tag_url}) \"{tag}\"").format(author=author, author_url=author_url, tag=change["logparams"]["tag"], tag_url=link)
-		recent_changes.init_info()
 	elif action == "managetags/activate":
 		link = link_formatter(create_article_path("Special:Tags", WIKI_ARTICLE_PATH))
 		content = "🏷️ "+_("[{author}]({author_url}) activated a [tag]({tag_url}) \"{tag}\"").format(author=author, author_url=author_url, tag=change["logparams"]["tag"], tag_url=link)

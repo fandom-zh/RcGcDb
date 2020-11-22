@@ -19,7 +19,7 @@ class UpdateDB:
 			if update[2] is None:
 				sql = "UPDATE rcgcdw SET rcid = ? WHERE wiki = ? AND ( rcid != -1 OR rcid IS NULL )"
 			else:
-				sql = "UPDATE rcgcdw SET postid = ? WHERE wikiid = ?"
+				sql = "UPDATE rcgcdw SET postid = ? WHERE wiki = ?"
 			db_cursor.execute(sql, (update[1], update[0],))
 		db_connection.commit()
 		self.clear_list()

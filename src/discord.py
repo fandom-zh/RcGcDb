@@ -46,11 +46,16 @@ class DiscordMessage:
 		self.wiki = wiki
 
 		if message_type == "embed":
-			self.__setup_embed()
+			self._setup_embed()
 		elif message_type == "compact":
 			self.webhook_object["content"] = content
 
 		self.event_type = event_type
+
+	def message_type(self):
+		if "content" in self.webhook_object:
+			return "compact"
+		return "embed"
 
 	def __setitem__(self, key, value):
 		"""Set item is used only in embeds."""
@@ -66,15 +71,9 @@ class DiscordMessage:
 		"""Return the Discord webhook object ready to be sent"""
 		return json.dumps(self.webhook_object)
 
-	def __setup_embed(self):
+	def _setup_embed(self):
 		"""Setup another embed"""
 		self.embed = defaultdict(dict)
-		if "embeds" not in self.webhook_object:
-			self.webhook_object["embeds"] = [self.embed]
-		else:
-			if len(self.webhook_object["embeds"]) > 9:
-				raise EmbedListFull
-			self.webhook_object["embeds"].append(self.embed)
 		self.embed["color"] = None
 
 	def finish_embed(self):
@@ -85,6 +84,12 @@ class DiscordMessage:
 				self.embed["color"] = settings["appearance"]["embed"][self.event_type]["color"]
 		else:
 			self.embed["color"] = math.floor(self.embed["color"])
+		if "embeds" not in self.webhook_object:
+			self.webhook_object["embeds"] = [self.embed]
+		else:
+			if len(self.webhook_object["embeds"]) > 10:
+				raise EmbedListFull
+			self.webhook_object["embeds"].append(self.embed)
 
 	def set_author(self, name, url, icon_url=""):
 		self.embed["author"]["name"] = name
@@ -114,9 +119,9 @@ class StackedDiscordMessage(DiscordMessage):
 			self.add_embed(message.embed)
 
 	def add_embed(self, embed):
-		self.finish_embed()
-		self.__setup_embed()
+		self._setup_embed()
 		self.embed = embed
+		self.finish_embed()
 
 
 # Monitoring webhook functions

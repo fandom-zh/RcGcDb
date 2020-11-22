@@ -360,7 +360,7 @@ async def discussion_handler():
 						local_wiki = all_wikis[db_wiki["wiki"]] = Wiki()
 						local_wiki.rc_active = db_wiki["rcid"]
 					try:
-						feeds_response = await local_wiki.fetch_feeds(db_wiki["wikiid"], session)
+						feeds_response = await local_wiki.fetch_feeds(db_wiki["wiki"], session)
 					except (WikiServerError, WikiError):
 						continue  # ignore this wiki if it throws errors
 					try:
@@ -389,9 +389,9 @@ async def discussion_handler():
 						continue
 				if db_wiki["postid"] is None:  # new wiki, just get the last post to not spam the channel
 					if len(discussion_feed) > 0:
-						DBHandler.add(db_wiki["wikiid"], discussion_feed[-1]["id"], True)
+						DBHandler.add(db_wiki["wiki"], discussion_feed[-1]["id"], True)
 					else:
-						DBHandler.add(db_wiki["wikiid"], "0", True)
+						DBHandler.add(db_wiki["wiki"], "0", True)
 					DBHandler.update_db()
 					continue
 				comment_events = []
@@ -432,7 +432,7 @@ async def discussion_handler():
 									logger.exception("Exception on Feeds formatter")
 									await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in feed formatter", Post=str(post)[0:1000], Wiki=db_wiki["wiki"])
 				if discussion_feed:
-					DBHandler.add(db_wiki["wikiid"], post["id"], True)
+					DBHandler.add(db_wiki["wiki"], post["id"], True)
 				await asyncio.sleep(delay=2.0)  # hardcoded really doesn't need much more
 			DBHandler.update_db()
 	except asyncio.CancelledError:

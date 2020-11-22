@@ -1,6 +1,7 @@
 import asyncio, logging, aiohttp
 from src.discord import send_to_discord_webhook, DiscordMessage, StackedDiscordMessage
 from src.config import settings
+from src.exceptions import EmbedListFull
 from math import ceil
 from collections import defaultdict
 logger = logging.getLogger("rcgcdw.msgqueue")
@@ -26,6 +27,12 @@ class MessageQueue:
 	def add_message(self, message):
 		self._queue.append(message)
 
+	def replace_message(self, to_replace: DiscordMessage, with_replace: StackedDiscordMessage):
+		try:
+			self._queue[self._queue.index(to_replace)] = with_replace
+		except ValueError:
+			raise
+
 	def cut_messages(self, item_num):
 		self._queue = self._queue[item_num:]
 
@@ -43,18 +50,24 @@ class MessageQueue:
 
 	async def send_msg_set(self, msg_set: tuple):
 		webhook_url, messages = msg_set  #  str("daosdkosakda/adkahfwegr34", list(DiscordMessage, DiscordMessage, DiscordMessage)
-		if len(messages) > 1 and messages[0].message_type == "embed":
+		if len(messages) > 1 and messages[0].message_type() == "embed":
 			for i, msg in enumerate(messages):
 				if isinstance(msg, DiscordMessage):
 					break
-			for group_index in range(ceil(len(messages)/10)):
-				message_group_index = group_index*10+i
-				stackable = StackedDiscordMessage(messages[message_group_index])  #TODO Find a way to replace item on the list with stacked message
+			removed_msgs = 0
+			for group_index in range(ceil((len(messages)-i)/10)):
+				message_group_index = group_index*10+i-removed_msgs
+				stackable = StackedDiscordMessage(messages[message_group_index])
 				for message in messages[message_group_index+1:message_group_index+9]:
-					stackable.add_embed(message.embed)
+					try:
+						stackable.add_embed(message.embed)
+					except EmbedListFull:
+						break
 					self._queue.remove(message)
 					messages.remove(message)
-
+				self.replace_message(messages[message_group_index], stackable)
+				messages[message_group_index] = stackable
+				removed_msgs += 1
 		for msg in messages:
 			if self.global_rate_limit:
 				return  # if we are globally rate limited just wait for first gblocked request to finish
