@@ -87,7 +87,7 @@ class DiscordMessage:
 		if "embeds" not in self.webhook_object:
 			self.webhook_object["embeds"] = [self.embed]
 		else:
-			if len(self.webhook_object["embeds"]) > 10:
+			if len(self.webhook_object["embeds"]) > 9:
 				raise EmbedListFull
 			self.webhook_object["embeds"].append(self.embed)
 
