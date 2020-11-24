@@ -1,41 +1,41 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the RcGcDd package.
+# This file is distributed under the same license as the RcGcDb package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: RcGcDd\n"
+"Project-Id-Version: RcGcDb\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-10-14 20:45+0200\n"
+"POT-Creation-Date: 2020-10-14 21:05+0200\n"
 "PO-Revision-Date: 2020-11-24 22:18+0000\n"
-"Last-Translator: MarkusRost <sukramxro@gmail.com>\n"
-"Language-Team: German <https://weblate.frisk.space/projects/wiki-bot/rcgcdb/"
-"de/>\n"
-"Language: de\n"
+"Last-Translator: Yongmin Hong <revi@pobox.com>\n"
+"Language-Team: Korean <https://weblate.frisk.space/projects/wiki-bot/rcgcdb/"
+"ko/>\n"
+"Language: ko\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: Weblate 4.2.1\n"
 
 #: src/discord.py:25
 msgid "wiki deleted"
-msgstr "Wiki gelöscht"
+msgstr "위키 삭제됨"
 
 #: src/discord.py:25 src/discord.py:26
 msgid "wiki inaccessible"
-msgstr "Wiki unerreichbar"
+msgstr "위키에 접속할 수 없음"
 
 #: src/discord.py:26
 msgid "discussions disabled"
-msgstr "Diskussionen deaktiviert"
+msgstr "토론 비활성화됨"
 
 #: src/discord.py:27
 msgid "unknown error"
-msgstr "unbekannter Fehler"
+msgstr "알 수 없는 오류"
 
 #: src/discord.py:28
 #, python-brace-format
 msgid "This recent changes webhook has been removed for `{reason}`!"
-msgstr "Dieser Letzte Änderungen-Webhook wurde entfernt wegen `{reason}`!"
+msgstr "`{reason}` 때문에 최근 바뀝 웹훅이 삭제되었습니다!"
