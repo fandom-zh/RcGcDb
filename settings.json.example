@@ -26,6 +26,7 @@
                 "formatter": "standard",
                 "class": "logging.handlers.TimedRotatingFileHandler",
                 "filename": "logs/error.log",
+                "encoding": "utf8",
                 "interval": 7,
                 "when": "D",
                 "level": 25
@@ -34,6 +35,7 @@
                 "formatter": "standard",
                 "class": "logging.handlers.TimedRotatingFileHandler",
                 "filename": "logs/debug.log",
+                "encoding": "utf8",
                 "interval": 7,
                 "when": "D",
                 "level": 0
