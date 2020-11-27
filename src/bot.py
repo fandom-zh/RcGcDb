@@ -73,9 +73,9 @@ class RcQueue:
 		logger.debug(f"Removing {wiki} from group queue.")
 		group = get_domain(wiki)
 		self[group]["query"] = LimitedList([x for x in self[group]["query"] if x.url != wiki])
+		all_wikis[wiki].rc_active = -1
 		if not self[group]["query"]:  # if there is no wiki left in the queue, get rid of the task
 			logger.debug(f"{group} no longer has any wikis queued!")
-			all_wikis[wiki].rc_active = -1
 			await self.stop_task_group(group)
 
 	async def stop_task_group(self, group):
