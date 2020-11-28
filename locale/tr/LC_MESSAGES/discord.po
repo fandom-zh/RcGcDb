@@ -1,18 +1,18 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the RcGcDd package.
+# This file is distributed under the same license as the RcGcDb package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: RcGcDd\n"
+"Project-Id-Version: RcGcDb\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-10-14 20:45+0200\n"
-"PO-Revision-Date: 2020-11-24 22:18+0000\n"
-"Last-Translator: MarkusRost <sukramxro@gmail.com>\n"
-"Language-Team: German <https://weblate.frisk.space/projects/wiki-bot/rcgcdb/"
-"de/>\n"
-"Language: de\n"
+"POT-Creation-Date: 2020-10-14 21:05+0200\n"
+"PO-Revision-Date: 2020-11-27 19:14+0000\n"
+"Last-Translator: Doğukan Karakaş <dogukankarakas6@gmail.com>\n"
+"Language-Team: Turkish <https://weblate.frisk.space/projects/wiki-bot/rcgcdb/"
+"tr/>\n"
+"Language: tr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -21,21 +21,21 @@ msgstr ""
 
 #: src/discord.py:25
 msgid "wiki deleted"
-msgstr "Wiki gelöscht"
+msgstr "viki silindi"
 
 #: src/discord.py:25 src/discord.py:26
 msgid "wiki inaccessible"
-msgstr "Wiki unerreichbar"
+msgstr "vikiye ulaşılamıyor"
 
 #: src/discord.py:26
 msgid "discussions disabled"
-msgstr "Diskussionen deaktiviert"
+msgstr "tartışmalar devre dışı"
 
 #: src/discord.py:27
 msgid "unknown error"
-msgstr "unbekannter Fehler"
+msgstr "bilinmeyen hata"
 
 #: src/discord.py:28
 #, python-brace-format
 msgid "This recent changes webhook has been removed for `{reason}`!"
-msgstr "Dieser Letzte Änderungen-Webhook wurde entfernt wegen `{reason}`!"
+msgstr "Bu son değişiklikler webhook'u `{reason}` nedeniyle kaldırılmış!"
