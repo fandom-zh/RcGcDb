@@ -1,18 +1,18 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the RcGcDd package.
+# This file is distributed under the same license as the RcGcDb package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: RcGcDd\n"
+"Project-Id-Version: RcGcDb\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-10-14 20:45+0200\n"
+"POT-Creation-Date: 2020-10-14 21:05+0200\n"
 "PO-Revision-Date: 2020-11-24 22:18+0000\n"
-"Last-Translator: MarkusRost <sukramxro@gmail.com>\n"
-"Language-Team: German <https://weblate.frisk.space/projects/wiki-bot/rcgcdb/"
-"de/>\n"
-"Language: de\n"
+"Last-Translator: Raffox97 <raffox97@gmail.com>\n"
+"Language-Team: Italian <https://weblate.frisk.space/projects/wiki-bot/rcgcdb/"
+"it/>\n"
+"Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -21,21 +21,21 @@ msgstr ""
 
 #: src/discord.py:25
 msgid "wiki deleted"
-msgstr "Wiki gelöscht"
+msgstr "wiki cancellato"
 
 #: src/discord.py:25 src/discord.py:26
 msgid "wiki inaccessible"
-msgstr "Wiki unerreichbar"
+msgstr "wiki inaccessibile"
 
 #: src/discord.py:26
 msgid "discussions disabled"
-msgstr "Diskussionen deaktiviert"
+msgstr "discussioni disabilitate"
 
 #: src/discord.py:27
 msgid "unknown error"
-msgstr "unbekannter Fehler"
+msgstr "errore sconosciuto"
 
 #: src/discord.py:28
 #, python-brace-format
 msgid "This recent changes webhook has been removed for `{reason}`!"
-msgstr "Dieser Letzte Änderungen-Webhook wurde entfernt wegen `{reason}`!"
+msgstr "Questo webhook delle ultime modifiche è stato rimosso per `{reason}`!"
