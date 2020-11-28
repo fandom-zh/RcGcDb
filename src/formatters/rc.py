@@ -46,8 +46,6 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 			sign = "+"
 		else:
 			sign = ""
-		if change["title"].startswith("MediaWiki:Tag-"):
-			pass
 		if action == "edit":
 			content = "📝 "+_("[{author}]({author_url}) edited [{article}]({edit_link}){comment} ({sign}{edit_size})").format(author=author, author_url=author_url, article=change["title"], edit_link=edit_link, comment=parsed_comment, edit_size=edit_size, sign=sign)
 		else:
@@ -244,7 +242,11 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 	elif action == "delete/event":
 		content = "👁️ "+_("[{author}]({author_url}) changed visibility of log events{comment}").format(author=author, author_url=author_url, comment=parsed_comment)
 	elif action == "import/interwiki":
-		content = "📥 "+_("[{author}]({author_url}) imported interwiki{comment}").format(author=author, author_url=author_url, comment=parsed_comment)
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
+		source_link = link_formatter(create_article_path(change["logparams"]["interwiki_title"], WIKI_ARTICLE_PATH))
+		content = "📥 "+ngettext("[{author}]({author_url}) imported [{article}]({article_url}) with {count} revision from [{source}]({source_url}){comment}",
+		                          "[{author}]({author_url}) imported [{article}]({article_url}) with {count} revisions from [{source}]({source_url}){comment}", change["logparams"]["count"]).format(
+			author=author, author_url=author_url, article=change["title"], article_url=link, count=change["logparams"]["count"], source=change["logparams"]["interwiki_title"], source_url=source_link, comment=parsed_comment)
 	elif action == "abusefilter/modify":
 		link = link_formatter(create_article_path("Special:AbuseFilter/history/{number}/diff/prev/{historyid}".format(number=change["logparams"]['newId'], historyid=change["logparams"]["historyId"]), WIKI_ARTICLE_PATH))
 		content = "🔍 "+_("[{author}]({author_url}) edited abuse filter [number {number}]({filter_url})").format(author=author, author_url=author_url, number=change["logparams"]['newId'], filter_url=link)
@@ -322,37 +324,50 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		content = "🏷️ "+_("[{author}]({author_url}) deactivated a [tag]({tag_url}) \"{tag}\"").format(author=author, author_url=author_url, tag=change["logparams"]["tag"], tag_url=link)
 	elif action == "managewiki/settings":  # Miraheze's ManageWiki extension https://github.com/miraheze/ManageWiki
 		content = "⚙️ "+_(
-			"[{author}]({author_url}) changed wiki settings ({reason})".format(author=author, author_url=author_url,
+			"[{author}]({author_url}) changed wiki settings{reason}".format(author=author, author_url=author_url,
 			                                                                   reason=parsed_comment))
 	elif action == "managewiki/delete":
-		content = "🗑️ "+_("[{author}]({author_url}) deleted a wiki *{wiki_name}* ({comment})").format(author=author, author_url=author_url,
+		content = "🗑️ "+_("[{author}]({author_url}) deleted a wiki *{wiki_name}*{comment}").format(author=author, author_url=author_url,
 		                                                                                              wiki_name=change["logparams"].get("wiki", _("Unknown")), comment=parsed_comment)
 	elif action == "managewiki/lock":
-		content = "🔒 "+_("[{author}]({author_url}) locked a wiki *{wiki_name}* ({comment})").format(
+		content = "🔒 "+_("[{author}]({author_url}) locked a wiki *{wiki_name}*{comment}").format(
 			author=author, author_url=author_url, wiki_name=change["logparams"].get("wiki", _("Unknown")), comment=parsed_comment)
 	elif action == "managewiki/namespaces":
-		content = "📦 "+_("[{author}]({author_url}) modified a namespace *{namespace_name}* on *{wiki_name}* ({comment})").format(
+		content = "📦 "+_("[{author}]({author_url}) modified a namespace *{namespace_name}* on *{wiki_name}*{comment}").format(
 			author=author, author_url=author_url, namespace_name=change["logparams"].get("namespace", _("Unknown")),
 		    wiki_name=change["logparams"].get("wiki", _("Unknown")), comment=parsed_comment)
 	elif action == "managewiki/namespaces-delete":
 		content = "🗑️ " + _(
-			"[{author}]({author_url}) deleted a namespace *{namespace_name}* on *{wiki_name}* ({comment})").format(
+			"[{author}]({author_url}) deleted a namespace *{namespace_name}* on *{wiki_name}*{comment}").format(
 			author=author, author_url=author_url,
 			namespace_name=change["logparams"].get("namespace", _("Unknown")),
 			wiki_name=change["logparams"].get("wiki", _("Unknown")), comment=parsed_comment)
 	elif action == "managewiki/rights":
-		content = "🏅 " + _("[{author}]({author_url}) modified user group *{group_name}* ({comment})").format(
-			author=author, author_url=author_url, group_name=change["title"][32:], comment=parsed_comment
+		group_name = change["title"].split("/permissions/", 1)[1]
+		content = "🏅 " + _("[{author}]({author_url}) modified user group *{group_name}*{comment}").format(
+			author=author, author_url=author_url, group_name=group_name, comment=parsed_comment
 		)
 	elif action == "managewiki/undelete":
-		content = "🏅 " + _("[{author}]({author_url}) restored a wiki *{wiki_name}* ({comment})").format(
+		content = "🏅 " + _("[{author}]({author_url}) restored a wiki *{wiki_name}*{comment}").format(
 			author=author, author_url=author_url, wiki_name=change["logparams"].get("wiki", _("Unknown")), comment=parsed_comment
 		)
 	elif action == "managewiki/unlock":
-		content = "🏅 " + _("[{author}]({author_url}) unlocked a wiki *{wiki_name}* ({comment})").format(
+		content = "🏅 " + _("[{author}]({author_url}) unlocked a wiki *{wiki_name}*{comment}").format(
 			author=author, author_url=author_url, wiki_name=change["logparams"].get("wiki", _("Unknown")),
 			comment=parsed_comment
 		)
+	elif action == "renameuser/renameuser":
+		link = link_formatter(create_article_path("User:"+change["logparams"]["newuser"], WIKI_ARTICLE_PATH))
+		edits = change["logparams"]["edits"]
+		if edits > 0:
+			content = "📛 " + ngettext("[{author}]({author_url}) renamed user *{old_name}* with {edits} edit to [{new_name}]({link}){comment}",
+			                          "[{author}]({author_url}) renamed user *{old_name}* with {edits} edits to [{new_name}]({link}){comment}", edits).format(
+				author=author, author_url=author_url, old_name=change["logparams"]["olduser"], edits=edits, new_name=change["logparams"]["newuser"], link=link, comment=parsed_comment
+			)
+		else:
+			content = "📛 " + _("[{author}]({author_url}) renamed user *{old_name}* to [{new_name}]({link}){comment}").format(
+				author=author, author_url=author_url, old_name=change["logparams"]["olduser"], new_name=change["logparams"]["newuser"], link=link, comment=parsed_comment
+			)
 	elif action == "suppressed":
 		content = "👁️ "+_("An action has been hidden by administration.")
 	else:
@@ -647,8 +662,10 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		link = create_article_path("Special:RecentChanges", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Changed visibility of log events")
 	elif action == "import/interwiki":
-		link = create_article_path("Special:RecentChanges", WIKI_ARTICLE_PATH)
-		embed["title"] = _("Imported interwiki")
+		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
+		embed["title"] = ngettext("Imported {article} with {count} revision from \"{source}\"",
+		                          "Imported {article} with {count} revisions from \"{source}\"", change["logparams"]["count"]).format(
+			article=change["title"], count=change["logparams"]["count"], source=change["logparams"]["interwiki_title"])
 	elif action == "abusefilter/modify":
 		link = create_article_path("Special:AbuseFilter/history/{number}/diff/prev/{historyid}".format(number=change["logparams"]['newId'], historyid=change["logparams"]["historyId"]), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Edited abuse filter number {number}").format(number=change["logparams"]['newId'])
@@ -759,7 +776,8 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		link = create_article_path("", WIKI_ARTICLE_PATH)
 		embed.add_field(_('Wiki'), change["logparams"].get("wiki", _("Unknown")))
 	elif action == "managewiki/rights":
-		embed["title"] = _("Modified \"{usergroup_name}\" usergroup").format(usergroup_name=change["title"][32:])
+		group_name = change["title"].split("/permissions/", 1)[1]
+		embed["title"] = _("Modified \"{usergroup_name}\" usergroup").format(usergroup_name=group_name)
 		link = create_article_path("", WIKI_ARTICLE_PATH)
 	elif action == "managewiki/undelete":
 		embed["title"] = _("Restored a \"{wiki}\" wiki").format(wiki=change["logparams"].get("wiki", _("Unknown")))
@@ -767,6 +785,13 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 	elif action == "managewiki/unlock":
 		embed["title"] = _("Unlocked a \"{wiki}\" wiki").format(wiki=change["logparams"].get("wiki", _("Unknown")))
 		link = create_article_path("", WIKI_ARTICLE_PATH)
+	elif action == "renameuser/renameuser":
+		edits = change["logparams"]["edits"]
+		if edits > 0:
+			embed["title"] = ngettext("Renamed user \"{old_name}\" with {edits} edit to \"{new_name}\"", "Renamed user \"{old_name}\" with {edits} edits to \"{new_name}\"", edits).format(old_name=change["logparams"]["olduser"], edits=edits, new_name=change["logparams"]["newuser"])
+		else:
+			embed["title"] = _("Renamed user \"{old_name}\" to \"{new_name}\"").format(old_name=change["logparams"]["olduser"], new_name=change["logparams"]["newuser"])
+		link = create_article_path("User:"+change["logparams"]["newuser"], WIKI_ARTICLE_PATH)
 	elif action == "suppressed":
 		link = create_article_path("", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Action has been hidden by administration.")
