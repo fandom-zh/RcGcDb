@@ -357,7 +357,7 @@ async def discussion_handler():
 	try:
 		while True:
 			fetch_all = db_cursor.execute(
-				"SELECT wiki, rcid, postid FROM rcgcdw WHERE postid != '-1'")
+				"SELECT wiki, rcid, postid FROM rcgcdw WHERE postid != '-1' OR postid IS NULL")
 			for db_wiki in fetch_all.fetchall():
 				header = settings["header"]
 				header["Accept"] = "application/hal+json"
@@ -376,8 +376,8 @@ async def discussion_handler():
 						discussion_feed_resp = await feeds_response.json(encoding="UTF-8")
 						if "title" in discussion_feed_resp:
 							error = discussion_feed_resp["error"]
-							if error == "site doesn't exists":
-								if db_wiki["rcid"] != -1:
+							if error == "site doesn't exists":  # Discussions disabled
+								if db_wiki["rcid"] != -1:  # RC feed is disabled
 									db_cursor.execute("UPDATE rcgcdw SET postid = ? WHERE wiki = ?",
 														("-1", db_wiki["wiki"],))
 								else:
@@ -426,11 +426,14 @@ async def discussion_handler():
 							await generic_msg_sender_exception_logger(traceback.format_exc(),
 							                                          "Exception on Feeds article comment request",
 							                                          Post=str(post)[0:1000], Wiki=db_wiki["wiki"])
+				message_list = defaultdict(list)
 				for post in discussion_feed:  # Yeah, second loop since the comments require an extra request
 					if post["id"] > db_wiki["postid"]:
 						for target in targets.items():
 							try:
-								await essential_feeds(post, comment_pages, db_wiki, target)
+								message = await essential_feeds(post, comment_pages, db_wiki, target)
+								if message is not None:
+									message_list[target[0]].append(message)
 							except asyncio.CancelledError:
 								raise
 							except:
@@ -440,6 +443,10 @@ async def discussion_handler():
 								else:
 									logger.exception("Exception on Feeds formatter")
 									await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in feed formatter", Post=str(post)[0:1000], Wiki=db_wiki["wiki"])
+				for messages in message_list.values():
+					messages = stack_message_list(messages)
+					for message in messages:
+						await send_to_discord(message)
 				if discussion_feed:
 					DBHandler.add(db_wiki["wiki"], post["id"], True)
 				await asyncio.sleep(delay=2.0)  # hardcoded really doesn't need much more
