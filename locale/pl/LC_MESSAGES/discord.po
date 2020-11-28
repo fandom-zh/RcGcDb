@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RcGcDd\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-11-28 23:50+0100\n"
+"POT-Creation-Date: 2020-10-14 20:45+0200\n"
 "PO-Revision-Date: 2020-08-11 20:56+0000\n"
 "Last-Translator: Frisk The Evil Goat Overlord <piotrex43@protonmail.ch>\n"
 "Language-Team: Polish <https://weblate.frisk.space/projects/wiki-bot/rcgcdb/"
@@ -30,7 +30,7 @@ msgstr "wiki przestała być osiągalna"
 
 #: src/discord.py:28
 msgid "discussions disabled"
-msgstr ""
+msgstr "dyskusje zostały wyłączone"
 
 #: src/discord.py:29
 msgid "unknown error"

@@ -1,0 +1,41 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the RcGcDb package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: RcGcDb\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-10-14 21:05+0200\n"
+"PO-Revision-Date: 2020-11-24 22:18+0000\n"
+"Last-Translator: Tamara Carvallo <tamy_gygy@hotmail.com>\n"
+"Language-Team: Spanish <https://weblate.frisk.space/projects/wiki-bot/rcgcdb/"
+"es/>\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.2.1\n"
+
+#: src/discord.py:25
+msgid "wiki deleted"
+msgstr "wiki eliminado"
+
+#: src/discord.py:25 src/discord.py:26
+msgid "wiki inaccessible"
+msgstr "wiki no accesible"
+
+#: src/discord.py:26
+msgid "discussions disabled"
+msgstr "discusiones deshabilitadas"
+
+#: src/discord.py:27
+msgid "unknown error"
+msgstr "error desconocido"
+
+#: src/discord.py:28
+#, python-brace-format
+msgid "This recent changes webhook has been removed for `{reason}`!"
+msgstr "¡Este webhook de cambios recientes se ha eliminado por `{reason}`!"
