@@ -13,11 +13,12 @@ from src.config import settings
 from src.database import db_cursor, db_connection
 from src.exceptions import *
 from src.misc import get_paths, get_domain
-from src.msgqueue import messagequeue
+from src.msgqueue import messagequeue, send_to_discord
 from src.queue_handler import DBHandler
 from src.wiki import Wiki, process_cats, process_mwmsgs, essential_info, essential_feeds
-from src.discord import DiscordMessage, generic_msg_sender_exception_logger
+from src.discord import DiscordMessage, generic_msg_sender_exception_logger, stack_message_list
 from src.wiki_ratelimiter import RateLimiter
+
 
 logging.config.dictConfig(settings["logging"])
 logger = logging.getLogger("rcgcdb.bot")
@@ -281,14 +282,17 @@ async def scan_group(group: str):
 					await process_cats(change, local_wiki, mw_msgs, categorize_events)
 				else:  # If we broke from previous loop (too many changes) don't execute sending messages here
 					highest_rc = local_wiki.rc_active  # setup var for later use
+					message_list = defaultdict(list)
 					for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
 						if change["rcid"] > local_wiki.rc_active:
 							if highest_rc is None or change["rcid"] > highest_rc:  # make sure that the highest_rc is really highest rcid but do allow other entries with potentially lesser rcids come after without breaking the cycle
 								highest_rc = change["rcid"]
 							for target in targets.items():
 								try:
-									await essential_info(change, categorize_events, local_wiki, target, paths,
+									message = await essential_info(change, categorize_events, local_wiki, target, paths,
 									                     recent_changes_resp, rate_limiter)
+									if message is not None:
+										message_list[target[0]].append(message)
 								except asyncio.CancelledError:
 									raise
 								except:
@@ -298,6 +302,11 @@ async def scan_group(group: str):
 									else:
 										logger.exception("Exception on RC formatter")
 										await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in RC formatter", Wiki=queued_wiki.url, Change=str(change)[0:1000])
+					# Lets stack the messages
+					for messages in message_list.values():
+						messages = stack_message_list(messages)
+						for message in messages:
+							await send_to_discord(message)
 					if recent_changes:  # we don't have to test for highest_rc being null, because if there are no RC entries recent_changes will be an empty list which will result in false in here and DO NOT save the value
 						local_wiki.rc_active = highest_rc
 						DBHandler.add(queued_wiki.url, highest_rc)

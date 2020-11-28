@@ -205,7 +205,7 @@ async def process_mwmsgs(wiki_response: dict, local_wiki: Wiki, mw_msgs: dict):
 
 # db_wiki: webhook, wiki, lang, display, rcid, postid
 async def essential_info(change: dict, changed_categories, local_wiki: Wiki, target: tuple, paths: tuple, request: dict,
-                         rate_limiter: RateLimiter):
+                         rate_limiter: RateLimiter) -> src.discord.DiscordMessage:
 	"""Prepares essential information for both embed and compact message format."""
 	_ = langs[target[0][0]]["wiki"].gettext
 	changed_categories = changed_categories.get(change["revid"], None)
@@ -236,7 +236,7 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, tar
 			additional_data["tags"][tag["name"]] = (BeautifulSoup(tag["displayname"], "lxml")).get_text()
 		except KeyError:
 			additional_data["tags"][tag["name"]] = None  # Tags with no displ
-	await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, paths, rate_limiter, additional_data=additional_data)
+	return await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, paths, rate_limiter, additional_data=additional_data)
 
 
 async def essential_feeds(change: dict, comment_pages: dict, db_wiki: sqlite3.Row, target: tuple):

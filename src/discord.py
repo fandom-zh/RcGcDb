@@ -7,6 +7,7 @@ from src.database import db_cursor
 from src.i18n import langs
 from src.exceptions import EmbedListFull
 from asyncio import TimeoutError
+from math import ceil
 
 import aiohttp
 
@@ -44,11 +45,13 @@ class DiscordMessage:
 		self.webhook_object = dict(allowed_mentions={"parse": []})
 		self.webhook_url = webhook_url
 		self.wiki = wiki
+		self.length = 0
 
 		if message_type == "embed":
 			self._setup_embed()
 		elif message_type == "compact":
 			self.webhook_object["content"] = content
+			self.length = len(content)
 
 		self.event_type = event_type
 
@@ -60,6 +63,8 @@ class DiscordMessage:
 	def __setitem__(self, key, value):
 		"""Set item is used only in embeds."""
 		try:
+			if key in ('title', 'description'):
+				self.length += len(value) - len(self.embed.get(key, ""))
 			self.embed[key] = value
 		except NameError:
 			raise TypeError("Tried to assign a value when message type is plain message!")
@@ -76,6 +81,9 @@ class DiscordMessage:
 		self.embed = defaultdict(dict)
 		self.embed["color"] = None
 
+	def __len__(self):
+		return self.length
+
 	def finish_embed(self):
 		if self.embed["color"] is None:
 			if settings["appearance"]["embed"].get(self.event_type, {"color": None})["color"] is None:
@@ -91,7 +99,8 @@ class DiscordMessage:
 				raise EmbedListFull
 			self.webhook_object["embeds"].append(self.embed)
 
-	def set_author(self, name, url, icon_url=""):
+	def set_author(self, name: str, url: str, icon_url=""):
+		self.length += len(name)
 		self.embed["author"]["name"] = name
 		self.embed["author"]["url"] = url
 		self.embed["author"]["icon_url"] = icon_url
@@ -99,6 +108,7 @@ class DiscordMessage:
 	def add_field(self, name, value, inline=False):
 		if "fields" not in self.embed:
 			self.embed["fields"] = []
+		self.length += len(name) + len(value)
 		self.embed["fields"].append(dict(name=name, value=value, inline=inline))
 
 	def set_avatar(self, url):
@@ -106,6 +116,37 @@ class DiscordMessage:
 
 	def set_name(self, name):
 		self.webhook_object["username"] = name
+
+def stack_message_list(messages: list) -> list:
+	if len(messages) > 1:
+		if messages[0].message_type() == "embed":
+			# for i, msg in enumerate(messages):
+			# 	if not isinstance(msg, StackedDiscordMessage):
+			# 		break
+			# else:  # all messages in messages are stacked, exit this if
+			# 	i += 1
+			removed_msgs = 0
+			for group_index in range(ceil((len(messages)) / 10)):
+				message_group_index = group_index * 10 - removed_msgs
+				stackable = StackedDiscordMessage(messages[message_group_index])
+				for message in messages[message_group_index + 1:message_group_index + 10]:
+					try:
+						stackable.add_embed(message.embed)
+					except EmbedListFull:
+						break
+					messages.remove(message)
+					removed_msgs += 1
+				messages[message_group_index] = stackable
+		elif messages[0].message_type() == "compact":
+			message_index = 0
+			while len(messages) > message_index+1:
+				if (len(messages[message_index]) + len(messages[message_index+1])) < 2000:
+					messages[message_index].webhook_object["content"] = messages[message_index].webhook_object["content"] + "\n" + messages[message_index + 1].webhook_object["content"]
+					messages[message_index].length += (len(messages[message_index + 1]) + 1)
+					messages.remove(messages[message_index + 1])
+				else:
+					message_index += 1
+	return messages
 
 
 class StackedDiscordMessage(DiscordMessage):
@@ -119,6 +160,8 @@ class StackedDiscordMessage(DiscordMessage):
 			self.add_embed(message.embed)
 
 	def add_embed(self, embed):
+		if len(self) + len(embed) > 6000:
+			raise EmbedListFull
 		self._setup_embed()
 		self.embed = embed
 		self.finish_embed()

@@ -20,7 +20,7 @@ if 1 == 2: # additional translation strings in unreachable code
 	      _("autoreview"), _("autopatrol"), _("wiki_guardian"), ngettext("second", "seconds", 1), ngettext("minute", "minutes", 1), ngettext("hour", "hours", 1), ngettext("day", "days", 1), ngettext("week", "weeks", 1), ngettext("month", "months",1), ngettext("year", "years", 1), ngettext("millennium", "millennia", 1), ngettext("decade", "decades", 1), ngettext("century", "centuries", 1))
 
 async def compact_formatter(action, change, parsed_comment, categories, recent_changes, message_target, paths, rate_limiter,
-                            additional_data=None):
+                            additional_data=None) -> DiscordMessage:
 	"""Recent Changes compact formatter, part of RcGcDw"""
 	_ = langs[message_target[0][0]]["rc_formatters"].gettext
 	ngettext = langs[message_target[0][0]]["rc_formatters"].ngettext
@@ -361,10 +361,10 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 			return
 		else:
 			content = "❓ "+_("Unknown event `{event}` by [{author}]({author_url}), report it on the [support server](<{support}>).").format(event=action, author=author, author_url=author_url, support=settings["support"])
-	await send_to_discord(DiscordMessage("compact", action, message_target[1], content=content, wiki=WIKI_SCRIPT_PATH))
+	return DiscordMessage("compact", action, message_target[1], content=content, wiki=WIKI_SCRIPT_PATH)
 
 
-async def embed_formatter(action, change, parsed_comment, categories, recent_changes, message_target, paths, rate_limiter, additional_data=None):
+async def embed_formatter(action, change, parsed_comment, categories, recent_changes, message_target, paths, rate_limiter, additional_data=None) -> DiscordMessage:
 	"""Recent Changes embed formatter, part of RcGcDw"""
 	_ = langs[message_target[0][0]]["rc_formatters"].gettext
 	ngettext = langs[message_target[0][0]]["rc_formatters"].ngettext
@@ -805,4 +805,4 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		del_cat = (_("**Removed**: ") + ", ".join(list(categories["removed"])[0:16]) + ("" if len(categories["removed"])<=15 else _(" and {} more").format(len(categories["removed"])-15))) if categories["removed"] else ""
 		embed.add_field(_("Changed categories"), new_cat + del_cat)
 	embed.finish_embed()
-	await send_to_discord(embed)
+	return embed
