@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RcGcDd\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-10-14 20:45+0200\n"
+"POT-Creation-Date: 2020-11-28 23:50+0100\n"
 "PO-Revision-Date: 2020-08-11 20:56+0000\n"
 "Last-Translator: Eduaddad <duduaddad@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://weblate.frisk.space/projects/"
@@ -19,23 +19,23 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
 "X-Generator: Weblate 4.1.1\n"
 
-#: src/discord.py:25
+#: src/discord.py:27
 msgid "wiki deleted"
 msgstr "wiki excluída"
 
-#: src/discord.py:25 src/discord.py:26
+#: src/discord.py:27 src/discord.py:28
 msgid "wiki inaccessible"
 msgstr "wiki está inacessível"
 
-#: src/discord.py:26
+#: src/discord.py:28
 msgid "discussions disabled"
 msgstr ""
 
-#: src/discord.py:27
+#: src/discord.py:29
 msgid "unknown error"
 msgstr "erro desconhecido"
 
-#: src/discord.py:28
+#: src/discord.py:30
 #, python-brace-format
 msgid "This recent changes webhook has been removed for `{reason}`!"
 msgstr "Este webhook de mudanças recentes foi removido por `{reason}`!"

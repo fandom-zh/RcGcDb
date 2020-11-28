@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RcGcDb\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-10-14 21:05+0200\n"
+"POT-Creation-Date: 2020-11-29 00:18+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,10 +17,10 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/wiki.py:207
+#: src/wiki.py:220
 msgid "~~hidden~~"
 msgstr ""
 
-#: src/wiki.py:212
+#: src/wiki.py:225
 msgid "hidden"
 msgstr ""
