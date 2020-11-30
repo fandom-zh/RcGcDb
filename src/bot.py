@@ -443,6 +443,7 @@ async def discussion_handler():
 								else:
 									logger.exception("Exception on Feeds formatter")
 									await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in feed formatter", Post=str(post)[0:1000], Wiki=db_wiki["wiki"])
+				# Lets stack the messages
 				for messages in message_list.values():
 					messages = stack_message_list(messages)
 					for message in messages:
