@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-11-29 00:18+0100\n"
+"POT-Creation-Date: 2020-11-30 21:48+0100\n"
 "PO-Revision-Date: 2020-03-18 13:59+0100\n"
 "Last-Translator: BabylonAS\n"
 "Language-Team: \n"
@@ -19,11 +19,11 @@ msgstr ""
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "X-Generator: Poedit 2.3\n"
 
-#: src/wiki.py:220
+#: src/wiki.py:205
 msgid "~~hidden~~"
 msgstr "~~скрыто~~"
 
-#: src/wiki.py:225
+#: src/wiki.py:210
 msgid "hidden"
 msgstr "скрыто"
 

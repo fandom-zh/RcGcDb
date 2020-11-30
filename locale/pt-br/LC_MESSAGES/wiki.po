@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-11-28 23:50+0100\n"
+"POT-Creation-Date: 2020-11-30 21:48+0100\n"
 "PO-Revision-Date: 2020-11-27 13:07+0000\n"
 "Last-Translator: dr03ramos <dr03ramos@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://translate.wikibot.de/projects/"
@@ -19,11 +19,11 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
 "X-Generator: Weblate 4.2.1\n"
 
-#: src/wiki.py:220
+#: src/wiki.py:205
 msgid "~~hidden~~"
 msgstr "~~oculto~~"
 
-#: src/wiki.py:225
+#: src/wiki.py:210
 msgid "hidden"
 msgstr "oculto"
 

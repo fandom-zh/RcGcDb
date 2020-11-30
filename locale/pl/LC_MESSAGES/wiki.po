@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RcGcDw\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-11-28 23:50+0100\n"
+"POT-Creation-Date: 2020-11-30 21:48+0100\n"
 "PO-Revision-Date: 2020-08-13 19:07+0000\n"
 "Last-Translator: Rail <>\n"
 "Language-Team: Polish <https://weblate.frisk.space/projects/rcgcdw/rc/pl/>\n"
@@ -19,11 +19,11 @@ msgstr ""
 "X-Generator: Weblate 4.1.1\n"
 "Generated-By: pygettext.py 1.5\n"
 
-#: src/wiki.py:220
+#: src/wiki.py:205
 msgid "~~hidden~~"
 msgstr "~~ukryte~~"
 
-#: src/wiki.py:225
+#: src/wiki.py:210
 msgid "hidden"
 msgstr "ukryte"
 
