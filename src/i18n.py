@@ -2,7 +2,7 @@ import sys, logging, gettext
 from collections import defaultdict
 
 logger = logging.getLogger("rcgcdb.i18n")
-supported_languages = ('de', 'pl', 'pt-br')
+supported_languages = ('de', 'hi', 'pl', 'pt-br', 'ru')
 translated_files = ('wiki', 'misc', 'discord', 'rc_formatters', 'discussion_formatters')
 
 try:
