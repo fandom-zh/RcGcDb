@@ -387,6 +387,16 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 			author=author, author_url=author_url, wiki_name=change["logparams"].get("wiki", _("Unknown")),
 			comment=parsed_comment
 		)
+	elif action == "datadump/generate":
+		content = "🏅 " + _("[{author}]({author_url}) generated *{file}* dump{comment}").format(
+			author=author, author_url=author_url, file=change["logparams"]["filename"],
+			comment=parsed_comment
+		)
+	elif action == "datadump/delete":
+		content = "🏅 " + _("[{author}]({author_url}) deleted *{file}* dump{comment}").format(
+			author=author, author_url=author_url, file=change["logparams"]["filename"],
+			comment=parsed_comment
+		)
 	elif action == "pagetranslation/mark":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		if "?" in link:
@@ -952,35 +962,41 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		link = create_article_path("Special:Tags", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Deactivated a tag \"{tag}\"").format(tag=change["logparams"]["tag"])
 	elif action == "managewiki/settings":  # Miraheze's ManageWiki extension https://github.com/miraheze/ManageWiki
-		link = create_article_path("", WIKI_ARTICLE_PATH)
+		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		embed["title"] = _("Changed wiki settings")
 		if change["logparams"].get("changes", ""):
 			embed.add_field("Setting", change["logparams"].get("changes"))
 	elif action == "managewiki/delete":
 		embed["title"] = _("Deleted a \"{wiki}\" wiki").format(wiki=change["logparams"].get("wiki", _("Unknown")))
-		link = create_article_path("", WIKI_ARTICLE_PATH)
+		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 	elif action == "managewiki/lock":
 		embed["title"] = _("Locked a \"{wiki}\" wiki").format(wiki=change["logparams"].get("wiki", _("Unknown")))
-		link = create_article_path("", WIKI_ARTICLE_PATH)
+		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 	elif action == "managewiki/namespaces":
 		embed["title"] = _("Modified a \"{namespace_name}\" namespace").format(namespace_name=change["logparams"].get("namespace", _("Unknown")))
-		link = create_article_path("", WIKI_ARTICLE_PATH)
+		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		embed.add_field(_('Wiki'), change["logparams"].get("wiki", _("Unknown")))
 	elif action == "managewiki/namespaces-delete":
 		embed["title"] = _("Deleted a \"{namespace_name}\" namespace").format(
 				namespace_name=change["logparams"].get("namespace", _("Unknown")))
-		link = create_article_path("", WIKI_ARTICLE_PATH)
+		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		embed.add_field(_('Wiki'), change["logparams"].get("wiki", _("Unknown")))
 	elif action == "managewiki/rights":
 		group_name = change["title"].split("/permissions/", 1)[1]
 		embed["title"] = _("Modified \"{usergroup_name}\" usergroup").format(usergroup_name=group_name)
-		link = create_article_path("", WIKI_ARTICLE_PATH)
+		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 	elif action == "managewiki/undelete":
 		embed["title"] = _("Restored a \"{wiki}\" wiki").format(wiki=change["logparams"].get("wiki", _("Unknown")))
-		link = create_article_path("", WIKI_ARTICLE_PATH)
+		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 	elif action == "managewiki/unlock":
 		embed["title"] = _("Unlocked a \"{wiki}\" wiki").format(wiki=change["logparams"].get("wiki", _("Unknown")))
-		link = create_article_path("", WIKI_ARTICLE_PATH)
+		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
+	elif action == "datadump/generate":
+		embed["title"] = _("Generated {file} dump").format(file=change["logparams"]["filename"])
+		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
+	elif action == "datadump/delete":
+		embed["title"] = _("Deleted {file} dump").format(file=change["logparams"]["filename"])
+		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 	elif action == "pagetranslation/mark":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		if "?" in link:
