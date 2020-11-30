@@ -390,9 +390,9 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 	elif action == "pagetranslation/mark":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		if "?" in link:
-			link = link + "&oldid=" + change["logparams"]["revision"]
+			link = link + "&oldid={}".format(change["logparams"]["revision"])
 		else:
-			link = link + "?oldid=" + change["logparams"]["revision"]
+			link = link + "?oldid={}".format(change["logparams"]["revision"])
 		link = link_formatter(link)
 		content = "🌐 " + _("[{author}]({author_url}) marked [{article}]({article_url}) for translation{comment}").format(
 			author=author, author_url=author_url,
@@ -507,9 +507,9 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 	elif action == "translationreview/message":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		if "?" in link:
-			link = link + "&oldid=" + change["logparams"]["revision"]
+			link = link + "&oldid={}".format(change["logparams"]["revision"])
 		else:
-			link = link + "?oldid=" + change["logparams"]["revision"]
+			link = link + "?oldid={}".format(change["logparams"]["revision"])
 		link = link_formatter(link)
 		content = "🌐 " + _("[{author}]({author_url}) reviewed translation [{article}]({article_url}){comment}").format(
 			author=author, author_url=author_url,
@@ -984,9 +984,9 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 	elif action == "pagetranslation/mark":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		if "?" in link:
-			link = link + "&oldid=" + change["logparams"]["revision"]
+			link = link + "&oldid={}".format(change["logparams"]["revision"])
 		else:
-			link = link + "?oldid=" + change["logparams"]["revision"]
+			link = link + "?oldid={}".format(change["logparams"]["revision"])
 		embed["title"] = _("Marked \"{article}\" for translation").format(article=change["title"])
 	elif action == "pagetranslation/unmark":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
@@ -1034,9 +1034,9 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 	elif action == "translationreview/message":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		if "?" in link:
-			link = link + "&oldid=" + change["logparams"]["revision"]
+			link = link + "&oldid={}".format(change["logparams"]["revision"])
 		else:
-			link = link + "?oldid=" + change["logparams"]["revision"]
+			link = link + "?oldid={}".format(change["logparams"]["revision"])
 		embed["title"] = _("Reviewed translation \"{article}\"").format(article=change["title"])
 	elif action == "translationreview/group":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
