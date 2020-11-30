@@ -450,8 +450,8 @@ async def discussion_handler():
 						await send_to_discord(message)
 				if discussion_feed:
 					DBHandler.add(db_wiki["wiki"], post["id"], True)
-					DBHandler.update_db()
 				await asyncio.sleep(delay=2.0)  # hardcoded really doesn't need much more
+			DBHandler.update_db()
 	except asyncio.CancelledError:
 		pass
 	except:
