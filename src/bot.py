@@ -357,12 +357,12 @@ async def discussion_handler():
 	try:
 		while True:
 			fetch_all = db_cursor.execute(
-				"SELECT wiki, rcid, postid FROM rcgcdw WHERE postid != '-1' OR postid IS NULL")
+				"SELECT wiki, rcid, postid FROM rcgcdw WHERE postid != '-1' OR postid IS NULL GROUP BY wiki")
 			for db_wiki in fetch_all.fetchall():
 				header = settings["header"]
 				header["Accept"] = "application/hal+json"
 				async with aiohttp.ClientSession(headers=header,
-													timeout=aiohttp.ClientTimeout(6.0)) as session:
+				                                 timeout=aiohttp.ClientTimeout(6.0)) as session:
 					try:
 						local_wiki = all_wikis[db_wiki["wiki"]]  # set a reference to a wiki object from memory
 					except KeyError:
@@ -379,7 +379,7 @@ async def discussion_handler():
 							if error == "site doesn't exists":  # Discussions disabled
 								if db_wiki["rcid"] != -1:  # RC feed is disabled
 									db_cursor.execute("UPDATE rcgcdw SET postid = ? WHERE wiki = ?",
-														("-1", db_wiki["wiki"],))
+									                  ("-1", db_wiki["wiki"],))
 								else:
 									await local_wiki.remove(db_wiki["wiki"], 1000)
 								DBHandler.update_db()
@@ -450,8 +450,8 @@ async def discussion_handler():
 						await send_to_discord(message)
 				if discussion_feed:
 					DBHandler.add(db_wiki["wiki"], post["id"], True)
+					DBHandler.update_db()
 				await asyncio.sleep(delay=2.0)  # hardcoded really doesn't need much more
-			DBHandler.update_db()
 	except asyncio.CancelledError:
 		pass
 	except:

@@ -25,6 +25,7 @@ class MessageQueue:
 
 	def add_message(self, message):
 		self._queue.append(message)
+		logger.debug("Adding new message")
 	#
 	# def replace_message(self, to_replace: DiscordMessage, with_replace: StackedDiscordMessage):
 	# 	try:
@@ -56,7 +57,10 @@ class MessageQueue:
 			if status[0] < 2:
 				logger.debug("Sending message succeeded")
 				try:
-					self._queue.remove(msg)
+					if len(msg.webhook_url) > 1:
+						msg.webhook_url.remove(webhook_url)
+					else:
+						self._queue.remove(msg)
 				except ValueError:
 					#  For the love of god I cannot figure why can it return ValueError: list.remove(x): x not in list, however considering it's not in the list, somehow, anymore we can just not care about it I guess
 					pass
@@ -92,7 +96,8 @@ messagequeue = MessageQueue()
 
 
 async def send_to_discord(msg):
-	webhooks = msg.webhook_url.copy()
-	for webhook in webhooks:
-		msg.webhook_url = [webhook]
-		messagequeue.add_message(msg)
+	messagequeue.add_message(msg)
+	# webhooks = msg.webhook_url.copy()
+	# for webhook in webhooks:
+	# 	msg.webhook_url = [webhook]  # Doing it just so it doesn't store reference but value
+	# 	messagequeue.add_message(msg.copy())

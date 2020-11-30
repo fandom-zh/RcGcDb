@@ -8,7 +8,6 @@ import datetime
 from src.config import settings
 from src.misc import link_formatter, create_article_path, parse_link, profile_field_name, ContentParser
 from src.discord import DiscordMessage
-from src.msgqueue import send_to_discord
 from src.i18n import langs
 
 from bs4 import BeautifulSoup
@@ -211,14 +210,14 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 				                                                                author_url=author_url,
 				                                                                target=target_user,
 				                                                                target_url=link,
-				                                                                field=profile_field_name(change["logparams"]['4:section'], False),
+				                                                                field=profile_field_name(change["logparams"]['4:section'], False, message_target[0][0]),
 				                                                                desc=BeautifulSoup(change["parsedcomment"], "lxml").get_text())
 		else:
 			content = "📌 " + _("[{author}]({author_url}) edited the {field} on [their own]({target_url}) profile. *({desc})*").format(
 				author=author,
 				author_url=author_url,
 				target_url=link,
-				field=profile_field_name(change["logparams"]['4:section'], False),
+				field=profile_field_name(change["logparams"]['4:section'], False, message_target[0][0]),
 				desc=BeautifulSoup(change["parsedcomment"], "lxml").get_text())
 	elif action in ("rights/rights", "rights/autopromote"):
 		link = link_formatter(create_article_path("User:{user}".format(user=change["title"].split(":")[1]), WIKI_ARTICLE_PATH))

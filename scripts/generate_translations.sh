@@ -6,7 +6,7 @@ xgettext -L Python --package-name=RcGcDb -o locale/templates/discord.pot src/dis
 xgettext -L Python --package-name=RcGcDb -o locale/templates/misc.pot src/misc.py
 
 declare -a StringArray=("discussion_formatters" "rc_formatters" "discord" "wiki" "misc")
-for language in de pl pt-br
+for language in de pl pt-br hi ru uk
 do
   for file in ${StringArray[@]}; do
     msgmerge -U locale/$language/LC_MESSAGES/$file.po locale/templates/$file.pot
