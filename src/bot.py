@@ -451,6 +451,7 @@ async def discussion_handler():
 				if discussion_feed:
 					DBHandler.add(db_wiki["wiki"], post["id"], True)
 				await asyncio.sleep(delay=2.0)  # hardcoded really doesn't need much more
+			await asyncio.sleep(delay=1.0) # Avoid lock on no wikis
 			DBHandler.update_db()
 	except asyncio.CancelledError:
 		pass

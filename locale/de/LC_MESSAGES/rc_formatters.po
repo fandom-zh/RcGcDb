@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-11-30 21:48+0100\n"
-"PO-Revision-Date: 2020-11-28 22:58+0000\n"
+"POT-Creation-Date: 2020-12-05 12:41+0100\n"
+"PO-Revision-Date: 2020-12-01 12:29+0000\n"
 "Last-Translator: MarkusRost <sukramxro@gmail.com>\n"
 "Language-Team: German <https://translate.wikibot.de/projects/rcgcdw/"
 "rc_formatters/de/>\n"
@@ -118,7 +118,7 @@ msgstr[0] "Jahrhundert"
 msgstr[1] "Jahrhunderte"
 
 #: src/formatters/rc.py:51
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) edited [{article}]({edit_link}){comment} {bold}"
 "({sign}{edit_size}){bold}"
@@ -127,7 +127,7 @@ msgstr ""
 "({sign}{edit_size}){bold}"
 
 #: src/formatters/rc.py:53
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) created [{article}]({edit_link}){comment} {bold}"
 "({sign}{edit_size}){bold}"
@@ -322,38 +322,38 @@ msgstr ""
 "dauerhaft"
 
 #: src/formatters/rc.py:201
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) deleted a [comment]({comment}) on {target}'s profile"
 msgstr ""
-"[{author}]({author_url}) bearbeitete einen [Kommentar]({comment}) auf dem "
-"Profil von {target}"
+"[{author}]({author_url}) löschte einen [Kommentar]({comment}) auf dem Profil "
+"von {target}"
 
 #: src/formatters/rc.py:203
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) deleted a [comment]({comment}) on their own profile"
 msgstr ""
-"[{author}]({author_url}) bearbeitete einen [Kommentar]({comment}) auf dem "
+"[{author}]({author_url}) löschte einen [Kommentar]({comment}) auf dem "
 "eigenen Profil"
 
 #: src/formatters/rc.py:209
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) edited the {field} on [{target}]({target_url})'s "
 "profile. *({desc})*"
 msgstr ""
 "[{author}]({author_url}) bearbeitete den {field} auf dem Profil von "
-"{target}. *({desc})*"
+"[{target}]({target_url}). *({desc})*"
 
 #: src/formatters/rc.py:216
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) edited the {field} on [their own]({target_url}) "
 "profile. *({desc})*"
 msgstr ""
-"[{author}]({author_url}) bearbeitete den {field} auf dem eigenen Profil. "
-"*({desc})*"
+"[{author}]({author_url}) bearbeitete den {field} auf dem [eigenen Profil]"
+"({target_url}). *({desc})*"
 
 #: src/formatters/rc.py:231 src/formatters/rc.py:233 src/formatters/rc.py:832
 #: src/formatters/rc.py:834
@@ -694,166 +694,167 @@ msgid "[{author}]({author_url}) deleted *{file}* dump{comment}"
 msgstr "[{author}]({author_url}) löschte das Wiki *{wiki_name}*{comment}"
 
 #: src/formatters/rc.py:407
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) marked [{article}]({article_url}) for "
 "translation{comment}"
 msgstr ""
-"[{author}]({author_url}) stellte [{article}]({article_url}) wieder "
-"her{comment}"
+"[{author}]({author_url}) markierte [{article}]({article_url}) zur "
+"Übersetzung{comment}"
 
 #: src/formatters/rc.py:414
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) removed [{article}]({article_url}) from the "
 "translation system{comment}"
 msgstr ""
-"[{author}]({author_url}) importierte [{article}]({article_url}) mit einer "
-"Version{comment}"
+"[{author}]({author_url}) entfernte [{article}]({article_url}) aus dem "
+"Übersetzungssystem{comment}"
 
 #: src/formatters/rc.py:421
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) completed moving translation pages from *{article}* "
 "to [{target}]({target_url}){comment}"
 msgstr ""
-"[{author}]({author_url}) verschob die Schutzeinstellungen von {redirect}"
-"*{article}* nach [{target}]({target_url}){comment}"
+"[{author}]({author_url}) schloss die Umbenennung der übersetzbaren Seite von "
+"*{article}* nach [{target}]({target_url}) ab{comment}"
 
 #: src/formatters/rc.py:429
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) encountered a problem while moving [{article}]"
 "({article_url}) to [{target}]({target_url}){comment}"
 msgstr ""
-"[{author}]({author_url}) vereinigte Versionen von [{article}]({article_url}) "
-"in [{dest}]({dest_url}){comment}"
+"[{author}]({author_url}) hatte ein Problem beim Verschieben der Seite von "
+"[{article}]({article_url}) nach [{target}]({target_url}){comment}"
 
 #: src/formatters/rc.py:437
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) completed deletion of translatable page [{article}]"
 "({article_url}){comment}"
 msgstr ""
-"[{author}]({author_url}) entfernte den Schutz von [{article}]({article_url})"
-"{comment}"
+"[{author}]({author_url}) schloss die Löschung der übersetzbaren Seite "
+"[{article}]({article_url}) ab{comment}"
 
 #: src/formatters/rc.py:445
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) failed to delete [{article}]({article_url}) which "
 "belongs to translatable page [{target}]({target_url}){comment}"
 msgstr ""
-"[{author}]({author_url}) importierte [{article}]({article_url}) mit einer "
-"Version von [{source}]({source_url}){comment}"
+"[{author}]({author_url}) konnte die Seite [{article}]({article_url}) nicht "
+"löschen, die zur übersetzbaren Seite [{target}]({target_url}) gehört{comment}"
 
 #: src/formatters/rc.py:453
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) completed deletion of translation page [{article}]"
 "({article_url}){comment}"
 msgstr ""
-"[{author}]({author_url}) änderte die Sichtbarkeit einer Version von "
-"[{article}]({article_url}){comment}"
+"[{author}]({author_url}) schloss die Löschung der Übersetzungsseite "
+"[{article}]({article_url}) ab{comment}"
 
 #: src/formatters/rc.py:461
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) failed to delete [{article}]({article_url}) which "
 "belongs to translation page [{target}]({target_url}){comment}"
 msgstr ""
-"[{author}]({author_url}) importierte [{article}]({article_url}) mit einer "
-"Version von [{source}]({source_url}){comment}"
+"[{author}]({author_url}) konnte die Seite [{article}]({article_url}) nicht "
+"löschen, die zur Übersetzungsseite [{target}]({target_url}) gehört{comment}"
 
 #: src/formatters/rc.py:469
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) encouraged translation of [{article}]({article_url})"
 "{comment}"
 msgstr ""
-"[{author}]({author_url}) entfernte den Schutz von [{article}]({article_url})"
-"{comment}"
+"[{author}]({author_url}) empfahl die Übersetzung der Seite [{article}]"
+"({article_url}){comment}"
 
 #: src/formatters/rc.py:476
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) discouraged translation of [{article}]"
 "({article_url}){comment}"
 msgstr ""
-"[{author}]({author_url}) stellte [{article}]({article_url}) wieder "
-"her{comment}"
+"[{author}]({author_url}) riet von der Übersetzung der Seite [{article}]"
+"({article_url}) ab{comment}"
 
 #: src/formatters/rc.py:486
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) limited languages for [{article}]({article_url}) to "
 "`{languages}`{comment}"
 msgstr ""
-"[{author}]({author_url}) änderte den Schutzstatus von [{article}]"
-"({article_url}) {settings}{comment}"
+"[{author}]({author_url}) begrenzte die Sprachen für [{article}]"
+"({article_url}) auf `{languages}`{comment}"
 
 #: src/formatters/rc.py:492
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) set the priority languages for [{article}]"
 "({article_url}) to `{languages}`{comment}"
 msgstr ""
-"[{author}]({author_url}) änderte den Schutzstatus von [{article}]"
-"({article_url}) {settings}{comment}"
+"[{author}]({author_url}) legte die priorisierten Sprachen für [{article}]"
+"({article_url}) auf `{languages}` fest{comment}"
 
 #: src/formatters/rc.py:498
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) removed priority languages from [{article}]"
 "({article_url}){comment}"
 msgstr ""
-"[{author}]({author_url}) entfernte den Schutz von [{article}]({article_url})"
-"{comment}"
+"[{author}]({author_url}) entfernte die priorisierten Sprachen von [{article}]"
+"({article_url}){comment}"
 
 #: src/formatters/rc.py:505
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) added translatable page [{article}]({article_url}) "
 "to aggregate group \"{group}\"{comment}"
 msgstr ""
-"[{author}]({author_url}) änderte das Inhaltsmodell der Seite [{article}]"
-"({article_url}) von {old} zu {new}{comment}"
+"[{author}]({author_url}) fügte die übersetzbare Seite [{article}]"
+"({article_url}) zur zusammenfassenden Gruppe „{group}“ hinzu{comment}"
 
 #: src/formatters/rc.py:512
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) removed translatable page [{article}]"
 "({article_url}) from aggregate group \"{group}\"{comment}"
 msgstr ""
-"[{author}]({author_url}) entfernte den Schutz von [{article}]({article_url})"
-"{comment}"
+"[{author}]({author_url}) entfernte die übersetzbare Seite [{article}]"
+"({article_url}) von der zusammenfassenden Gruppe „{group}“{comment}"
 
 #: src/formatters/rc.py:524
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) reviewed translation [{article}]({article_url})"
 "{comment}"
 msgstr ""
-"[{author}]({author_url}) stellte [{article}]({article_url}) wieder "
-"her{comment}"
+"[{author}]({author_url}) überprüfte die Übersetzung [{article}]"
+"({article_url}){comment}"
 
 #: src/formatters/rc.py:532
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) changed the state of `{language}` translations of "
 "[{article}]({article_url}) from `{old_state}` to `{new_state}`{comment}"
 msgstr ""
-"[{author}]({author_url}) änderte das Inhaltsmodell der Seite [{article}]"
-"({article_url}) von {old} zu {new}{comment}"
+"[{author}]({author_url}) änderte den Status der Übersetzungen in der Sprache "
+"`{language}` der Seite [{article}]({article_url}) von `{old_state}` in "
+"`{new_state}`{comment}"
 
 #: src/formatters/rc.py:539
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) changed the state of `{language}` translations of "
 "[{article}]({article_url}) to `{new_state}`{comment}"
 msgstr ""
-"[{author}]({author_url}) änderte das Inhaltsmodell der Seite [{article}]"
-"({article_url}) von {old} zu {new}{comment}"
+"[{author}]({author_url}) änderte den Status der Übersetzungen in der Sprache "
+"`{language}` der Seite [{article}]({article_url}) in `{new_state}`{comment}"
 
 #: src/formatters/rc.py:548
 #, python-brace-format
@@ -1066,9 +1067,8 @@ msgid "Purged a comment on {target}'s profile"
 msgstr "Löschte ein Kommentar auf dem Profil von {target} dauerhaft"
 
 #: src/formatters/rc.py:803
-#, fuzzy
 msgid "Purged a comment on their own profile"
-msgstr "Bearbeitete ein Kommentar auf dem eigenen Profil"
+msgstr "Löschte ein Kommentar auf dem eigenen Profil dauerhaft"
 
 #: src/formatters/rc.py:811
 #, python-brace-format
@@ -1076,9 +1076,8 @@ msgid "Deleted a comment on {target}'s profile"
 msgstr "Löschte ein Kommentar auf dem Profil von {target}"
 
 #: src/formatters/rc.py:813
-#, fuzzy
 msgid "Deleted a comment on their own profile"
-msgstr "Bearbeitete ein Kommentar auf dem eigenen Profil"
+msgstr "Löschte ein Kommentar auf dem eigenen Profil"
 
 #: src/formatters/rc.py:817
 #, python-brace-format
@@ -1317,27 +1316,29 @@ msgstr "Löschte {article}"
 #: src/formatters/rc.py:1006
 #, python-brace-format
 msgid "Marked \"{article}\" for translation"
-msgstr ""
+msgstr "Markierte „{article}“ zum Übersetzen"
 
 #: src/formatters/rc.py:1009
 #, python-brace-format
 msgid "Removed \"{article}\" from the translation system"
-msgstr ""
+msgstr "Entfernte „{article}“ aus dem Übersetzungssystem"
 
 #: src/formatters/rc.py:1012
 #, python-brace-format
 msgid "Completed moving translation pages from \"{article}\" to \"{target}\""
 msgstr ""
+"Schloss die Verschiebung der Übersetzungsseiten von „{article}“ nach "
+"„{target}“ ab"
 
 #: src/formatters/rc.py:1015
 #, python-brace-format
 msgid "Encountered a problem while moving \"{article}\" to \"{target}\""
-msgstr ""
+msgstr "Hatte ein Problem beim Verschieben von „{article}“ nach „{target}“"
 
 #: src/formatters/rc.py:1018
 #, python-brace-format
 msgid "Completed deletion of translatable page \"{article}\""
-msgstr ""
+msgstr "Schloss die Löschung der übersetzbaren Seite „{article}“ ab"
 
 #: src/formatters/rc.py:1021
 #, python-brace-format
@@ -1345,71 +1346,79 @@ msgid ""
 "Failed to delete \"{article}\" which belongs to translatable page "
 "\"{target}\""
 msgstr ""
+"Konnte „{article}“ nicht löschen, die zur übersetzbaren Seite „{target}“ "
+"gehört"
 
 #: src/formatters/rc.py:1024
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Completed deletion of translation page \"{article}\""
-msgstr "Änderte die Sichtbarkeit einer Versionen von {article} "
+msgstr "Schloss die Löschung der Übersetzungsseite „{article}“ ab"
 
 #: src/formatters/rc.py:1027
 #, python-brace-format
 msgid ""
 "Failed to delete \"{article}\" which belongs to translation page \"{target}\""
 msgstr ""
+"Konnte „{article}“ nicht löschen, die zur Übersetzungsseite „{target}“ gehört"
 
 #: src/formatters/rc.py:1030
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Encouraged translation of \"{article}\""
-msgstr "Entfernte den Schutz von {article}"
+msgstr "Empfahl die Übersetzung von „{article}“"
 
 #: src/formatters/rc.py:1033
 #, python-brace-format
 msgid "Discouraged translation of \"{article}\""
-msgstr ""
+msgstr "Riet von der Übersetzung von „{article}“ ab"
 
 #: src/formatters/rc.py:1039
 #, python-brace-format
 msgid "Limited languages for \"{article}\" to `{languages}`"
-msgstr ""
+msgstr "Begrenzte die Sprachen für „{article}“ auf `{languages}`"
 
 #: src/formatters/rc.py:1041
 #, python-brace-format
 msgid "Priority languages for \"{article}\" set to `{languages}`"
 msgstr ""
+"Legte die priorisierten Sprachen für „{article}“ auf `{languages}` fest"
 
 #: src/formatters/rc.py:1043
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Removed priority languages from \"{article}\""
-msgstr "Entfernte den Schutz von {article}"
+msgstr "Entfernte die priorisierten Sprachen von „{article}“"
 
 #: src/formatters/rc.py:1046
 #, python-brace-format
 msgid "Added translatable page \"{article}\" to aggregate group \"{group}\""
 msgstr ""
+"Fügte die übersetzbare Seite „{article}“ zur zusammenfassenden Gruppe "
+"„{group}“ hinzu"
 
 #: src/formatters/rc.py:1049
 #, python-brace-format
 msgid ""
 "Removed translatable page \"{article}\" from aggregate group \"{group}\""
 msgstr ""
+"Entfernte die übersetzbare Seite „{article}“ von der zusammenfassenden "
+"Gruppe „{group}“"
 
 #: src/formatters/rc.py:1056
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Reviewed translation \"{article}\""
-msgstr "Entfernte den Schutz von {article}"
+msgstr "Überprüfte die Übersetzung „{article}“"
 
 #: src/formatters/rc.py:1059
 #, python-brace-format
 msgid "Changed the state of `{language}` translations of \"{article}\""
-msgstr ""
+msgstr "Änderte den Status der Übersetzungen in `{language}` für „{article}“"
 
 #: src/formatters/rc.py:1061
 msgid "Old state"
-msgstr ""
+msgstr "Alter Status"
 
 #: src/formatters/rc.py:1062
 msgid "New state"
-msgstr ""
+msgstr "Neuer Status"
 
 #: src/formatters/rc.py:1066
 #, python-brace-format
