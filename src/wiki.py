@@ -54,7 +54,7 @@ class Wiki:
 	@staticmethod
 	async def fetch_feeds(wiki, session: aiohttp.ClientSession) -> aiohttp.ClientResponse:
 		url_path = "{wiki}wikia.php".format(wiki=wiki)
-		params = {"controller": "DiscussionPost", "method": "getPosts", "sortDirection": "descending", "sortKey": "creation_date", "limit": 20}
+		params = {"controller": "DiscussionPost", "method": "getPosts", "includeCounters": "false", "sortDirection": "descending", "sortKey": "creation_date", "limit": 20}
 		try:
 			response = await session.get(url_path, params=params)
 			response.raise_for_status()
