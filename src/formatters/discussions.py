@@ -48,6 +48,7 @@ async def feeds_compact_formatter(post_type, post, message_target, wiki, article
 	elif post_type == "ARTICLE_COMMENT":
 		if article_page is None:
 			article_page = {"title": _("unknown"), "fullUrl": wiki}  # No page known
+		article_page["fullUrl"] = article_page["fullUrl"].replace(")", "\)").replace("()", "\(")
 		if not post["isReply"]:
 			message = "🗒️ "+_("[{author}]({author_url}) created a [comment](<{url}?commentId={commentId}>) on [{article}](<{url}>)").format(author=author, author_url=author_url, url=article_page["fullUrl"], article=article_page["title"], commentId=post["threadId"])
 		else:
