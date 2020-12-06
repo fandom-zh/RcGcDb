@@ -86,12 +86,14 @@ class DiscordMessage:
 
 	def finish_embed(self):
 		if self.embed["color"] is None:
-			if settings["appearance"]["embed"].get(self.event_type, {"color": None})["color"] is None:
+			if settings["event_appearance"].get(self.event_type, {"color": None})["color"] is None:
 				self.embed["color"] = random.randrange(1, 16777215)
 			else:
-				self.embed["color"] = settings["appearance"]["embed"][self.event_type]["color"]
+				self.embed["color"] = settings["event_appearance"][self.event_type]["color"]
 		else:
 			self.embed["color"] = math.floor(self.embed["color"])
+		if not self.embed["author"]["icon_url"] and settings["event_appearance"].get(self.event_type, {"icon": None})["icon"]:
+			self.embed["author"]["icon_url"] = settings["event_appearance"][self.event_type]["icon"]
 		if "embeds" not in self.webhook_object:
 			self.webhook_object["embeds"] = [self.embed]
 		else:

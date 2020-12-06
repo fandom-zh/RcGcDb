@@ -24,42 +24,56 @@ async def feeds_compact_formatter(post_type, post, message_target, wiki, article
 	else:
 		author = post["createdBy"]["name"]
 		author_url = link_formatter(create_article_path("User:{user}".format(user=author), wiki + "wiki/$1"))
+	event_type = "discussion"
 	if post_type == "FORUM":
 		if not post["isReply"]:
 			thread_funnel = post.get("funnel")
 			msg_text = _("[{author}]({author_url}) created [{title}](<{url}f/p/{threadId}>) in {forumName}")
 			if thread_funnel == "POLL":
+				event_type = "discussion/forum/poll"
 				msg_text = _("[{author}]({author_url}) created a poll [{title}](<{url}f/p/{threadId}>) in {forumName}")
 			elif thread_funnel == "QUIZ":
+				event_type = "discussion/forum/quiz"
 				msg_text = _("[{author}]({author_url}) created a quiz [{title}](<{url}f/p/{threadId}>) in {forumName}")
-			elif thread_funnel != "TEXT":
+			elif thread_funnel == "TEXT":
+				event_type = "discussion/forum/post"
+			else:
 				logger.warning("No entry for {event} with params: {params}".format(event=thread_funnel, params=post))
-			message = "📝 "+msg_text.format(author=author, author_url=author_url, title=post["title"], url=wiki, threadId=post["threadId"], forumName=post["forumName"])
+				event_type = "unknown"
+			message = msg_text.format(author=author, author_url=author_url, title=post["title"], url=wiki, threadId=post["threadId"], forumName=post["forumName"])
 		else:
-			message = "📝 "+_("[{author}]({author_url}) created a [reply](<{url}f/p/{threadId}/r/{postId}>) to [{title}](<{url}f/p/{threadId}>) in {forumName}").format(author=author, author_url=author_url, url=wiki, threadId=post["threadId"], postId=post["id"], title=post["_embedded"]["thread"][0]["title"], forumName=post["forumName"])
+			event_type = "discussion/forum/reply"
+			message = _("[{author}]({author_url}) created a [reply](<{url}f/p/{threadId}/r/{postId}>) to [{title}](<{url}f/p/{threadId}>) in {forumName}").format(author=author, author_url=author_url, url=wiki, threadId=post["threadId"], postId=post["id"], title=post["_embedded"]["thread"][0]["title"], forumName=post["forumName"])
 	elif post_type == "WALL":
 		user_wall = _("unknown")  # Fail safe
 		if post["forumName"].endswith(' Message Wall'):
 			user_wall = post["forumName"][:-13]
 		if not post["isReply"]:
-			message = "✉️ "+_("[{author}]({author_url}) created [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(author=author, author_url=author_url, title=post["title"], url=wiki, user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"])
+			event_type = "discussion/wall/post"
+			message = _("[{author}]({author_url}) created [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(author=author, author_url=author_url, title=post["title"], url=wiki, user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"])
 		else:
-			message = "📩 "+_("[{author}]({author_url}) created a [reply](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}#{replyId}>) to [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(author=author, author_url=author_url, url=wiki, title=post["_embedded"]["thread"][0]["title"], user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"], replyId=post["id"])
+			event_type = "discussion/wall/reply"
+			message = _("[{author}]({author_url}) created a [reply](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}#{replyId}>) to [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(author=author, author_url=author_url, url=wiki, title=post["_embedded"]["thread"][0]["title"], user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"], replyId=post["id"])
 	elif post_type == "ARTICLE_COMMENT":
 		if article_page is None:
 			article_page = {"title": _("unknown"), "fullUrl": wiki}  # No page known
 		article_page["fullUrl"] = article_page["fullUrl"].replace(")", "\)").replace("()", "\(")
 		if not post["isReply"]:
-			message = "🗒️ "+_("[{author}]({author_url}) created a [comment](<{url}?commentId={commentId}>) on [{article}](<{url}>)").format(author=author, author_url=author_url, url=article_page["fullUrl"], article=article_page["title"], commentId=post["threadId"])
+			event_type = "discussion/comment/post"
+			message = _("[{author}]({author_url}) created a [comment](<{url}?commentId={commentId}>) on [{article}](<{url}>)").format(author=author, author_url=author_url, url=article_page["fullUrl"], article=article_page["title"], commentId=post["threadId"])
 		else:
-			message = "🗒️ "+_("[{author}]({author_url}) created a [reply](<{url}?commentId={commentId}&replyId={replyId}>) to a [comment](<{url}?commentId={commentId}>) on [{article}](<{url}>)").format(author=author, author_url=author_url, url=article_page["fullUrl"], article=article_page["title"], commentId=post["threadId"], replyId=post["id"])
+			event_type = "discussion/comment/reply"
+			message = _("[{author}]({author_url}) created a [reply](<{url}?commentId={commentId}&replyId={replyId}>) to a [comment](<{url}?commentId={commentId}>) on [{article}](<{url}>)").format(author=author, author_url=author_url, url=article_page["fullUrl"], article=article_page["title"], commentId=post["threadId"], replyId=post["id"])
 	else:
 		logger.warning("No entry for {event} with params: {params}".format(event=post_type, params=post))
 		if not settings["support"]:
 			return
 		else:
-			message = "❓ "+_("Unknown event `{event}` by [{author}]({author_url}), report it on the [support server](<{support}>).").format(event=post_type, author=author, author_url=author_url, support=settings["support"])
-	return DiscordMessage("compact", "discussion", message_target[1], content=message, wiki=wiki)
+			message = _("Unknown event `{event}` by [{author}]({author_url}), report it on the [support server](<{support}>).").format(event=post_type, author=author, author_url=author_url, support=settings["support"])
+			event_type = "unknown"
+	if settings["event_appearance"].get(event_type, {"emoji": None})["emoji"]:
+		message = settings["event_appearance"][event_type]["emoji"] + " " + message
+	return DiscordMessage("compact", event_type, message_target[1], content=message, wiki=wiki)
 
 
 async def feeds_embed_formatter(post_type, post, message_target, wiki, article_page=None) -> DiscordMessage:
@@ -113,6 +127,7 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 				embed.event_type = "discussion/forum/post"
 			else:
 				logger.warning("No entry for {event} with params: {params}".format(event=thread_funnel, params=post))
+				embed.event_type = "unknown"
 			if message_target[0][1] > 1 and post["_embedded"]["thread"][0]["tags"]:
 				tag_displayname = []
 				for tag in post["_embedded"]["thread"][0]["tags"]:
@@ -152,7 +167,7 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 	else:
 		logger.warning("No entry for {event} with params: {params}".format(event=post_type, params=post))
 		embed["title"] = _("Unknown event `{event}`").format(event=post_type)
-		embed["color"] = 0
+		embed.event_type = "unknown"
 		if settings["support"]:
 			change_params = "[```json\n{params}\n```]({support})".format(params=json.dumps(post, indent=2), support=settings["support"])
 			if len(change_params) > 1000:
