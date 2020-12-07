@@ -67,7 +67,7 @@ msgid ""
 "{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/"
 "Message_Wall:{user_wall}>)"
 msgstr ""
-"[{author}]({author_url}) erstellte [{title}](<{wikiurl}wiki/Message_Wall:"
+"[{author}]({author_url}) erstellte [{title}](<{url}wiki/Message_Wall:"
 "{user_wall}?threadId={threadId}>) auf der [Nachrichtenseite von {user}]"
 "(<{url}wiki/Message_Wall:{user_wall}>)"
 
