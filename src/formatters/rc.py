@@ -575,8 +575,6 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		else:
 			content = _("Unknown event `{event}` by [{author}]({author_url}), report it on the [support server](<{support}>).").format(event=action, author=author, author_url=author_url, support=settings["support"])
 			action = "unknown"
-	if settings["event_appearance"].get(action, {"emoji": None})["emoji"]:
-		content = settings["event_appearance"][action]["emoji"] + " " + content
 	return DiscordMessage("compact", action, message_target[1], content=content, wiki=WIKI_SCRIPT_PATH)
 
 

@@ -71,8 +71,6 @@ async def feeds_compact_formatter(post_type, post, message_target, wiki, article
 		else:
 			message = _("Unknown event `{event}` by [{author}]({author_url}), report it on the [support server](<{support}>).").format(event=post_type, author=author, author_url=author_url, support=settings["support"])
 			event_type = "unknown"
-	if settings["event_appearance"].get(event_type, {"emoji": None})["emoji"]:
-		message = settings["event_appearance"][event_type]["emoji"] + " " + message
 	return DiscordMessage("compact", event_type, message_target[1], content=message, wiki=wiki)
 
 

@@ -50,6 +50,8 @@ class DiscordMessage:
 		if message_type == "embed":
 			self._setup_embed()
 		elif message_type == "compact":
+			if settings["event_appearance"].get(event_type, {"emoji": None})["emoji"]:
+				content = settings["event_appearance"][event_type]["emoji"] + " " + content
 			self.webhook_object["content"] = content
 			self.length = len(content)
 

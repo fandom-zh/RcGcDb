@@ -456,12 +456,17 @@
             "color": 1,
             "emoji": "👁️"
         },
-            "discussion/forum/post": {
+        "discussion": {
             "icon": "https://static.wikia.nocookie.net/663e53f7-1e79-4906-95a7-2c1df4ebbada",
             "color": 54998,
             "emoji": "📝"
         },
-            "discussion/forum/reply": {
+        "discussion/forum/post": {
+            "icon": "https://static.wikia.nocookie.net/663e53f7-1e79-4906-95a7-2c1df4ebbada",
+            "color": 54998,
+            "emoji": "📝"
+        },
+        "discussion/forum/reply": {
             "icon": "https://static.wikia.nocookie.net/663e53f7-1e79-4906-95a7-2c1df4ebbada",
             "color": 54998,
             "emoji": "📝"
@@ -500,6 +505,16 @@
             "icon": "",
             "color": 0,
             "emoji": "❓"
+        },
+        "webhook/remove": {
+            "icon": "https://raw.githubusercontent.com/Markus-Rost/discord-wiki-bot/master/dashboard/src/icon.png",
+            "color": 0,
+            "emoji": "<:wikibot:588723255972593672>"
+        },
+        "bot/exception": {
+            "icon": "https://raw.githubusercontent.com/Markus-Rost/discord-wiki-bot/master/dashboard/src/icon.png",
+            "color": 0,
+            "emoji": "<:wikibot:588723255972593672>"
         }
     }
 }
