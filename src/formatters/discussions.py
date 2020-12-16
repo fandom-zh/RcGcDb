@@ -15,15 +15,20 @@ async def feeds_compact_formatter(post_type, post, message_target, wiki, article
 	"""Compact formatter for Fandom discussions."""
 	_ = langs[message_target[0][0]]["discussion_formatters"].gettext
 	message = None
+	author = _("unknown")  # Fail safe
 	if post_type == "FORUM":
-		author = post["createdBy"]["name"]
+		if post["createdBy"]["name"]:
+			author = post["createdBy"]["name"]
 		author_url = "<{url}f/u/{creatorId}>".format(url=wiki, creatorId=post["creatorId"])
 	elif post["creatorIp"]:
 		author = post["creatorIp"][1:]
 		author_url = "<{url}wiki/Special:Contributions{creatorIp}>".format(url=wiki, creatorIp=post["creatorIp"])
 	else:
-		author = post["createdBy"]["name"]
-		author_url = link_formatter(create_article_path("User:{user}".format(user=author), wiki + "wiki/$1"))
+		if post["createdBy"]["name"]:
+			author = post["createdBy"]["name"]
+			author_url = link_formatter(create_article_path("User:{user}".format(user=author), wiki + "wiki/$1"))
+		else:
+			author_url = "<{url}f/u/{creatorId}>".format(url=wiki, creatorId=post["creatorId"])
 	event_type = "discussion"
 	if post_type == "FORUM":
 		if not post["isReply"]:
@@ -78,12 +83,20 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 	"""Embed formatter for Fandom discussions."""
 	_ = langs[message_target[0][0]]["discussion_formatters"].gettext
 	embed = DiscordMessage("embed", "discussion", message_target[1], wiki=wiki)
+	author = _("unknown")  # Fail safe
 	if post_type == "FORUM":
-		embed.set_author(post["createdBy"]["name"], "{url}f/u/{creatorId}".format(url=wiki, creatorId=post["creatorId"]), icon_url=post["createdBy"]["avatarUrl"])
+		if post["createdBy"]["name"]:
+			author = post["createdBy"]["name"]
+		embed.set_author(author, "{url}f/u/{creatorId}".format(url=wiki, creatorId=post["creatorId"]), icon_url=post["createdBy"]["avatarUrl"])
 	elif post["creatorIp"]:
-		embed.set_author(post["creatorIp"][1:], "{url}wiki/Special:Contributions{creatorIp}".format(url=wiki, creatorIp=post["creatorIp"]))
+		author = post["creatorIp"][1:]
+		embed.set_author(author, "{url}wiki/Special:Contributions{creatorIp}".format(url=wiki, creatorIp=post["creatorIp"]))
 	else:
-		embed.set_author(post["createdBy"]["name"], "{url}wiki/User:{creator}".format(url=wiki, creator=post["createdBy"]["name"].replace(" ", "_")), icon_url=post["createdBy"]["avatarUrl"])
+		if post["createdBy"]["name"]:
+			author = post["createdBy"]["name"]
+			embed.set_author(author, "{url}wiki/User:{creator}".format(url=wiki, creator=author.replace(" ", "_")), icon_url=post["createdBy"]["avatarUrl"])
+		else:
+			embed.set_author(author, "{url}f/u/{creatorId}".format(url=wiki, creatorId=post["creatorId"]), icon_url=post["createdBy"]["avatarUrl"])
 	if message_target[0][1] == 3:
 		if post.get("jsonModel") is not None:
 			npost = DiscussionsFromHellParser(post, wiki)
