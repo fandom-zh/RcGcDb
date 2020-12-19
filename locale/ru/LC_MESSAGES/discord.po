@@ -8,9 +8,9 @@ msgstr ""
 "Project-Id-Version: RcGcDb\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-11-29 00:10+0100\n"
-"PO-Revision-Date: 2020-10-19 14:45+0000\n"
+"PO-Revision-Date: 2020-12-21 18:20+0000\n"
 "Last-Translator: Philo04 <philipp2012lopu@mail.ru>\n"
-"Language-Team: Russian <https://weblate.frisk.space/projects/wiki-bot/rcgcdb/"
+"Language-Team: Russian <https://translate.wikibot.de/projects/rcgcdw/rcgcdb/"
 "ru/>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -30,7 +30,7 @@ msgstr "вики недоступна"
 
 #: src/discord.py:28
 msgid "discussions disabled"
-msgstr ""
+msgstr "обсуждения отключены"
 
 #: src/discord.py:29
 msgid "unknown error"
