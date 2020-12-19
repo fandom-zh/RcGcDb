@@ -321,6 +321,9 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) changed the content model of the page [{article}]({article_url}) from {old} to {new}{comment}").format(author=author, author_url=author_url, article=change["title"], article_url=link, old=change["logparams"]["oldmodel"],
 		                                                                         new=change["logparams"]["newmodel"], comment=parsed_comment)
+	elif action == "contentmodel/new":
+		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
+		content = _("[{author}]({author_url}) created the page [{article}]({article_url}) using a non-default content model {new}{comment}").format(author=author, author_url=author_url, article=change["title"], article_url=link, new=change["logparams"]["newmodel"], comment=parsed_comment)
 	elif action == "sprite/sprite":
 		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) edited the sprite for [{article}]({article_url})").format(author=author, author_url=author_url, article=change["title"], article_url=link)
@@ -933,6 +936,10 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		parsed_comment = _("Model changed from {old} to {new}: {reason}").format(old=change["logparams"]["oldmodel"],
 		                                                                         new=change["logparams"]["newmodel"],
 		                                                                         reason=parsed_comment)
+	elif action == "contentmodel/new":
+		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
+		embed["title"] = _("Created the page {article} using a non-default content model").format(article=change["title"])
+		parsed_comment = _("Created with model {new}: {reason}").format(new=change["logparams"]["newmodel"], reason=parsed_comment)
 	elif action == "sprite/sprite":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		embed["title"] = _("Edited the sprite for {article}").format(article=change["title"])
