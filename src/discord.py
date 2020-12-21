@@ -96,6 +96,9 @@ class DiscordMessage:
 			self.embed["color"] = math.floor(self.embed["color"])
 		if not self.embed["author"].get("icon_url", None) and settings["event_appearance"].get(self.event_type, {"icon": None})["icon"]:
 			self.embed["author"]["icon_url"] = settings["event_appearance"][self.event_type]["icon"]
+		self.finish_embed_message()
+
+	def finish_embed_message(self):
 		if "embeds" not in self.webhook_object:
 			self.webhook_object["embeds"] = [self.embed]
 		else:
@@ -158,6 +161,7 @@ class StackedDiscordMessage(DiscordMessage):
 		if isinstance(discordmessage, StackedDiscordMessage):
 			raise TypeError("Cannot transform StackedDiscordMessage")
 		self.__dict__ = discordmessage.__dict__
+		self.event_type = "StackedDiscordMessage"
 
 	def stack(self, messages: list):
 		for message in messages:
@@ -168,7 +172,7 @@ class StackedDiscordMessage(DiscordMessage):
 			raise EmbedListFull
 		self._setup_embed()
 		self.embed = embed
-		self.finish_embed()
+		self.finish_embed_message()
 
 
 # Monitoring webhook functions
