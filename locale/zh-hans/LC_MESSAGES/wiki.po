@@ -1,0 +1,39 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the RcGcDw package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: RcGcDw\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-12-21 15:31+0100\n"
+"PO-Revision-Date: 2020-12-06 14:17+0000\n"
+"Last-Translator: lakejason0 <sunliyuan200402@outlook.com>\n"
+"Language-Team: Chinese (Simplified) <https://translate.wikibot.de/projects/"
+"rcgcdw/rc/zh_Hans/>\n"
+"Language: zh_Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.2.1\n"
+
+#: src/wiki.py:205
+msgid "~~hidden~~"
+msgstr "~~隐藏~~"
+
+#: src/wiki.py:210
+msgid "hidden"
+msgstr "隐藏"
+
+#, python-brace-format
+#~ msgid "{wiki} seems to be down or unreachable."
+#~ msgstr "{wiki} 似乎无法访问。"
+
+#~ msgid "Connection status"
+#~ msgstr "连接状态"
+
+#, python-brace-format
+#~ msgid "Connection to {wiki} seems to be stable now."
+#~ msgstr "与 {wiki} 的连接现在应该很稳定。"
