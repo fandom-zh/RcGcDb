@@ -107,7 +107,7 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 		else:  # Fallback when model is not available
 			embed["description"] = post.get("rawContent", "")
 	if post["forumName"] is not None:
-		embed["footer"]["text"] = post["forumName"].replace("_", " ")
+		embed.set_footer(post["forumName"].replace("_", " "))
 	embed["timestamp"] = datetime.datetime.fromtimestamp(post["creationDate"]["epochSecond"], tz=datetime.timezone.utc).isoformat()
 	if post_type == "FORUM":
 		if not post["isReply"]:
@@ -174,7 +174,7 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 			embed.event_type = "discussion/comment/reply"
 			embed["url"] = "{url}?commentId={commentId}&replyId={replyId}".format(url=article_page["fullUrl"], commentId=post["threadId"], replyId=post["id"])
 			embed["title"] = _("Replied to a comment on {article}").format(article=article_page["title"])
-		embed["footer"]["text"] = article_page["title"]
+		embed.set_footer(article_page["title"])
 	else:
 		logger.warning("No entry for {event} with params: {params}".format(event=post_type, params=post))
 		embed["title"] = _("Unknown event `{event}`").format(event=post_type)

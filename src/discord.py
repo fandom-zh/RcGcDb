@@ -106,11 +106,16 @@ class DiscordMessage:
 				raise EmbedListFull
 			self.webhook_object["embeds"].append(self.embed)
 
-	def set_author(self, name: str, url: str, icon_url=""):
+	def set_author(self, name: str, url="", icon_url=""):
 		self.length += len(name)
 		self.embed["author"]["name"] = name
 		self.embed["author"]["url"] = url
 		self.embed["author"]["icon_url"] = icon_url
+
+	def set_footer(self, text: str, icon_url=""):
+		self.length += len(text)
+		self.embed["footer"]["text"] = text
+		self.embed["footer"]["icon_url"] = icon_url
 
 	def add_field(self, name, value, inline=False):
 		if "fields" not in self.embed:
@@ -138,7 +143,7 @@ def stack_message_list(messages: list) -> list:
 				stackable = StackedDiscordMessage(messages[message_group_index])
 				for message in messages[message_group_index + 1:message_group_index + 10]:
 					try:
-						stackable.add_embed(message.embed)
+						stackable.add_embed(message)
 					except EmbedListFull:
 						break
 					messages.remove(message)
@@ -165,13 +170,14 @@ class StackedDiscordMessage(DiscordMessage):
 
 	def stack(self, messages: list):
 		for message in messages:
-			self.add_embed(message.embed)
+			self.add_embed(message)
 
-	def add_embed(self, embed):
-		if len(self) + len(embed) > 6000:
+	def add_embed(self, message):
+		if len(self) + len(message) > 6000:
 			raise EmbedListFull
+		self.length += len(message)
 		self._setup_embed()
-		self.embed = embed
+		self.embed = message.embed
 		self.finish_embed_message()
 
 

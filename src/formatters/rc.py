@@ -1101,8 +1101,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		link = create_article_path("User:"+change["logparams"]["newuser"], WIKI_ARTICLE_PATH)
 	elif action == "suppressed":
 		link = create_article_path("", WIKI_ARTICLE_PATH)
-		embed["title"] = _("Action has been hidden by administration")
-		embed["author"]["name"] = _("Unknown")
+		embed.set_author(_("Unknown"))
 	else:
 		logger.warning("No entry for {event} with params: {params}".format(event=action, params=change))
 		link = create_article_path("Special:RecentChanges", WIKI_ARTICLE_PATH)
