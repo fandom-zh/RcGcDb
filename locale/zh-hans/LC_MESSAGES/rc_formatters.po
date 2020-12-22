@@ -110,22 +110,22 @@ msgid_plural "centuries"
 msgstr[0] ""
 
 #: src/formatters/rc.py:51
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) edited [{article}]({edit_link}){comment} {bold}"
 "({sign}{edit_size}){bold}"
 msgstr ""
-"[{author}]({author_url}) 编辑了 [{article}]({edit_link}){comment}（{sign}"
-"{edit_size}）"
+"[{author}]({author_url}) 编辑了 [{article}]({edit_link}){comment}{bold}"
+"（{sign}{edit_size}）{bold}"
 
 #: src/formatters/rc.py:53
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) created [{article}]({edit_link}){comment} {bold}"
 "({sign}{edit_size}){bold}"
 msgstr ""
-"[{author}]({author_url}) 创建了 [{article}]({edit_link}){comment}（{sign}"
-"{edit_size}）"
+"[{author}]({author_url}) 创建了 [{article}]({edit_link}){comment}{bold}"
+"（{sign}{edit_size}）{bold}"
 
 #: src/formatters/rc.py:56
 #, python-brace-format
