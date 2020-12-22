@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-12-21 19:17+0100\n"
-"PO-Revision-Date: 2020-12-22 00:13+0000\n"
+"POT-Creation-Date: 2020-12-21 15:31+0100\n"
+"PO-Revision-Date: 2020-11-27 13:07+0000\n"
 "Last-Translator: Philo04 <philipp2012lopu@mail.ru>\n"
 "Language-Team: Russian <https://translate.wikibot.de/projects/rcgcdw/"
 "discussion_formatters-1/ru/>\n"
@@ -18,13 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Weblate 4.2.1\n"
 
-#: src/formatters/discussions.py:18 src/formatters/discussions.py:53
-#: src/formatters/discussions.py:64 src/formatters/discussions.py:86
-#: src/formatters/discussions.py:155 src/formatters/discussions.py:168
-msgid "unknown"
-msgstr "неизвестно"
-
-#: src/formatters/discussions.py:36
+#: src/formatters/discussions.py:31
 #, python-brace-format
 msgid ""
 "[{author}]({author_url}) created [{title}](<{url}f/p/{threadId}>) in "
@@ -33,7 +27,7 @@ msgstr ""
 "[{author}]({author_url}) создал(а) [{title}](<{url}f/p/{threadId}>) в "
 "{forumName}"
 
-#: src/formatters/discussions.py:39
+#: src/formatters/discussions.py:34
 #, python-brace-format
 msgid ""
 "[{author}]({author_url}) created a poll [{title}](<{url}f/p/{threadId}>) in "
@@ -42,34 +36,34 @@ msgstr ""
 "[{author}]({author_url}) создал(а) опрос [{title}](<{url}f/p/{threadId}>) в "
 "{forumName}"
 
-#: src/formatters/discussions.py:42
+#: src/formatters/discussions.py:37
 #, python-brace-format
 msgid ""
 "[{author}]({author_url}) created a quiz [{title}](<{url}f/p/{threadId}>) in "
 "{forumName}"
 msgstr ""
 
-#: src/formatters/discussions.py:51
+#: src/formatters/discussions.py:46
 #, python-brace-format
 msgid ""
 "[{author}]({author_url}) created a [reply](<{url}f/p/{threadId}/r/{postId}>) "
 "to [{title}](<{url}f/p/{threadId}>) in {forumName}"
 msgstr ""
-"[{author}]({author_url}) [ответил](<{url}f/p/{threadId}/r/{postId}>) на "
-"[{title}](<{url}f/p/{threadId}>) в {forumName}"
 
-#: src/formatters/discussions.py:58
+#: src/formatters/discussions.py:48 src/formatters/discussions.py:59
+#: src/formatters/discussions.py:144 src/formatters/discussions.py:157
+msgid "unknown"
+msgstr ""
+
+#: src/formatters/discussions.py:53
 #, python-brace-format
 msgid ""
 "[{author}]({author_url}) created [{title}](<{url}wiki/Message_Wall:"
 "{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/"
 "Message_Wall:{user_wall}>)"
 msgstr ""
-"[{author}]({author_url}) создал [{title}](<{url}wiki/Message_Wall:"
-"{user_wall}?threadId={threadId}>) на [Стене Обсуждения Участника {user}]"
-"(<{url}wiki/Message_Wall:{user_wall}>)"
 
-#: src/formatters/discussions.py:61
+#: src/formatters/discussions.py:56
 #, python-brace-format
 msgid ""
 "[{author}]({author_url}) created a [reply](<{url}wiki/Message_Wall:"
@@ -77,105 +71,94 @@ msgid ""
 "Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall]"
 "(<{url}wiki/Message_Wall:{user_wall}>)"
 msgstr ""
-"[{author}]({author_url}) [ответил](<{url}wiki/Message_Wall:{user_wall}?"
-"threadId={threadId}#{replyId}>) на [{title}](<{url}wiki/Message_Wall:"
-"{user_wall}?threadId={threadId}>) на [Стене Обсуждения Участника {user}]"
-"(<{url}wiki/Message_Wall:{user_wall}>)"
 
-#: src/formatters/discussions.py:68
+#: src/formatters/discussions.py:63
 #, python-brace-format
 msgid ""
 "[{author}]({author_url}) created a [comment](<{url}?commentId={commentId}>) "
 "on [{article}](<{url}>)"
 msgstr ""
-"[{author}]({author_url}) оставил [комментарий](<{url}?commentId={commentId}"
-">) к [{article}](<{url}>)"
 
-#: src/formatters/discussions.py:71
+#: src/formatters/discussions.py:66
 #, python-brace-format
 msgid ""
 "[{author}]({author_url}) created a [reply](<{url}?commentId={commentId}"
 "&replyId={replyId}>) to a [comment](<{url}?commentId={commentId}>) on "
 "[{article}](<{url}>)"
 msgstr ""
-"[{author}]({author_url}) [ответил](<{url}?commentId={commentId}"
-"&replyId={replyId}>) на [комментарий](<{url}?commentId={commentId}>) к "
-"[{article}](<{url}>)"
 
-#: src/formatters/discussions.py:77
+#: src/formatters/discussions.py:72
 #, python-brace-format
 msgid ""
 "Unknown event `{event}` by [{author}]({author_url}), report it on the "
 "[support server](<{support}>)."
 msgstr ""
-"Неизвестное событие `{event}`, выполненное участником [{author}]"
-"({author_url}), сообщите об этом на [сервере поддержки](<{support}>)."
 
-#: src/formatters/discussions.py:115
+#: src/formatters/discussions.py:104
 #, python-brace-format
 msgid "Created \"{title}\""
-msgstr "Создал \"{title}\""
+msgstr ""
 
-#: src/formatters/discussions.py:119
+#: src/formatters/discussions.py:108
 #, python-brace-format
 msgid "Created a poll \"{title}\""
-msgstr "Создал опрос \"{title}\""
+msgstr ""
 
-#: src/formatters/discussions.py:126
+#: src/formatters/discussions.py:115
 msgid "Option {}"
 msgstr ""
 
-#: src/formatters/discussions.py:127
+#: src/formatters/discussions.py:116
 #, python-brace-format
 msgid "__[View image]({image_url})__"
-msgstr "__[Просмотреть изображение]({image_url})__"
+msgstr ""
 
-#: src/formatters/discussions.py:131
+#: src/formatters/discussions.py:120
 #, python-brace-format
 msgid "Created a quiz \"{title}\""
 msgstr ""
 
-#: src/formatters/discussions.py:147 src/formatters/discussions.py:149
+#: src/formatters/discussions.py:136 src/formatters/discussions.py:138
 msgid "Tags"
-msgstr "Метки"
+msgstr ""
 
-#: src/formatters/discussions.py:147
+#: src/formatters/discussions.py:136
 msgid "{} tags"
-msgstr "{} меток"
+msgstr ""
 
-#: src/formatters/discussions.py:152
+#: src/formatters/discussions.py:141
 #, python-brace-format
 msgid "Replied to \"{title}\""
-msgstr "Ответил на \"{title}\""
+msgstr ""
+
+#: src/formatters/discussions.py:150
+#, python-brace-format
+msgid "Created \"{title}\" on {user}'s Message Wall"
+msgstr ""
+
+#: src/formatters/discussions.py:154
+#, python-brace-format
+msgid "Replied to \"{title}\" on {user}'s Message Wall"
+msgstr ""
 
 #: src/formatters/discussions.py:161
 #, python-brace-format
-msgid "Created \"{title}\" on {user}'s Message Wall"
-msgstr "Создал \"{title}\" на Стене Обсуждения Участника {user}"
+msgid "Commented on {article}"
+msgstr ""
 
 #: src/formatters/discussions.py:165
 #, python-brace-format
-msgid "Replied to \"{title}\" on {user}'s Message Wall"
-msgstr "Ответил на \"{title}\" на Стене Обсуждения Участника {user}"
-
-#: src/formatters/discussions.py:172
-#, python-brace-format
-msgid "Commented on {article}"
-msgstr "Оставил Комментарий к статье {article}"
-
-#: src/formatters/discussions.py:176
-#, python-brace-format
 msgid "Replied to a comment on {article}"
-msgstr "Ответил на Комментарий к статье {article}"
+msgstr ""
 
-#: src/formatters/discussions.py:180
+#: src/formatters/discussions.py:169
 #, python-brace-format
 msgid "Unknown event `{event}`"
-msgstr "Неизвестное событие `{event}`"
+msgstr ""
 
-#: src/formatters/discussions.py:185 src/formatters/discussions.py:187
+#: src/formatters/discussions.py:174 src/formatters/discussions.py:176
 msgid "Report this on the support server"
-msgstr "Сообщите об этом на сервере поддержки"
+msgstr ""
 
 #~ msgid "Unregistered user"
 #~ msgstr "Незарегистрированный пользователь"
