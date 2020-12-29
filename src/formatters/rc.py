@@ -243,7 +243,7 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) protected [{article}]({article_url}) with the following settings: {settings}{comment}").format(author=author, author_url=author_url,
 		                                                                                                                                     article=change["title"], article_url=link,
-		                                                                                                                                     settings=change["logparams"]["description"]+(_(" [cascading]") if "cascade" in change["logparams"] else ""),
+		                                                                                                                                     settings=change["logparams"].get("description", "")+(_(" [cascading]") if "cascade" in change["logparams"] else ""),
 		                                                                                                                                     comment=parsed_comment)
 	elif action == "protect/modify":
 		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
@@ -251,7 +251,7 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 			"[{author}]({author_url}) modified protection settings of [{article}]({article_url}) to: {settings}{comment}").format(
 			author=author, author_url=author_url,
 			article=change["title"], article_url=link,
-			settings=change["logparams"]["description"] + (_(" [cascading]") if "cascade" in change["logparams"] else ""),
+			settings=change["logparams"].get("description", "") + (_(" [cascading]") if "cascade" in change["logparams"] else ""),
 			comment=parsed_comment)
 	elif action == "protect/unprotect":
 		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
@@ -855,13 +855,13 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 	elif action == "protect/protect":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		embed["title"] = _("Protected {target}").format(target=change["title"])
-		parsed_comment = "{settings}{cascade} | {reason}".format(settings=change["logparams"]["description"],
+		parsed_comment = "{settings}{cascade} | {reason}".format(settings=change["logparams"].get("description", ""),
 		                                                         cascade=_(" [cascading]") if "cascade" in change["logparams"] else "",
 		                                                         reason=parsed_comment)
 	elif action == "protect/modify":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		embed["title"] = _("Changed protection level for {article}").format(article=change["title"])
-		parsed_comment = "{settings}{cascade} | {reason}".format(settings=change["logparams"]["description"],
+		parsed_comment = "{settings}{cascade} | {reason}".format(settings=change["logparams"].get("description", ""),
 		                                                         cascade=_(" [cascading]") if "cascade" in change["logparams"] else "",
 		                                                         reason=parsed_comment)
 	elif action == "protect/unprotect":
