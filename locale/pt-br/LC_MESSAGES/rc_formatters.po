@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-12-23 00:37+0100\n"
-"PO-Revision-Date: 2020-12-13 14:30+0000\n"
-"Last-Translator: dr03ramos <dr03ramos@gmail.com>\n"
+"POT-Creation-Date: 2020-12-30 14:30+0100\n"
+"PO-Revision-Date: 2020-12-29 15:21+0000\n"
+"Last-Translator: Eduaddad <duduaddad@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://translate.wikibot.de/projects/"
 "rcgcdw/rc_formatters/pt-br/>\n"
 "Language: pt-br\n"
@@ -554,13 +554,13 @@ msgstr ""
 "({article_url}) de {old} para {new}{comment}"
 
 #: src/formatters/rc.py:326
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) created the page [{article}]({article_url}) using a "
 "non-default content model {new}{comment}"
 msgstr ""
-"[{author}]({author_url}) mudou o modelo de conteúdo da página [{article}]"
-"({article_url}) de {old} para {new}{comment}"
+"[{author}]({author_url}) criou a página [{article}]({article_url}) usando um "
+"modelo de conteúdo não padrão {new}{comment}"
 
 #: src/formatters/rc.py:329
 #, python-brace-format
@@ -640,7 +640,7 @@ msgstr "[{author}]({author_url}) excluiu uma wiki *{wiki_name}*{comment}"
 #: src/formatters/rc.py:994 src/formatters/rc.py:997 src/formatters/rc.py:999
 #: src/formatters/rc.py:1002 src/formatters/rc.py:1004
 #: src/formatters/rc.py:1010 src/formatters/rc.py:1013
-#: src/formatters/rc.py:1105
+#: src/formatters/rc.py:1104
 msgid "Unknown"
 msgstr "Desconhecido"
 
@@ -684,14 +684,14 @@ msgid "[{author}]({author_url}) unlocked a wiki *{wiki_name}*{comment}"
 msgstr "[{author}]({author_url}) destravou a wiki *{wiki_name}*{comment}"
 
 #: src/formatters/rc.py:394
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "[{author}]({author_url}) generated *{file}* dump{comment}"
-msgstr "[{author}]({author_url}) excluiu uma wiki *{wiki_name}*{comment}"
+msgstr "[{author}]({author_url}) gerou *{file}* de despejo{comment}"
 
 #: src/formatters/rc.py:399
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "[{author}]({author_url}) deleted *{file}* dump{comment}"
-msgstr "[{author}]({author_url}) excluiu uma wiki *{wiki_name}*{comment}"
+msgstr "[{author}]({author_url}) excluiu *{file}* de despejo{comment}"
 
 #: src/formatters/rc.py:410
 #, python-brace-format
@@ -858,16 +858,16 @@ msgstr ""
 #: src/formatters/rc.py:551 src/formatters/rc.py:554 src/formatters/rc.py:1088
 #: src/formatters/rc.py:1091
 msgid "(default)"
-msgstr ""
+msgstr "(padrão)"
 
 #: src/formatters/rc.py:555
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) changed the language of [{article}]({article_url}) "
 "from {old_lang} to {new_lang}{comment}"
 msgstr ""
-"[{author}]({author_url}) mudou o modelo de conteúdo da página [{article}]"
-"({article_url}) de {old} para {new}{comment}"
+"[{author}]({author_url}) mudou o idioma do [{article}]({article_url}) de "
+"{old_lang} para {new_lang}{comment}"
 
 #: src/formatters/rc.py:564
 #, python-brace-format
@@ -1219,12 +1219,12 @@ msgstr "Modelo alterado de {old} para {new}: {reason}"
 #: src/formatters/rc.py:941
 #, python-brace-format
 msgid "Created the page {article} using a non-default content model"
-msgstr ""
+msgstr "Criou a página {article} usando um modelo de conteúdo não padrão"
 
 #: src/formatters/rc.py:942
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Created with model {new}: {reason}"
-msgstr "Modelo alterado de {old} para {new}: {reason}"
+msgstr "Criado com modelo {new}: {reason}"
 
 #: src/formatters/rc.py:945
 #, python-brace-format
@@ -1327,12 +1327,12 @@ msgstr "Destravou a wiki \"{wiki}\""
 #: src/formatters/rc.py:1016
 #, python-brace-format
 msgid "Generated {file} dump"
-msgstr ""
+msgstr "Gerou despejo de {file}"
 
 #: src/formatters/rc.py:1019
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Deleted {file} dump"
-msgstr "Excluiu a página {article}"
+msgstr "Excluiu {file} de despejo"
 
 #: src/formatters/rc.py:1027
 #, python-brace-format
@@ -1438,17 +1438,17 @@ msgid "New state"
 msgstr "Novo estado"
 
 #: src/formatters/rc.py:1092
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Changed the language of \"{article}\""
-msgstr "Mudou o estado de traduções de`{language}` de \"{article}\""
+msgstr "Mudou o idioma de \"{article}\""
 
 #: src/formatters/rc.py:1093
 msgid "Old language"
-msgstr ""
+msgstr "Idioma antigo"
 
 #: src/formatters/rc.py:1094
 msgid "New language"
-msgstr ""
+msgstr "Novo idioma"
 
 #: src/formatters/rc.py:1098
 #, python-brace-format
@@ -1464,40 +1464,36 @@ msgstr[1] ""
 msgid "Renamed user \"{old_name}\" to \"{new_name}\""
 msgstr "Renomeou usuário \"{old_name}\" para \"{new_name}\""
 
-#: src/formatters/rc.py:1104
-msgid "Action has been hidden by administration"
-msgstr "A ação foi oculta pela administração"
-
-#: src/formatters/rc.py:1109
+#: src/formatters/rc.py:1108
 #, python-brace-format
 msgid "Unknown event `{event}`"
 msgstr "Evento desconhecido `{event}`"
 
-#: src/formatters/rc.py:1114 src/formatters/rc.py:1116
+#: src/formatters/rc.py:1113 src/formatters/rc.py:1115
 msgid "Report this on the support server"
 msgstr "Reportar isso no servidor de suporte"
 
-#: src/formatters/rc.py:1131
+#: src/formatters/rc.py:1130
 msgid "Tags"
 msgstr "Etiquetas"
 
-#: src/formatters/rc.py:1136
+#: src/formatters/rc.py:1135
 msgid "**Added**: "
 msgstr "**Adicionado**: "
 
-#: src/formatters/rc.py:1136
+#: src/formatters/rc.py:1135
 msgid " and {} more\n"
 msgstr " e {} mais\n"
 
-#: src/formatters/rc.py:1137
+#: src/formatters/rc.py:1136
 msgid "**Removed**: "
 msgstr "**Removida**: "
 
-#: src/formatters/rc.py:1137
+#: src/formatters/rc.py:1136
 msgid " and {} more"
 msgstr " e {} mais"
 
-#: src/formatters/rc.py:1138
+#: src/formatters/rc.py:1137
 msgid "Changed categories"
 msgstr "Mudanças de categorias"
 
@@ -1553,6 +1549,9 @@ msgstr[1] "Horas mais ativas"
 
 msgid "Day score"
 msgstr "Pontuação do dia"
+
+#~ msgid "Action has been hidden by administration"
+#~ msgstr "A ação foi oculta pela administração"
 
 #~ msgid "their own profile"
 #~ msgstr "seu próprio perfil"

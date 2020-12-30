@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-12-23 00:37+0100\n"
-"PO-Revision-Date: 2020-12-13 14:30+0000\n"
+"POT-Creation-Date: 2020-12-30 14:30+0100\n"
+"PO-Revision-Date: 2020-12-29 15:21+0000\n"
 "Last-Translator: MarkusRost <sukramxro@gmail.com>\n"
 "Language-Team: German <https://translate.wikibot.de/projects/rcgcdw/"
 "rc_formatters/de/>\n"
@@ -558,13 +558,13 @@ msgstr ""
 "({article_url}) von {old} zu {new}{comment}"
 
 #: src/formatters/rc.py:326
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) created the page [{article}]({article_url}) using a "
 "non-default content model {new}{comment}"
 msgstr ""
-"[{author}]({author_url}) änderte das Inhaltsmodell der Seite [{article}]"
-"({article_url}) von {old} zu {new}{comment}"
+"[{author}]({author_url}) erstellte die Seite [{article}]({article_url}) mit "
+"dem Inhaltsmodell {new}{comment}"
 
 #: src/formatters/rc.py:329
 #, python-brace-format
@@ -648,7 +648,7 @@ msgstr "[{author}]({author_url}) löschte das Wiki *{wiki_name}*{comment}"
 #: src/formatters/rc.py:994 src/formatters/rc.py:997 src/formatters/rc.py:999
 #: src/formatters/rc.py:1002 src/formatters/rc.py:1004
 #: src/formatters/rc.py:1010 src/formatters/rc.py:1013
-#: src/formatters/rc.py:1105
+#: src/formatters/rc.py:1104
 msgid "Unknown"
 msgstr "Unbekannt"
 
@@ -694,14 +694,14 @@ msgid "[{author}]({author_url}) unlocked a wiki *{wiki_name}*{comment}"
 msgstr "[{author}]({author_url}) entsperrte das Wiki *{wiki_name}*{comment}"
 
 #: src/formatters/rc.py:394
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "[{author}]({author_url}) generated *{file}* dump{comment}"
-msgstr "[{author}]({author_url}) löschte das Wiki *{wiki_name}*{comment}"
+msgstr "[{author}]({author_url}) generierte *{file}* Dump{comment}"
 
 #: src/formatters/rc.py:399
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "[{author}]({author_url}) deleted *{file}* dump{comment}"
-msgstr "[{author}]({author_url}) löschte das Wiki *{wiki_name}*{comment}"
+msgstr "[{author}]({author_url}) löschte *{file}* Dump{comment}"
 
 #: src/formatters/rc.py:410
 #, python-brace-format
@@ -869,16 +869,16 @@ msgstr ""
 #: src/formatters/rc.py:551 src/formatters/rc.py:554 src/formatters/rc.py:1088
 #: src/formatters/rc.py:1091
 msgid "(default)"
-msgstr ""
+msgstr "(Standard)"
 
 #: src/formatters/rc.py:555
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) changed the language of [{article}]({article_url}) "
 "from {old_lang} to {new_lang}{comment}"
 msgstr ""
-"[{author}]({author_url}) änderte das Inhaltsmodell der Seite [{article}]"
-"({article_url}) von {old} zu {new}{comment}"
+"[{author}]({author_url}) änderte die Sprache für [{article}]({article_url}) "
+"von {old_lang} zu {new_lang}{comment}"
 
 #: src/formatters/rc.py:564
 #, python-brace-format
@@ -1232,12 +1232,12 @@ msgstr "Modell geändert von {old} zu {new}: {reason}"
 #: src/formatters/rc.py:941
 #, python-brace-format
 msgid "Created the page {article} using a non-default content model"
-msgstr ""
+msgstr "Erstellte die Seite {article}mit einem nicht-standard Inhaltsmodell"
 
 #: src/formatters/rc.py:942
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Created with model {new}: {reason}"
-msgstr "Modell geändert von {old} zu {new}: {reason}"
+msgstr "Erstellt mit Modell {new}: {reason}"
 
 #: src/formatters/rc.py:945
 #, python-brace-format
@@ -1340,12 +1340,12 @@ msgstr "Entsperrte das Wiki „{wiki}“"
 #: src/formatters/rc.py:1016
 #, python-brace-format
 msgid "Generated {file} dump"
-msgstr ""
+msgstr "Generierte {file} Dump"
 
 #: src/formatters/rc.py:1019
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Deleted {file} dump"
-msgstr "Löschte {article}"
+msgstr "Löschte {file} Dump"
 
 #: src/formatters/rc.py:1027
 #, python-brace-format
@@ -1455,17 +1455,17 @@ msgid "New state"
 msgstr "Neuer Status"
 
 #: src/formatters/rc.py:1092
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Changed the language of \"{article}\""
-msgstr "Änderte den Status der Übersetzungen in `{language}` für „{article}“"
+msgstr "Änderte die Sprache für „{article}“"
 
 #: src/formatters/rc.py:1093
 msgid "Old language"
-msgstr ""
+msgstr "Alte Sprache"
 
 #: src/formatters/rc.py:1094
 msgid "New language"
-msgstr ""
+msgstr "Neue Sprache"
 
 #: src/formatters/rc.py:1098
 #, python-brace-format
@@ -1481,40 +1481,36 @@ msgstr[1] ""
 msgid "Renamed user \"{old_name}\" to \"{new_name}\""
 msgstr "Nannte den Benutzer „{old_name}“ zu „{new_name}“ um"
 
-#: src/formatters/rc.py:1104
-msgid "Action has been hidden by administration"
-msgstr "Aktion wurde versteckt"
-
-#: src/formatters/rc.py:1109
+#: src/formatters/rc.py:1108
 #, python-brace-format
 msgid "Unknown event `{event}`"
 msgstr "Unbekanntes Event `{event}`"
 
-#: src/formatters/rc.py:1114 src/formatters/rc.py:1116
+#: src/formatters/rc.py:1113 src/formatters/rc.py:1115
 msgid "Report this on the support server"
 msgstr "Melde es auf dem Support-Server"
 
-#: src/formatters/rc.py:1131
+#: src/formatters/rc.py:1130
 msgid "Tags"
 msgstr "Markierungen"
 
-#: src/formatters/rc.py:1136
+#: src/formatters/rc.py:1135
 msgid "**Added**: "
 msgstr "**Hinzugefügt:** "
 
-#: src/formatters/rc.py:1136
+#: src/formatters/rc.py:1135
 msgid " and {} more\n"
 msgstr " und {} mehr\n"
 
-#: src/formatters/rc.py:1137
+#: src/formatters/rc.py:1136
 msgid "**Removed**: "
 msgstr "**Entfernt:** "
 
-#: src/formatters/rc.py:1137
+#: src/formatters/rc.py:1136
 msgid " and {} more"
 msgstr " und {} mehr"
 
-#: src/formatters/rc.py:1138
+#: src/formatters/rc.py:1137
 msgid "Changed categories"
 msgstr "Geänderte Kategorien"
 
@@ -1570,6 +1566,9 @@ msgstr[1] "Aktivste Stunden"
 
 msgid "Day score"
 msgstr "Tageswert"
+
+#~ msgid "Action has been hidden by administration"
+#~ msgstr "Aktion wurde versteckt"
 
 #~ msgid "their own profile"
 #~ msgstr "das eigene Profil"

@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RcGcDw\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-12-21 19:17+0100\n"
-"PO-Revision-Date: 2020-12-13 14:30+0000\n"
+"POT-Creation-Date: 2020-12-30 14:30+0100\n"
+"PO-Revision-Date: 2020-12-29 15:21+0000\n"
 "Last-Translator: lakejason0 <sunliyuan200402@outlook.com>\n"
 "Language-Team: Chinese (Simplified) <https://translate.wikibot.de/projects/"
 "rcgcdw/rc_formatters/zh-hans/>\n"
@@ -245,90 +245,86 @@ msgid ""
 msgstr "[{author}]({author_url}) 解封了 [{blocked_user}]({user_url}){comment}"
 
 #: src/formatters/rc.py:157
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) left a [comment]({comment}) on {target}'s profile"
 msgstr ""
-"[{author}]({author_url}) 在 {target} 的资料页上留下了一条 [留言]({comment})"
+"[{author}]({author_url}) 在 {target} 的资料页上留下了一条[评论]({comment})"
 
 #: src/formatters/rc.py:159
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) left a [comment]({comment}) on their own profile"
-msgstr ""
-"[{author}]({author_url}) 在 {target} 的资料页上留下了一条 [留言]({comment})"
+msgstr "[{author}]({author_url}) 在自己的资料页上留下了一条[评论]({comment})"
 
 #: src/formatters/rc.py:165
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) replied to a [comment]({comment}) on {target}'s "
 "profile"
 msgstr ""
-"[{author}]({author_url}) 在 {target} 的资料页上回复了一条 [评论]({comment})"
+"[{author}]({author_url}) 在 {target} 的资料页上回复了一条[评论]({comment})"
 
 #: src/formatters/rc.py:171
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) replied to a [comment]({comment}) on their own "
 "profile"
-msgstr ""
-"[{author}]({author_url}) 在 {target} 的资料页上回复了一条 [评论]({comment})"
+msgstr "[{author}]({author_url}) 在自己的资料页上回复了一条[评论]({comment})"
 
 #: src/formatters/rc.py:179
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) edited a [comment]({comment}) on {target}'s profile"
 msgstr ""
-"[{author}]({author_url}) 在 {target} 的资料页上编辑了一条 [评论]({comment})"
+"[{author}]({author_url}) 在 {target} 的资料页上编辑了一条[评论]({comment})"
 
 #: src/formatters/rc.py:185
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) edited a [comment]({comment}) on their own profile"
-msgstr ""
-"[{author}]({author_url}) 在 {target} 的资料页上编辑了一条 [评论]({comment})"
+msgstr "[{author}]({author_url}) 在自己的资料页上编辑了一条[评论]({comment})"
 
 #: src/formatters/rc.py:191
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "[{author}]({author_url}) purged a comment on {target}'s profile"
 msgstr "[{author}]({author_url}) 在 {target} 的资料页上永久删除了一条评论"
 
 #: src/formatters/rc.py:193
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "[{author}]({author_url}) purged a comment on their own profile"
-msgstr "[{author}]({author_url}) 在 {target} 的资料页上永久删除了一条评论"
+msgstr "[{author}]({author_url}) 在自己的资料页上永久删除了一条评论"
 
 #: src/formatters/rc.py:201
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) deleted a [comment]({comment}) on {target}'s profile"
 msgstr ""
-"[{author}]({author_url}) 在 {target} 的资料页上编辑了一条 [评论]({comment})"
+"[{author}]({author_url}) 在 {target} 的资料页上删除了一条[评论]({comment})"
 
 #: src/formatters/rc.py:203
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) deleted a [comment]({comment}) on their own profile"
-msgstr ""
-"[{author}]({author_url}) 在 {target} 的资料页上编辑了一条 [评论]({comment})"
+msgstr "[{author}]({author_url}) 在自己的资料页上删除了一条[评论]({comment})"
 
 #: src/formatters/rc.py:209
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) edited the {field} on [{target}]({target_url})'s "
 "profile. *({desc})*"
 msgstr ""
-"[{author}]({author_url}) 在 {target} 的资料页上编辑了 {field} 栏位。"
-"*({desc})*"
+"[{author}]({author_url}) 在 [{target}]({target_url}) 的资料页上编辑了 "
+"{field} 栏位。*({desc})*"
 
 #: src/formatters/rc.py:216
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) edited the {field} on [their own]({target_url}) "
 "profile. *({desc})*"
 msgstr ""
-"[{author}]({author_url}) 在 {target} 的资料页上编辑了 {field} 栏位。"
-"*({desc})*"
+"[{author}]({author_url}) 在[自己]({target_url})的资料页上编辑了 {field} 栏"
+"位。*({desc})*"
 
 #: src/formatters/rc.py:231 src/formatters/rc.py:233 src/formatters/rc.py:849
 #: src/formatters/rc.py:851
@@ -336,22 +332,22 @@ msgid "none"
 msgstr "无"
 
 #: src/formatters/rc.py:236
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) changed group membership for [{target}]"
 "({target_url}) from {old_groups} to {new_groups}{comment}"
 msgstr ""
-"[{author}]({author_url}) 将页面 [{article}]({article_url}) 的内容模型从 "
-"{old} 更改为 {new}{comment}"
+"[{author}]({author_url}) 已将 [{target}]({target_url}) 的用户组从 "
+"{old_groups} 更改为 {new_groups}{comment}"
 
 #: src/formatters/rc.py:238
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "{author} autopromoted [{target}]({target_url}) from {old_groups} to "
 "{new_groups}{comment}"
 msgstr ""
-"[{author}]({author_url}) 将页面 [{article}]({article_url}) 的内容模型从 "
-"{old} 更改为 {new}{comment}"
+"{author} 自动提升了 [{target}]({target_url}) 的用户组，从 {old_groups} 更改"
+"为 {new_groups}{comment}"
 
 #: src/formatters/rc.py:239 src/formatters/rc.py:837
 msgid "System"
@@ -423,7 +419,7 @@ msgid "[{author}]({author_url}) changed visibility of log events{comment}"
 msgstr "[{author}]({author_url}) 更改了日志事件的可视性{comment}"
 
 #: src/formatters/rc.py:278
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) imported [{article}]({article_url}) with {count} "
 "revision from [{source}]({source_url}){comment}"
@@ -431,8 +427,8 @@ msgid_plural ""
 "[{author}]({author_url}) imported [{article}]({article_url}) with {count} "
 "revisions from [{source}]({source_url}){comment}"
 msgstr[0] ""
-"[{author}]({author_url}) 导入了 [{article}]({article_url}) 的 {count} 个修订"
-"版本{comment}"
+"[{author}]({author_url}) 从 [{source}]({source_url}) 导入了 [{article}]"
+"({article_url}) 的 {count} 个修订版本{comment}"
 
 #: src/formatters/rc.py:283
 #, python-brace-format
@@ -519,13 +515,13 @@ msgstr ""
 "{old} 更改为 {new}{comment}"
 
 #: src/formatters/rc.py:326
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) created the page [{article}]({article_url}) using a "
 "non-default content model {new}{comment}"
 msgstr ""
-"[{author}]({author_url}) 将页面 [{article}]({article_url}) 的内容模型从 "
-"{old} 更改为 {new}{comment}"
+"[{author}]({author_url}) 创建了页面 [{article}]({article_url})，使用了非默认"
+"的内容模型 {new}{comment}"
 
 #: src/formatters/rc.py:329
 #, python-brace-format
@@ -589,14 +585,14 @@ msgid "[{author}]({author_url}) deactivated a [tag]({tag_url}) \"{tag}\""
 msgstr "[{author}]({author_url}) 取消激活了一个[标签]({tag_url}) \"{tag}\""
 
 #: src/formatters/rc.py:361
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "[{author}]({author_url}) changed wiki settings{reason}"
-msgstr "[{author}]({author_url}) 更改了日志事件的可视性{comment}"
+msgstr "[{author}]({author_url}) 更改了wiki设置{reason}"
 
 #: src/formatters/rc.py:364
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "[{author}]({author_url}) deleted a wiki *{wiki_name}*{comment}"
-msgstr "[{author}]({author_url}) 导入了跨wiki表{comment}"
+msgstr "[{author}]({author_url}) 删除了wiki *{wiki_name}* {comment}"
 
 #: src/formatters/rc.py:365 src/formatters/rc.py:368 src/formatters/rc.py:371
 #: src/formatters/rc.py:372 src/formatters/rc.py:377 src/formatters/rc.py:378
@@ -604,237 +600,250 @@ msgstr "[{author}]({author_url}) 导入了跨wiki表{comment}"
 #: src/formatters/rc.py:994 src/formatters/rc.py:997 src/formatters/rc.py:999
 #: src/formatters/rc.py:1002 src/formatters/rc.py:1004
 #: src/formatters/rc.py:1010 src/formatters/rc.py:1013
-#: src/formatters/rc.py:1105
+#: src/formatters/rc.py:1104
 msgid "Unknown"
 msgstr "未知"
 
 #: src/formatters/rc.py:367
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "[{author}]({author_url}) locked a wiki *{wiki_name}*{comment}"
-msgstr "[{author}]({author_url}) 导入了跨wiki表{comment}"
+msgstr "[{author}]({author_url}) 锁定了wiki *{wiki_name}* {comment}"
 
 #: src/formatters/rc.py:370
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) modified a namespace *{namespace_name}* on "
 "*{wiki_name}*{comment}"
 msgstr ""
-"[{author}]({author_url}) 上传了 [{file}]({file_link}) 的一个新版本 {comment}"
+"[{author}]({author_url}) 修改了命名空间 *{namespace_name}* 于 *{wiki_name}* "
+"{comment}"
 
 #: src/formatters/rc.py:375
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) deleted a namespace *{namespace_name}* on "
 "*{wiki_name}*{comment}"
-msgstr "[{author}]({author_url}) 删除了 [{page}]({page_link}){comment}"
+msgstr ""
+"[{author}]({author_url}) 删除了命名空间 *{namespace_name}* 于 *{wiki_name}* "
+"{comment}"
 
 #: src/formatters/rc.py:381
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "[{author}]({author_url}) modified user group *{group_name}*{comment}"
-msgstr "[{author}]({author_url}) 导入了跨wiki表{comment}"
+msgstr "[{author}]({author_url}) 修改了用户组 *{group_name}*{comment}"
 
 #: src/formatters/rc.py:385
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "[{author}]({author_url}) restored a wiki *{wiki_name}*{comment}"
-msgstr "[{author}]({author_url}) 导入了跨wiki表{comment}"
+msgstr "[{author}]({author_url}) 恢复了wiki *{wiki_name}* {comment}"
 
 #: src/formatters/rc.py:389
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "[{author}]({author_url}) unlocked a wiki *{wiki_name}*{comment}"
-msgstr "[{author}]({author_url}) 导入了跨wiki表{comment}"
+msgstr "[{author}]({author_url}) 解锁了wiki *{wiki_name}* {comment}"
 
 #: src/formatters/rc.py:394
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "[{author}]({author_url}) generated *{file}* dump{comment}"
-msgstr "[{author}]({author_url}) 导入了跨wiki表{comment}"
+msgstr "[{author}]({author_url}) 生成了 *{file}* 转储{comment}"
 
 #: src/formatters/rc.py:399
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "[{author}]({author_url}) deleted *{file}* dump{comment}"
-msgstr "[{author}]({author_url}) 删除了 [{page}]({page_link}){comment}"
+msgstr "[{author}]({author_url}) 删除了 *{file}* 转储{comment}"
 
 #: src/formatters/rc.py:410
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) marked [{article}]({article_url}) for "
 "translation{comment}"
-msgstr "[{author}]({author_url}) 还原了 [{article}]({article_url}){comment}"
+msgstr ""
+"[{author}]({author_url}) 标记了 [{article}]({article_url}) 进行翻译 {comment}"
 
 #: src/formatters/rc.py:417
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) removed [{article}]({article_url}) from the "
 "translation system{comment}"
 msgstr ""
-"[{author}]({author_url}) 导入了 [{article}]({article_url}) 的 {count} 个修订"
-"版本{comment}"
+"[{author}]({author_url}) 从翻译系统中移除了 [{article}]({article_url})"
+"{comment}"
 
 #: src/formatters/rc.py:424
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) completed moving translation pages from *{article}* "
 "to [{target}]({target_url}){comment}"
 msgstr ""
-"[{author}]({author_url}) 将保护设置从 {redirect}*{article}* 移动到了 "
-"[{target}]({target_url}){comment}"
+"[{author}]({author_url}) 已完成将翻译页面 *{article}* 移动到 [{target}]"
+"({target_url}){comment}"
 
 #: src/formatters/rc.py:432
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) encountered a problem while moving [{article}]"
 "({article_url}) to [{target}]({target_url}){comment}"
 msgstr ""
-"[{author}]({author_url}) 将 [{article}]({article_url}) 的修订版本历史合并到 "
-"[{dest}]({dest_url}){comment}"
+"[{author}]({author_url}) 在移动 [{article}]({article_url}) 至 [{target}]"
+"({target_url}) 时遇到了问题{comment}"
 
 #: src/formatters/rc.py:440
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) completed deletion of translatable page [{article}]"
 "({article_url}){comment}"
 msgstr ""
-"[{author}]({author_url}) 移除了 [{article}]({article_url}) 的保护 {comment}"
+"[{author}]({author_url}) 完成了对可翻译页面 [{article}]({article_url}) 的删除"
+"{comment}"
 
 #: src/formatters/rc.py:448
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) failed to delete [{article}]({article_url}) which "
 "belongs to translatable page [{target}]({target_url}){comment}"
 msgstr ""
-"[{author}]({author_url}) 将 [{article}]({article_url}) 的修订版本历史合并到 "
-"[{dest}]({dest_url}){comment}"
+"[{author}]({author_url}) 无法删除 [{article}]({article_url})，其属于可翻译页"
+"面 [{target}]({target_url}){comment}"
 
 #: src/formatters/rc.py:456
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) completed deletion of translation page [{article}]"
 "({article_url}){comment}"
 msgstr ""
-"[{author}]({author_url}) 更改了[{article}]({article_url}) 的 {amount} 个版本"
-"的可见性{comment}"
+"[{author}]({author_url}) 已完成删除翻译页面 [{article}]({article_url})"
+"{comment}"
 
 #: src/formatters/rc.py:464
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) failed to delete [{article}]({article_url}) which "
 "belongs to translation page [{target}]({target_url}){comment}"
 msgstr ""
-"[{author}]({author_url}) 将 [{article}]({article_url}) 的修订版本历史合并到 "
-"[{dest}]({dest_url}){comment}"
+"[{author}]({author_url}) 无法删除 [{article}]({article_url})，其属于翻译页面 "
+"[{target}]({target_url}){comment}"
 
 #: src/formatters/rc.py:472
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) encouraged translation of [{article}]({article_url})"
 "{comment}"
 msgstr ""
-"[{author}]({author_url}) 移除了 [{article}]({article_url}) 的保护 {comment}"
+"[{author}]({author_url}) 支持了 [{article}]({article_url}) 的翻译 {comment}"
 
 #: src/formatters/rc.py:479
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) discouraged translation of [{article}]"
 "({article_url}){comment}"
-msgstr "[{author}]({author_url}) 还原了 [{article}]({article_url}){comment}"
+msgstr ""
+"[{author}]({author_url}) 不支持 [{article}]({article_url}) 的翻译{comment}"
 
 #: src/formatters/rc.py:489
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) limited languages for [{article}]({article_url}) to "
 "`{languages}`{comment}"
 msgstr ""
-"[{author}]({author_url}) 将 [{article}]({article_url}) 的保护设置更改为："
-"{settings}{comment}"
+"[{author}]({author_url}) 将 [{article}]({article_url}) 的语言限制为 "
+"`{languages}`{comment}"
 
 #: src/formatters/rc.py:495
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) set the priority languages for [{article}]"
 "({article_url}) to `{languages}`{comment}"
 msgstr ""
-"[{author}]({author_url}) 将 [{article}]({article_url}) 的保护设置更改为："
-"{settings}{comment}"
+"[{author}]({author_url}) 将 [{article}]({article_url}) 的优先语言设置为 "
+"`{languages}`{comment}"
 
 #: src/formatters/rc.py:501
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) removed priority languages from [{article}]"
 "({article_url}){comment}"
 msgstr ""
-"[{author}]({author_url}) 移除了 [{article}]({article_url}) 的保护 {comment}"
+"[{author}]({author_url}) 移除了 [{article}]({article_url}) 的优先语言 "
+"{comment}"
 
 #: src/formatters/rc.py:508
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) added translatable page [{article}]({article_url}) "
 "to aggregate group \"{group}\"{comment}"
 msgstr ""
-"[{author}]({author_url}) 将页面 [{article}]({article_url}) 的内容模型从 "
-"{old} 更改为 {new}{comment}"
+"[{author}]({author_url}) 将可翻译页面 [{article}]({article_url}) 加入了聚合消"
+"息组 \"{group}\"{comment}"
 
 #: src/formatters/rc.py:515
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) removed translatable page [{article}]"
 "({article_url}) from aggregate group \"{group}\"{comment}"
 msgstr ""
-"[{author}]({author_url}) 移除了 [{article}]({article_url}) 的保护 {comment}"
+"[{author}]({author_url}) 将可翻译页面 [{article}]({article_url}) 从聚合消息"
+"组 \"{group}\" 中移除{comment}"
 
 #: src/formatters/rc.py:527
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) reviewed translation [{article}]({article_url})"
 "{comment}"
-msgstr "[{author}]({author_url}) 还原了 [{article}]({article_url}){comment}"
+msgstr ""
+"[{author}]({author_url}) 复核了翻译 [{article}]({article_url}){comment}"
 
 #: src/formatters/rc.py:535
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) changed the state of `{language}` translations of "
 "[{article}]({article_url}) from `{old_state}` to `{new_state}`{comment}"
 msgstr ""
-"[{author}]({author_url}) 将页面 [{article}]({article_url}) 的内容模型从 "
-"{old} 更改为 {new}{comment}"
+"[{author}]({author_url}) 将 [{article}]({article_url}) 的 `{language}` 翻译的"
+"状态从 `{old_state}` 更改为 `{new_state}`{comment}"
 
 #: src/formatters/rc.py:542
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) changed the state of `{language}` translations of "
 "[{article}]({article_url}) to `{new_state}`{comment}"
 msgstr ""
-"[{author}]({author_url}) 将页面 [{article}]({article_url}) 的内容模型从 "
-"{old} 更改为 {new}{comment}"
+"[{author}]({author_url}) 更改了 [{article}]({article_url}) 的 `{language}` 翻"
+"译的状态为 `{new_state}`{comment}"
 
 #: src/formatters/rc.py:551 src/formatters/rc.py:554 src/formatters/rc.py:1088
 #: src/formatters/rc.py:1091
 msgid "(default)"
-msgstr ""
+msgstr "（默认）"
 
 #: src/formatters/rc.py:555
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) changed the language of [{article}]({article_url}) "
 "from {old_lang} to {new_lang}{comment}"
 msgstr ""
-"[{author}]({author_url}) 将页面 [{article}]({article_url}) 的内容模型从 "
-"{old} 更改为 {new}{comment}"
+"[{author}]({author_url}) 更改了 [{article}]({article_url}) 的语言，从 "
+"{old_lang} 更改为 {new_lang}{comment}"
 
 #: src/formatters/rc.py:564
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) renamed user *{old_name}* with {edits} edit to "
 "[{new_name}]({link}){comment}"
 msgid_plural ""
 "[{author}]({author_url}) renamed user *{old_name}* with {edits} edits to "
 "[{new_name}]({link}){comment}"
-msgstr[0] "[{author}]({author_url}) 删除了 [{page}]({page_link}){comment}"
+msgstr[0] ""
+"[{author}]({author_url}) 将编辑数为 {edits} 的用户 *{old_name}* 重命名为 "
+"[{new_name}]({link}) {comment}"
 
 #: src/formatters/rc.py:569
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "[{author}]({author_url}) renamed user *{old_name}* to [{new_name}]({link})"
 "{comment}"
-msgstr "[{author}]({author_url}) 删除了 [{page}]({page_link}){comment}"
+msgstr ""
+"[{author}]({author_url}) 将用户 *{old_name}* 重命名为 [{new_name}]({link})"
+"{comment}"
 
 #: src/formatters/rc.py:573
 msgid "An action has been hidden by administration."
@@ -941,7 +950,7 @@ msgstr "将保护设置从 {redirect}{article} 移动到了 {title}"
 
 #: src/formatters/rc.py:741
 msgid "unknown expiry time"
-msgstr ""
+msgstr "未知的过期时间"
 
 #: src/formatters/rc.py:746
 msgid "Blocked from editing the following pages: "
@@ -1022,9 +1031,8 @@ msgid "Purged a comment on {target}'s profile"
 msgstr "永久删除了 {target} 的资料页上的一条留言"
 
 #: src/formatters/rc.py:820
-#, fuzzy
 msgid "Purged a comment on their own profile"
-msgstr "编辑了自己的资料页上的一条留言"
+msgstr "永久删除了自己的资料页上的一条评论"
 
 #: src/formatters/rc.py:828
 #, python-brace-format
@@ -1032,9 +1040,8 @@ msgid "Deleted a comment on {target}'s profile"
 msgstr "删除了 {target} 的资料页上的一条留言"
 
 #: src/formatters/rc.py:830
-#, fuzzy
 msgid "Deleted a comment on their own profile"
-msgstr "编辑了自己的资料页上的一条留言"
+msgstr "删除了自己的资料页上的一条评论"
 
 #: src/formatters/rc.py:834
 #, python-brace-format
@@ -1088,10 +1095,10 @@ msgid "Changed visibility of log events"
 msgstr "更改了日志事件的可见性"
 
 #: src/formatters/rc.py:889
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Imported {article} with {count} revision from \"{source}\""
 msgid_plural "Imported {article} with {count} revisions from \"{source}\""
-msgstr[0] "导入了含有 {count} 个修订版本的 {article}"
+msgstr[0] "导入了来自 \"{source}\" 的含有 {count} 个修订版本的 {article}"
 
 #: src/formatters/rc.py:894
 #, python-brace-format
@@ -1161,12 +1168,12 @@ msgstr "内容模型从 {old} 更改为 {new}：{reason}"
 #: src/formatters/rc.py:941
 #, python-brace-format
 msgid "Created the page {article} using a non-default content model"
-msgstr ""
+msgstr "使用非默认内容模型创建了页面 {article}"
 
 #: src/formatters/rc.py:942
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Created with model {new}: {reason}"
-msgstr "内容模型从 {old} 更改为 {new}：{reason}"
+msgstr "使用内容模型 {new} 创建：{reason}"
 
 #: src/formatters/rc.py:945
 #, python-brace-format
@@ -1225,223 +1232,222 @@ msgstr "取消激活了标签 \"{tag}\""
 
 #: src/formatters/rc.py:987
 msgid "Changed wiki settings"
-msgstr ""
+msgstr "更改了wiki设置"
 
 #: src/formatters/rc.py:991
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Deleted a \"{wiki}\" wiki"
-msgstr "删除了标签 \"{tag}\""
+msgstr "删除了wiki \"{wiki}\""
 
 #: src/formatters/rc.py:994
 #, python-brace-format
 msgid "Locked a \"{wiki}\" wiki"
-msgstr ""
+msgstr "锁定了wiki \"{wiki}\""
 
 #: src/formatters/rc.py:997
 #, python-brace-format
 msgid "Modified a \"{namespace_name}\" namespace"
-msgstr ""
+msgstr "修改了命名空间 \"{namespace_name}\""
 
 #: src/formatters/rc.py:999 src/formatters/rc.py:1004
 msgid "Wiki"
-msgstr ""
+msgstr "Wiki"
 
 #: src/formatters/rc.py:1001
 #, python-brace-format
 msgid "Deleted a \"{namespace_name}\" namespace"
-msgstr ""
+msgstr "删除了命名空间 \"{namespace_name}\""
 
 #: src/formatters/rc.py:1007
 #, python-brace-format
 msgid "Modified \"{usergroup_name}\" usergroup"
-msgstr ""
+msgstr "修改了用户组 \"{usergroup_name}\""
 
 #: src/formatters/rc.py:1010
 #, python-brace-format
 msgid "Restored a \"{wiki}\" wiki"
-msgstr ""
+msgstr "还原了wiki \"{wiki}\""
 
 #: src/formatters/rc.py:1013
 #, python-brace-format
 msgid "Unlocked a \"{wiki}\" wiki"
-msgstr ""
+msgstr "解锁了wiki \"{wiki}\""
 
 #: src/formatters/rc.py:1016
 #, python-brace-format
 msgid "Generated {file} dump"
-msgstr ""
+msgstr "生成了转储 {file}"
 
 #: src/formatters/rc.py:1019
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Deleted {file} dump"
-msgstr "删除了页面 {article}"
+msgstr "删除了转储 {file}"
 
 #: src/formatters/rc.py:1027
 #, python-brace-format
 msgid "Marked \"{article}\" for translation"
-msgstr ""
+msgstr "将 \"{article}\" 标记为进行翻译"
 
 #: src/formatters/rc.py:1030
 #, python-brace-format
 msgid "Removed \"{article}\" from the translation system"
-msgstr ""
+msgstr "将 \"{article}\" 从翻译系统中移除"
 
 #: src/formatters/rc.py:1033
 #, python-brace-format
 msgid "Completed moving translation pages from \"{article}\" to \"{target}\""
-msgstr ""
+msgstr "已完成将翻译页面从 \"{article}\" 移动到 \"{target}\""
 
 #: src/formatters/rc.py:1036
 #, python-brace-format
 msgid "Encountered a problem while moving \"{article}\" to \"{target}\""
-msgstr ""
+msgstr "在移动 \"{article}\" 到 \"{target}\" 时遇到问题"
 
 #: src/formatters/rc.py:1039
 #, python-brace-format
 msgid "Completed deletion of translatable page \"{article}\""
-msgstr ""
+msgstr "已完成删除可翻译页面 \"{article}\""
 
 #: src/formatters/rc.py:1042
 #, python-brace-format
 msgid ""
 "Failed to delete \"{article}\" which belongs to translatable page "
 "\"{target}\""
-msgstr ""
+msgstr "无法删除 \"{article}\"，其属于可翻译页面 \"{target}\""
 
 #: src/formatters/rc.py:1045
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Completed deletion of translation page \"{article}\""
-msgstr "更改了页面 {article} 的 {amount} 个修订版本的可见性 "
+msgstr "已完成删除翻译页面 \"{article}\""
 
 #: src/formatters/rc.py:1048
 #, python-brace-format
 msgid ""
 "Failed to delete \"{article}\" which belongs to translation page \"{target}\""
-msgstr ""
+msgstr "无法删除 \"{article}\"，其属于翻译页面 \"{target}\""
 
 #: src/formatters/rc.py:1051
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Encouraged translation of \"{article}\""
-msgstr "移除了 {article} 的保护"
+msgstr "支持了 \"{article}\" 的翻译"
 
 #: src/formatters/rc.py:1054
 #, python-brace-format
 msgid "Discouraged translation of \"{article}\""
-msgstr ""
+msgstr "不支持了 \"{article}\" 的翻译"
 
 #: src/formatters/rc.py:1060
 #, python-brace-format
 msgid "Limited languages for \"{article}\" to `{languages}`"
-msgstr ""
+msgstr "将 \"{article}\" 的语言限制为 `{languages}`"
 
 #: src/formatters/rc.py:1062
 #, python-brace-format
 msgid "Priority languages for \"{article}\" set to `{languages}`"
-msgstr ""
+msgstr "将 \"{article}\" 的优先语言设为 `{languages}`"
 
 #: src/formatters/rc.py:1064
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Removed priority languages from \"{article}\""
-msgstr "移除了 {article} 的保护"
+msgstr "从 \"{article}\" 移除了优先语言"
 
 #: src/formatters/rc.py:1067
 #, python-brace-format
 msgid "Added translatable page \"{article}\" to aggregate group \"{group}\""
-msgstr ""
+msgstr "将可翻译页面 \"{article}\" 加入聚合信息组 \"{group}\""
 
 #: src/formatters/rc.py:1070
 #, python-brace-format
 msgid ""
 "Removed translatable page \"{article}\" from aggregate group \"{group}\""
-msgstr ""
+msgstr "将可翻译页面 \"{article}\" 从聚合信息组 \"{group}\" 中移除"
 
 #: src/formatters/rc.py:1077
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Reviewed translation \"{article}\""
-msgstr "移除了 {article} 的保护"
+msgstr "复核了翻译 \"{article}\""
 
 #: src/formatters/rc.py:1080
 #, python-brace-format
 msgid "Changed the state of `{language}` translations of \"{article}\""
-msgstr ""
+msgstr "更改了 \"{article}\" 的 `{language}` 翻译的状态"
 
 #: src/formatters/rc.py:1082
 msgid "Old state"
-msgstr ""
+msgstr "旧状态"
 
 #: src/formatters/rc.py:1083
 msgid "New state"
-msgstr ""
+msgstr "新状态"
 
 #: src/formatters/rc.py:1092
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Changed the language of \"{article}\""
-msgstr "更改了 {article} 的保护等级"
+msgstr "更改了 \"{article}\" 的语言"
 
 #: src/formatters/rc.py:1093
 msgid "Old language"
-msgstr ""
+msgstr "旧语言"
 
 #: src/formatters/rc.py:1094
 msgid "New language"
-msgstr ""
+msgstr "新语言"
 
 #: src/formatters/rc.py:1098
 #, python-brace-format
 msgid "Renamed user \"{old_name}\" with {edits} edit to \"{new_name}\""
 msgid_plural "Renamed user \"{old_name}\" with {edits} edits to \"{new_name}\""
-msgstr[0] ""
+msgstr[0] "将有 {edits} 次编辑的用户 \"{old_name}\" 重命名为 \"{new_name}\""
 
 #: src/formatters/rc.py:1100
 #, python-brace-format
 msgid "Renamed user \"{old_name}\" to \"{new_name}\""
-msgstr ""
+msgstr "将用户 \"{old_name}\" 重命名为 \"{new_name}\""
 
-#: src/formatters/rc.py:1104
-msgid "Action has been hidden by administration"
-msgstr "操作已被管理员隐藏"
-
-#: src/formatters/rc.py:1109
+#: src/formatters/rc.py:1108
 #, python-brace-format
 msgid "Unknown event `{event}`"
 msgstr "未知事件 `{event}`"
 
-#: src/formatters/rc.py:1114 src/formatters/rc.py:1116
+#: src/formatters/rc.py:1113 src/formatters/rc.py:1115
 msgid "Report this on the support server"
 msgstr "在支持服务器上报告此错误"
 
-#: src/formatters/rc.py:1131
+#: src/formatters/rc.py:1130
 msgid "Tags"
 msgstr "标签"
 
-#: src/formatters/rc.py:1136
+#: src/formatters/rc.py:1135
 msgid "**Added**: "
 msgstr "**添加了**： "
 
-#: src/formatters/rc.py:1136
+#: src/formatters/rc.py:1135
 msgid " and {} more\n"
 msgstr " 还有{}更多\n"
 
-#: src/formatters/rc.py:1137
+#: src/formatters/rc.py:1136
 msgid "**Removed**: "
 msgstr "**移除了**： "
 
-#: src/formatters/rc.py:1137
+#: src/formatters/rc.py:1136
 msgid " and {} more"
 msgstr " 还有{}更多"
 
-#: src/formatters/rc.py:1138
+#: src/formatters/rc.py:1137
 msgid "Changed categories"
 msgstr "更改了分类"
 
-#, fuzzy, python-brace-format
+#~ msgid "Action has been hidden by administration"
+#~ msgstr "操作已被管理员隐藏"
+
+#, python-brace-format
 #~ msgid ""
 #~ "[{author}]({author_url}) triggered *{abuse_filter}*, performing the "
 #~ "action \"{action}\" on *[{target}]({target_url})* - action taken: "
 #~ "{result}."
 #~ msgstr ""
-#~ "[{author}]({author_url}) 移动 {redirect}*{article}* 至 [{target}]"
-#~ "({target_url}) 覆盖重定向，{made_a_redirect}{comment}"
+#~ "[{author}]({author_url}) 触发了 *{abuse_filter}*，执行操作 \"{action}\" "
+#~ "于 *[{target}]({target_url})* - 已采取的行动： {result}。"
 
 #~ msgid "**No license!**"
 #~ msgstr "**没有许可协议！**"
@@ -1473,3 +1479,67 @@ msgstr "更改了分类"
 
 #~ msgid "Imported interwiki"
 #~ msgstr "导入了跨wiki表"
+
+#~ msgid "None"
+#~ msgstr "无"
+
+#~ msgid "Warning issued"
+#~ msgstr "已发出警告"
+
+#~ msgid "**Blocked user**"
+#~ msgstr "**已封禁用户**"
+
+#~ msgid "Tagged the edit"
+#~ msgstr "已标记编辑"
+
+#~ msgid "Disallowed the action"
+#~ msgstr "已阻止操作"
+
+#~ msgid "**IP range blocked**"
+#~ msgstr "**已封禁IP区段**"
+
+#~ msgid "Throttled actions"
+#~ msgstr "已对操作进行频率控制"
+
+#~ msgid "Removed autoconfirmed group"
+#~ msgstr "已撤销自动确认用户组"
+
+#~ msgid "**Removed from privileged groups**"
+#~ msgstr "**已移除用户组**"
+
+#~ msgid "Edit"
+#~ msgstr "编辑"
+
+#~ msgid "Upload"
+#~ msgstr "上传"
+
+#~ msgid "Move"
+#~ msgstr "移动"
+
+#~ msgid "Stash upload"
+#~ msgstr "隐藏上传"
+
+#~ msgid "Deletion"
+#~ msgstr "删除"
+
+#~ msgid "Account creation"
+#~ msgstr "账户创建"
+
+#~ msgid "Auto account creation"
+#~ msgstr "自动账户创建"
+
+#~ msgid "Unregistered user"
+#~ msgstr "未注册用户"
+
+#, python-brace-format
+#~ msgid "{user} triggered \"{abuse_filter}\""
+#~ msgstr "{user} 触发了 \"{abuse_filter}\""
+
+#~ msgid "Performed"
+#~ msgstr "执行了"
+
+#~ msgid "Action taken"
+#~ msgstr "采取的操作"
+
+#~ msgid "Title"
+#~ msgstr "标题"

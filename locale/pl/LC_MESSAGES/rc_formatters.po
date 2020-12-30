@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RcGcDw\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-12-23 00:37+0100\n"
+"POT-Creation-Date: 2020-12-30 14:30+0100\n"
 "PO-Revision-Date: 2020-12-01 12:29+0000\n"
 "Last-Translator: Frisk The Evil Goat Overlord <piotrex43@protonmail.ch>\n"
 "Language-Team: Polish <https://translate.wikibot.de/projects/rcgcdw/"
@@ -662,7 +662,7 @@ msgstr "[{author}]({author_url}) usunął/usunęła wiki *{wiki_name}*{comment}"
 #: src/formatters/rc.py:994 src/formatters/rc.py:997 src/formatters/rc.py:999
 #: src/formatters/rc.py:1002 src/formatters/rc.py:1004
 #: src/formatters/rc.py:1010 src/formatters/rc.py:1013
-#: src/formatters/rc.py:1105
+#: src/formatters/rc.py:1104
 msgid "Unknown"
 msgstr "Nieznana"
 
@@ -1482,40 +1482,36 @@ msgstr[2] ""
 msgid "Renamed user \"{old_name}\" to \"{new_name}\""
 msgstr "Zmieniono nazwę użytkownika „{old_name}” na „{new_name}”"
 
-#: src/formatters/rc.py:1104
-msgid "Action has been hidden by administration"
-msgstr "Akcja została ukryta przez administrację"
-
-#: src/formatters/rc.py:1109
+#: src/formatters/rc.py:1108
 #, python-brace-format
 msgid "Unknown event `{event}`"
 msgstr "Nieznane wydarzenie `{event}`"
 
-#: src/formatters/rc.py:1114 src/formatters/rc.py:1116
+#: src/formatters/rc.py:1113 src/formatters/rc.py:1115
 msgid "Report this on the support server"
 msgstr "Zgłoś to na serwerze wsparcia"
 
-#: src/formatters/rc.py:1131
+#: src/formatters/rc.py:1130
 msgid "Tags"
 msgstr "Znaczniki"
 
-#: src/formatters/rc.py:1136
+#: src/formatters/rc.py:1135
 msgid "**Added**: "
 msgstr "**Dodane**: "
 
-#: src/formatters/rc.py:1136
+#: src/formatters/rc.py:1135
 msgid " and {} more\n"
 msgstr " oraz {} innych\n"
 
-#: src/formatters/rc.py:1137
+#: src/formatters/rc.py:1136
 msgid "**Removed**: "
 msgstr "**Usunięte**: "
 
-#: src/formatters/rc.py:1137
+#: src/formatters/rc.py:1136
 msgid " and {} more"
 msgstr " oraz {} innych"
 
-#: src/formatters/rc.py:1138
+#: src/formatters/rc.py:1137
 msgid "Changed categories"
 msgstr "Zmienione kategorie"
 
@@ -1576,6 +1572,9 @@ msgstr[2] "Najbardziej aktywne godziny"
 
 msgid "Day score"
 msgstr "Wynik dnia"
+
+#~ msgid "Action has been hidden by administration"
+#~ msgstr "Akcja została ukryta przez administrację"
 
 #~ msgid "their own profile"
 #~ msgstr "swoim własnym profilu"
