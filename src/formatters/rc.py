@@ -971,11 +971,9 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 	elif action == "managetags/create":
 		link = create_article_path("Special:Tags", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Created a tag \"{tag}\"").format(tag=change["logparams"]["tag"])
-		recent_changes.init_info()
 	elif action == "managetags/delete":
 		link = create_article_path("Special:Tags", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Deleted a tag \"{tag}\"").format(tag=change["logparams"]["tag"])
-		recent_changes.init_info()
 	elif action == "managetags/activate":
 		link = create_article_path("Special:Tags", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Activated a tag \"{tag}\"").format(tag=change["logparams"]["tag"])
