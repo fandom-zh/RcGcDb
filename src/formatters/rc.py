@@ -5,6 +5,7 @@ import time
 import json
 import logging
 import datetime
+from aiohttp import ClientResponseError
 from src.config import settings
 from src.misc import link_formatter, create_article_path, parse_link, profile_field_name, ContentParser
 from src.discord import DiscordMessage
@@ -653,9 +654,14 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 				logger.warning("Unable to download data on the edit content!")
 	elif action in ("upload/overwrite", "upload/upload", "upload/revert"):  # sending files
 		license = None
-		urls = await recent_changes.safe_request(
+		try:
+			urls = await recent_changes.safe_request(
 			"{wiki}?action=query&format=json&prop=imageinfo&list=&meta=&titles={filename}&iiprop=timestamp%7Curl%7Carchivename&iilimit=5".format(
 				wiki=WIKI_API_PATH, filename=change["title"]), rate_limiter, "query", "pages")
+		except ClientResponseError:
+			# We could do this in safe_request but I don't know how that would affect other requests,
+			# prefer to have handling in here instead. When this happens, simply ignore the image preview
+			urls = None
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		additional_info_retrieved = False
 		if urls is not None:
