@@ -112,7 +112,7 @@ class RcQueue:
 				shutdown(asyncio.get_event_loop())
 			else:
 				logger.exception("Group task returned error")
-				await generic_msg_sender_exception_logger(traceback.format_exc(), "Group task error logger", Group=group)
+				await generic_msg_sender_exception_logger(traceback.format_exc(), "Group task error logger (really bad)", Group=group)
 		else:
 			self.domain_list[group]["query"].pop(0)
 
@@ -164,7 +164,7 @@ class RcQueue:
 				shutdown(asyncio.get_event_loop())
 			else:
 				logger.exception("Exception on queue updater")
-				await generic_msg_sender_exception_logger(traceback.format_exc(), "Queue updator")
+				await generic_msg_sender_exception_logger(traceback.format_exc(), "Queue updator (ok)")
 
 
 	def __getitem__(self, item):
@@ -301,7 +301,7 @@ async def scan_group(group: str):
 										raise
 									else:
 										logger.exception("Exception on RC formatter")
-										await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in RC formatter", Wiki=queued_wiki.url, Change=str(change)[0:1000])
+										await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in RC formatter (ok)", Wiki=queued_wiki.url, Change=str(change)[0:1000])
 					# Lets stack the messages
 					for messages in message_list.values():
 						messages = stack_message_list(messages)
@@ -354,6 +354,7 @@ async def message_sender():
 			await generic_msg_sender_exception_logger(traceback.format_exc(), "Message sender exception")
 
 async def discussion_handler():
+	# Handler for Fandom Discussions, it has the entire look of things from queuing to sending
 	try:
 		while True:
 			fetch_all = db_cursor.execute(
@@ -442,7 +443,7 @@ async def discussion_handler():
 									shutdown(loop=asyncio.get_event_loop())
 								else:
 									logger.exception("Exception on Feeds formatter")
-									await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in feed formatter", Post=str(post)[0:1000], Wiki=db_wiki["wiki"])
+									await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in feed formatter (ok)", Post=str(post)[0:1000], Wiki=db_wiki["wiki"])
 				# Lets stack the messages
 				for messages in message_list.values():
 					messages = stack_message_list(messages)
@@ -460,11 +461,13 @@ async def discussion_handler():
 			raise  # reraise the issue
 		else:
 			logger.exception("Exception on Feeds formatter")
-			await generic_msg_sender_exception_logger(traceback.format_exc(), "Discussion handler task exception", Wiki=db_wiki["wiki"])
+			await generic_msg_sender_exception_logger(traceback.format_exc(), "Discussion handler task exception (bad)", Wiki=db_wiki["wiki"])
 
 
 
 def shutdown(loop, signal=None):
+	# This is our best attempt at shutting down gently - we save and close the database, wait for messages to be sent,
+	# stop all of the tasks and stop the look effectively shutting down all asyncio operations
 	global main_tasks
 	DBHandler.update_db()
 	db_connection.close()
