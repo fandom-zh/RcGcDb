@@ -18,6 +18,7 @@ from src.queue_handler import DBHandler
 from src.wiki import Wiki, process_cats, process_mwmsgs, essential_info, essential_feeds
 from src.discord import DiscordMessage, generic_msg_sender_exception_logger, stack_message_list
 from src.wiki_ratelimiter import RateLimiter
+from src.irc_feed import AioIRCCat
 
 
 logging.config.dictConfig(settings["logging"])
@@ -64,6 +65,11 @@ class RcQueue:
 	async def start_group(self, group, initial_wikis):
 		"""Starts a task for given domain group"""
 		if group not in self.domain_list:
+			if group in settings["irc_servers"]:
+				irc_connection = AioIRCCat(settings["irc_servers"]["group"]["irc_channel_mapping"], all_wikis)
+				irc_connection.connect(settings["irc_servers"][group]["irc_host"], settings["irc_servers"][group]["irc_port"], "RcGcDb")
+			else:
+				irc_connection = None
 			self.domain_list[group] = {"task": asyncio.create_task(scan_group(group)), "last_rowid": 0, "query": LimitedList(initial_wikis), "rate_limiter": RateLimiter()}
 			logger.debug(self.domain_list[group])
 		else:
