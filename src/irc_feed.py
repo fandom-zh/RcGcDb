@@ -13,18 +13,16 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 			connection.join(channel)
 
 	def on_pubmsg(self, channel, event):
-
+		if channel == self.targets["rc"]:
+			self.parse_fandom_message(' '.join(event.arguments))
+		elif channel == self.targets["discussion"]:
+			self.parse_fandom_discussion(' '.join(event.arguments))
 
 	def on_nicknameinuse(self, c, e):
 		c.nick(c.get_nickname() + "_")
 
 	async def parse_fandom_message(self, message):
-		raw_msg = message
 		message = message.split("\x035*\x03")
-		try:
-			user = message[1][4:].strip().strip(chr(3))
-		except IndexError:
-			return
 		# print(asyncio.all_tasks())
 		half = message[0].find("\x0302http")
 		if half == -1:
