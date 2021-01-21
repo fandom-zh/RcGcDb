@@ -24,6 +24,7 @@ class Wiki:
 	fail_times: int = 0  # corresponding to amount of times connection with wiki failed for client reasons (400-499)
 	session: aiohttp.ClientSession = None
 	rc_active: int = 0
+	last_check: float = 0.0
 
 	@staticmethod
 	async def fetch_wiki(extended, script_path, session: aiohttp.ClientSession, ratelimiter: RateLimiter, amount=20) -> aiohttp.ClientResponse:

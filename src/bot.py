@@ -4,6 +4,7 @@ import logging.config
 import signal
 import traceback
 import nest_asyncio
+import time
 from collections import defaultdict, namedtuple
 from typing import Generator
 
@@ -65,12 +66,14 @@ class RcQueue:
 	async def start_group(self, group, initial_wikis):
 		"""Starts a task for given domain group"""
 		if group not in self.domain_list:
-			if group in settings["irc_servers"]:
-				irc_connection = AioIRCCat(settings["irc_servers"]["group"]["irc_channel_mapping"], all_wikis)
-				irc_connection.connect(settings["irc_servers"][group]["irc_host"], settings["irc_servers"][group]["irc_port"], "RcGcDb")
+			for irc_server in settings["irc_servers"].keys():
+				if group in settings["irc_servers"]["irc_server"]["domains"]:
+					irc_connection = AioIRCCat(settings["irc_servers"]["group"]["irc_channel_mapping"], all_wikis)
+					irc_connection.connect(settings["irc_servers"][irc_server]["irc_host"], settings["irc_servers"][irc_server]["irc_port"], settings["irc_servers"][irc_server]["irc_name"])
+					break
 			else:
 				irc_connection = None
-			self.domain_list[group] = {"task": asyncio.create_task(scan_group(group)), "last_rowid": 0, "query": LimitedList(initial_wikis), "rate_limiter": RateLimiter()}
+			self.domain_list[group] = {"task": asyncio.create_task(scan_group(group)), "last_rowid": 0, "query": LimitedList(initial_wikis), "rate_limiter": RateLimiter(), "irc": irc_connection}
 			logger.debug(self.domain_list[group])
 		else:
 			raise KeyError
@@ -149,6 +152,11 @@ class RcQueue:
 					continue
 				try:
 					current_domain: dict = self[domain]
+					if current_domain["irc"]:
+						if db_wiki["wiki"] not in current_domain["irc"].updated and all_wikis[db_wiki["wiki"]].last_updated+settings["irc_overtime"] > time.time():
+							continue  #  if domain has IRC, has not been updated, and it was updated less than an hour ago
+						else:  # otherwise remove it from the list
+							current_domain["irc"].updated.remove(db_wiki["wiki"])
 					if not db_wiki["ROWID"] < current_domain["last_rowid"]:
 						current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20))
 				except KeyError:
