@@ -374,9 +374,9 @@ async def discussion_handler():
 						continue  # ignore this wiki if it throws errors
 					try:
 						discussion_feed_resp = await feeds_response.json(encoding="UTF-8")
-						if "title" in discussion_feed_resp:
+						if "error" in discussion_feed_resp:
 							error = discussion_feed_resp["error"]
-							if error == "site doesn't exists":  # Discussions disabled
+							if error == "NotFoundException":  # Discussions disabled
 								if db_wiki["rcid"] != -1:  # RC feed is disabled
 									db_cursor.execute("UPDATE rcgcdw SET postid = ? WHERE wiki = ?",
 									                  ("-1", db_wiki["wiki"],))
