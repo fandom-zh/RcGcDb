@@ -62,17 +62,23 @@ class RcQueue:
 	def __init__(self):
 		self.domain_list = {}
 		self.to_remove = []
+		self.irc_mapping = {}
 
 	async def start_group(self, group, initial_wikis):
 		"""Starts a task for given domain group"""
 		if group not in self.domain_list:
-			for irc_server in settings["irc_servers"].keys():
-				if group in settings["irc_servers"]["irc_server"]["domains"]:
-					irc_connection = AioIRCCat(settings["irc_servers"]["group"]["irc_channel_mapping"], all_wikis)
-					irc_connection.connect(settings["irc_servers"][irc_server]["irc_host"], settings["irc_servers"][irc_server]["irc_port"], settings["irc_servers"][irc_server]["irc_name"])
-					break
+			if group in self.irc_mapping:  # Hopefully there are no race conditions....
+				irc_connection = self.irc_mapping[group]
 			else:
-				irc_connection = None
+				for irc_server in settings["irc_servers"].keys():
+					if group in settings["irc_servers"][irc_server]["domains"]:
+						irc_connection = AioIRCCat(settings["irc_servers"]["group"]["irc_channel_mapping"], all_wikis)
+						for domain in settings["irc_servers"][irc_server]["domains"]:
+							self.irc_mapping[domain] = irc_connection
+						irc_connection.connect(settings["irc_servers"][irc_server]["irc_host"], settings["irc_servers"][irc_server]["irc_port"], settings["irc_servers"][irc_server]["irc_name"])
+						break
+				else:
+					irc_connection = None
 			self.domain_list[group] = {"task": asyncio.create_task(scan_group(group)), "last_rowid": 0, "query": LimitedList(initial_wikis), "rate_limiter": RateLimiter(), "irc": irc_connection}
 			logger.debug(self.domain_list[group])
 		else:
@@ -285,6 +291,7 @@ async def scan_group(group: str):
 				targets = generate_targets(queued_wiki.url, "AND (rcid != -1 OR rcid IS NULL)")
 				paths = get_paths(queued_wiki.url, recent_changes_resp)
 				new_events = 0
+				local_wiki.last_check = time.time()  # on successful check, save new last check time
 				for change in recent_changes:
 					if change["rcid"] > local_wiki.rc_active and queued_wiki.amount != 450:
 						new_events += 1
