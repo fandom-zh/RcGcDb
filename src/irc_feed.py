@@ -1,4 +1,5 @@
 import irc.client_aio
+import json
 from urllib.parse import urlparse, quote
 
 class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
@@ -6,6 +7,7 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		irc.client.SimpleIRCClient.__init__(self)
 		self.targets = targets
 		self.updated = []  # Storage for edited wikis
+		self.updated_discussions = []
 		self.wikis = all_wikis
 
 	def on_welcome(self, connection, event):  # Join IRC channels
@@ -21,7 +23,7 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 	def on_nicknameinuse(self, c, e):
 		c.nick(c.get_nickname() + "_")
 
-	async def parse_fandom_message(self, message):
+	def parse_fandom_message(self, message):
 		message = message.split("\x035*\x03")
 		# print(asyncio.all_tasks())
 		half = message[0].find("\x0302http")
@@ -33,6 +35,14 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		full_url = url.netloc + recognize_langs(url.path)
 		if full_url in self.wikis:
 			self.updated.append(full_url)
+
+	def parse_discussions_message(self, message):
+		post = json.loads(message)
+		if post.get('action', 'unknown') != "deleted":  # ignore deletion events
+			url = urlparse(post.get('url'))
+			full_url = url.netloc + recognize_langs(url.path)
+			self.updated_discussions.append(full_url)
+
 
 def recognize_langs(path):
 	lang = ""

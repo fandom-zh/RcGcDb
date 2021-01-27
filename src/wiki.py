@@ -25,6 +25,7 @@ class Wiki:
 	session: aiohttp.ClientSession = None
 	rc_active: int = 0
 	last_check: float = 0.0
+	last_discussion_check: float = 0.0
 
 	@staticmethod
 	async def fetch_wiki(extended, script_path, session: aiohttp.ClientSession, ratelimiter: RateLimiter, amount=20) -> aiohttp.ClientResponse:
