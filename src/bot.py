@@ -380,6 +380,10 @@ async def discussion_handler():
 			fetch_all = db_cursor.execute(
 				"SELECT wiki, rcid, postid FROM rcgcdw WHERE postid != '-1' OR postid IS NULL GROUP BY wiki")
 			for db_wiki in fetch_all.fetchall():
+				if db_wiki["wiki"] not in rcqueue.irc_mapping["fandom.com"].updated_discussions and all_wikis[db_wiki["wiki"]].last_updated+settings["irc_overtime"] > time.time():  # I swear if another wiki farm ever starts using Fandom discussions I'm gonna use explosion magic
+					continue
+				else:
+					rcqueue.irc_mapping["fandom.com"].updated_discussions.remove(db_wiki["wiki"])
 				header = settings["header"]
 				header["Accept"] = "application/hal+json"
 				async with aiohttp.ClientSession(headers=header,
