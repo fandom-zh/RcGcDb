@@ -72,7 +72,7 @@ class RcQueue:
 			else:
 				for irc_server in settings["irc_servers"].keys():
 					if group in settings["irc_servers"][irc_server]["domains"]:
-						irc_connection = AioIRCCat(settings["irc_servers"]["group"]["irc_channel_mapping"], all_wikis)
+						irc_connection = AioIRCCat(settings["irc_servers"][irc_server]["irc_channel_mapping"], all_wikis)
 						for domain in settings["irc_servers"][irc_server]["domains"]:
 							self.irc_mapping[domain] = irc_connection
 						irc_connection.connect(settings["irc_servers"][irc_server]["irc_host"], settings["irc_servers"][irc_server]["irc_port"], settings["irc_servers"][irc_server]["irc_name"])
@@ -92,7 +92,10 @@ class RcQueue:
 		all_wikis[wiki].rc_active = -1
 		if not self[group]["query"]:  # if there is no wiki left in the queue, get rid of the task
 			logger.debug(f"{group} no longer has any wikis queued!")
-			await self.stop_task_group(group)
+			if not self.check_if_domain_in_db(group):
+				await self.stop_task_group(group)
+			else:
+				logger.debug(f"But there are still wikis for it in DB!")
 
 	async def stop_task_group(self, group):
 		self[group]["task"].cancel()
@@ -102,7 +105,7 @@ class RcQueue:
 		fetch_all = db_cursor.execute(
 			'SELECT ROWID, webhook, wiki, lang, display, rcid FROM rcgcdw WHERE rcid != -1 GROUP BY wiki ORDER BY ROWID ASC')
 		for wiki in fetch_all.fetchall():
-			if get_domain(db_wiki["wiki"]) == domain:
+			if get_domain(wiki["wiki"]) == domain:
 				return True
 		return False
 
@@ -159,13 +162,22 @@ class RcQueue:
 				try:
 					current_domain: dict = self[domain]
 					if current_domain["irc"]:
-						if db_wiki["wiki"] not in current_domain["irc"].updated and all_wikis[db_wiki["wiki"]].last_updated+settings["irc_overtime"] > time.time():
+						logger.info('CURRENT STATUS:')
+						logger.info("DOMAIN LIST FOR IRC: {}".format(current_domain["irc"].updated))
+						logger.info("CURRENT DOMAIN INFO: {}".format(domain))
+						logger.info("IS WIKI IN A LIST?: {}".format(db_wiki["wiki"] in current_domain["irc"].updated))
+						logger.info("LAST CHECK FOR THE WIKI {} IS {}".format(db_wiki["wiki"], all_wikis[db_wiki["wiki"]].last_check))
+						if db_wiki["wiki"] not in current_domain["irc"].updated and all_wikis[db_wiki["wiki"]].last_check+settings["irc_overtime"] > time.time():
 							continue  #  if domain has IRC, has not been updated, and it was updated less than an hour ago
 						else:  # otherwise remove it from the list
-							current_domain["irc"].updated.remove(db_wiki["wiki"])
+							try:
+								current_domain["irc"].updated.remove(db_wiki["wiki"])
+							except KeyError:
+								pass  # this is to be expected when third condition is not met above
 					if not db_wiki["ROWID"] < current_domain["last_rowid"]:
 						current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20))
 				except KeyError:
+					raise
 					await self.start_group(domain, [QueuedWiki(db_wiki["wiki"], 20)])
 					logger.info("A new domain group ({}) has been added since last time, adding it to the domain_list and starting a task...".format(domain))
 				except ListFull:
@@ -381,10 +393,13 @@ async def discussion_handler():
 			fetch_all = db_cursor.execute(
 				"SELECT wiki, rcid, postid FROM rcgcdw WHERE postid != '-1' OR postid IS NULL GROUP BY wiki")
 			for db_wiki in fetch_all.fetchall():
-				if db_wiki["wiki"] not in rcqueue.irc_mapping["fandom.com"].updated_discussions and all_wikis[db_wiki["wiki"]].last_updated+settings["irc_overtime"] > time.time():  # I swear if another wiki farm ever starts using Fandom discussions I'm gonna use explosion magic
+				if db_wiki["wiki"] not in rcqueue.irc_mapping["fandom.com"].updated_discussions and all_wikis[db_wiki["wiki"]].last_discussion_check+settings["irc_overtime"] > time.time():  # I swear if another wiki farm ever starts using Fandom discussions I'm gonna use explosion magic
 					continue
 				else:
-					rcqueue.irc_mapping["fandom.com"].updated_discussions.remove(db_wiki["wiki"])
+					try:
+						rcqueue.irc_mapping["fandom.com"].updated_discussions.remove(db_wiki["wiki"])
+					except KeyError:
+						pass  # to be expected
 				header = settings["header"]
 				header["Accept"] = "application/hal+json"
 				async with aiohttp.ClientSession(headers=header,
