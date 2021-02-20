@@ -24,6 +24,8 @@ class Wiki:
 	fail_times: int = 0  # corresponding to amount of times connection with wiki failed for client reasons (400-499)
 	session: aiohttp.ClientSession = None
 	rc_active: int = 0
+	last_check: float = 0.0
+	last_discussion_check: float = 0.0
 
 	@staticmethod
 	async def fetch_wiki(extended, script_path, session: aiohttp.ClientSession, ratelimiter: RateLimiter, amount=20) -> aiohttp.ClientResponse:
@@ -187,6 +189,7 @@ async def process_mwmsgs(wiki_response: dict, local_wiki: Wiki, mw_msgs: dict):
 	key = len(mw_msgs)
 	mw_msgs[key] = msgs  # it may be a little bit messy for sure, however I don't expect any reason to remove mw_msgs entries by one
 	local_wiki.mw_messages = key
+
 
 # db_wiki: webhook, wiki, lang, display, rcid, postid
 async def essential_info(change: dict, changed_categories, local_wiki: Wiki, target: tuple, paths: tuple, request: dict,
