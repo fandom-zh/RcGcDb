@@ -177,7 +177,6 @@ class RcQueue:
 					if not db_wiki["ROWID"] < current_domain["last_rowid"]:
 						current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20))
 				except KeyError:
-					raise
 					await self.start_group(domain, [QueuedWiki(db_wiki["wiki"], 20)])
 					logger.info("A new domain group ({}) has been added since last time, adding it to the domain_list and starting a task...".format(domain))
 				except ListFull:
