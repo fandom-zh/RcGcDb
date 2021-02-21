@@ -391,7 +391,12 @@ async def discussion_handler():
 			fetch_all = db_cursor.execute(
 				"SELECT wiki, rcid, postid FROM rcgcdw WHERE postid != '-1' OR postid IS NULL GROUP BY wiki")
 			for db_wiki in fetch_all.fetchall():
-				if db_wiki["wiki"] not in rcqueue.irc_mapping["fandom.com"].updated_discussions and all_wikis[db_wiki["wiki"]].last_discussion_check+settings["irc_overtime"] > time.time():  # I swear if another wiki farm ever starts using Fandom discussions I'm gonna use explosion magic
+				try:
+					local_wiki = all_wikis[db_wiki["wiki"]]  # set a reference to a wiki object from memory
+				except KeyError:
+					local_wiki = all_wikis[db_wiki["wiki"]] = Wiki()
+					local_wiki.rc_active = db_wiki["rcid"]
+				if db_wiki["wiki"] not in rcqueue.irc_mapping["fandom.com"].updated_discussions and local_wiki.last_discussion_check+settings["irc_overtime"] > time.time():  # I swear if another wiki farm ever starts using Fandom discussions I'm gonna use explosion magic
 					continue
 				else:
 					try:
@@ -402,11 +407,6 @@ async def discussion_handler():
 				header["Accept"] = "application/hal+json"
 				async with aiohttp.ClientSession(headers=header,
 				                                 timeout=aiohttp.ClientTimeout(6.0)) as session:
-					try:
-						local_wiki = all_wikis[db_wiki["wiki"]]  # set a reference to a wiki object from memory
-					except KeyError:
-						local_wiki = all_wikis[db_wiki["wiki"]] = Wiki()
-						local_wiki.rc_active = db_wiki["rcid"]
 					try:
 						feeds_response = await local_wiki.fetch_feeds(db_wiki["wiki"], session)
 					except (WikiServerError, WikiError):
