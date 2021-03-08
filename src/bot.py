@@ -249,7 +249,8 @@ async def scan_group(group: str):
 	while True:
 		try:
 			async with rcqueue.retrieve_next_queued(group) as queued_wiki:  # acquire next wiki in queue
-				await asyncio.sleep(calculate_delay_for_group(len(rcqueue[group]["query"])))
+				if "irc" not in rcqueue[group]:
+					await asyncio.sleep(calculate_delay_for_group(len(rcqueue[group]["query"])))
 				logger.debug("Wiki {}".format(queued_wiki.url))
 				local_wiki = all_wikis[queued_wiki.url]  # set a reference to a wiki object from memory
 				extended = False
@@ -346,7 +347,7 @@ async def scan_group(group: str):
 		except asyncio.CancelledError:
 			return
 		except QueueEmpty:
-			await asyncio.sleep(21.0)
+			await asyncio.sleep(10.0)
 			continue
 
 
