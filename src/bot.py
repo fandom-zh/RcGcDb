@@ -130,7 +130,7 @@ class RcQueue:
 				shutdown(asyncio.get_event_loop())
 			else:
 				logger.exception("Group task returned error")
-				await generic_msg_sender_exception_logger(traceback.format_exc(), "Group task error logger (really bad)", Group=group)
+				await generic_msg_sender_exception_logger(traceback.format_exc(), "Group task error logger", Group=group)
 		else:
 			self.domain_list[group]["query"].pop(0)
 
@@ -162,11 +162,11 @@ class RcQueue:
 				try:
 					current_domain: dict = self[domain]
 					if current_domain["irc"]:
-						logger.info('CURRENT STATUS:')
-						logger.info("DOMAIN LIST FOR IRC: {}".format(current_domain["irc"].updated))
-						logger.info("CURRENT DOMAIN INFO: {}".format(domain))
-						logger.info("IS WIKI IN A LIST?: {}".format(db_wiki["wiki"] in current_domain["irc"].updated))
-						logger.info("LAST CHECK FOR THE WIKI {} IS {}".format(db_wiki["wiki"], all_wikis[db_wiki["wiki"]].last_check))
+						logger.debug('CURRENT STATUS:')
+						logger.debug("DOMAIN LIST FOR IRC: {}".format(current_domain["irc"].updated))
+						logger.debug("CURRENT DOMAIN INFO: {}".format(domain))
+						logger.debug("IS WIKI IN A LIST?: {}".format(db_wiki["wiki"] in current_domain["irc"].updated))
+						logger.debug("LAST CHECK FOR THE WIKI {} IS {}".format(db_wiki["wiki"], all_wikis[db_wiki["wiki"]].last_check))
 						if db_wiki["wiki"] not in current_domain["irc"].updated and all_wikis[db_wiki["wiki"]].last_check+settings["irc_overtime"] > time.time():
 							continue  #  if domain has IRC, has not been updated, and it was updated less than an hour ago
 						else:  # otherwise remove it from the list
@@ -177,7 +177,6 @@ class RcQueue:
 					if not db_wiki["ROWID"] < current_domain["last_rowid"]:
 						current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20))
 				except KeyError:
-					raise
 					await self.start_group(domain, [QueuedWiki(db_wiki["wiki"], 20)])
 					logger.info("A new domain group ({}) has been added since last time, adding it to the domain_list and starting a task...".format(domain))
 				except ListFull:
@@ -196,7 +195,7 @@ class RcQueue:
 				shutdown(asyncio.get_event_loop())
 			else:
 				logger.exception("Exception on queue updater")
-				await generic_msg_sender_exception_logger(traceback.format_exc(), "Queue updator (ok)")
+				await generic_msg_sender_exception_logger(traceback.format_exc(), "Queue updator")
 
 
 	def __getitem__(self, item):
@@ -250,7 +249,8 @@ async def scan_group(group: str):
 	while True:
 		try:
 			async with rcqueue.retrieve_next_queued(group) as queued_wiki:  # acquire next wiki in queue
-				await asyncio.sleep(calculate_delay_for_group(len(rcqueue[group]["query"])))
+				if "irc" not in rcqueue[group]:
+					await asyncio.sleep(calculate_delay_for_group(len(rcqueue[group]["query"])))
 				logger.debug("Wiki {}".format(queued_wiki.url))
 				local_wiki = all_wikis[queued_wiki.url]  # set a reference to a wiki object from memory
 				extended = False
@@ -334,7 +334,7 @@ async def scan_group(group: str):
 										raise
 									else:
 										logger.exception("Exception on RC formatter")
-										await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in RC formatter (ok)", Wiki=queued_wiki.url, Change=str(change)[0:1000])
+										await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in RC formatter", Wiki=queued_wiki.url, Change=str(change)[0:1000])
 					# Lets stack the messages
 					for messages in message_list.values():
 						messages = stack_message_list(messages)
@@ -347,7 +347,7 @@ async def scan_group(group: str):
 		except asyncio.CancelledError:
 			return
 		except QueueEmpty:
-			await asyncio.sleep(21.0)
+			await asyncio.sleep(10.0)
 			continue
 
 
@@ -387,13 +387,17 @@ async def message_sender():
 			await generic_msg_sender_exception_logger(traceback.format_exc(), "Message sender exception")
 
 async def discussion_handler():
-	# Handler for Fandom Discussions, it has the entire look of things from queuing to sending
 	try:
 		while True:
 			fetch_all = db_cursor.execute(
 				"SELECT wiki, rcid, postid FROM rcgcdw WHERE postid != '-1' OR postid IS NULL GROUP BY wiki")
 			for db_wiki in fetch_all.fetchall():
-				if db_wiki["wiki"] not in rcqueue.irc_mapping["fandom.com"].updated_discussions and all_wikis[db_wiki["wiki"]].last_discussion_check+settings["irc_overtime"] > time.time():  # I swear if another wiki farm ever starts using Fandom discussions I'm gonna use explosion magic
+				try:
+					local_wiki = all_wikis[db_wiki["wiki"]]  # set a reference to a wiki object from memory
+				except KeyError:
+					local_wiki = all_wikis[db_wiki["wiki"]] = Wiki()
+					local_wiki.rc_active = db_wiki["rcid"]
+				if db_wiki["wiki"] not in rcqueue.irc_mapping["fandom.com"].updated_discussions and local_wiki.last_discussion_check+settings["irc_overtime"] > time.time():  # I swear if another wiki farm ever starts using Fandom discussions I'm gonna use explosion magic
 					continue
 				else:
 					try:
@@ -405,19 +409,14 @@ async def discussion_handler():
 				async with aiohttp.ClientSession(headers=header,
 				                                 timeout=aiohttp.ClientTimeout(6.0)) as session:
 					try:
-						local_wiki = all_wikis[db_wiki["wiki"]]  # set a reference to a wiki object from memory
-					except KeyError:
-						local_wiki = all_wikis[db_wiki["wiki"]] = Wiki()
-						local_wiki.rc_active = db_wiki["rcid"]
-					try:
 						feeds_response = await local_wiki.fetch_feeds(db_wiki["wiki"], session)
 					except (WikiServerError, WikiError):
 						continue  # ignore this wiki if it throws errors
 					try:
 						discussion_feed_resp = await feeds_response.json(encoding="UTF-8")
-						if "title" in discussion_feed_resp:
+						if "error" in discussion_feed_resp:
 							error = discussion_feed_resp["error"]
-							if error == "site doesn't exists":  # Discussions disabled
+							if error == "NotFoundException":  # Discussions disabled
 								if db_wiki["rcid"] != -1:  # RC feed is disabled
 									db_cursor.execute("UPDATE rcgcdw SET postid = ? WHERE wiki = ?",
 									                  ("-1", db_wiki["wiki"],))
@@ -483,7 +482,7 @@ async def discussion_handler():
 									shutdown(loop=asyncio.get_event_loop())
 								else:
 									logger.exception("Exception on Feeds formatter")
-									await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in feed formatter (ok)", Post=str(post)[0:1000], Wiki=db_wiki["wiki"])
+									await generic_msg_sender_exception_logger(traceback.format_exc(), "Exception in feed formatter", Post=str(post)[0:1000], Wiki=db_wiki["wiki"])
 				# Lets stack the messages
 				for messages in message_list.values():
 					messages = stack_message_list(messages)
@@ -501,13 +500,11 @@ async def discussion_handler():
 			raise  # reraise the issue
 		else:
 			logger.exception("Exception on Feeds formatter")
-			await generic_msg_sender_exception_logger(traceback.format_exc(), "Discussion handler task exception (bad)", Wiki=db_wiki["wiki"])
+			await generic_msg_sender_exception_logger(traceback.format_exc(), "Discussion handler task exception", Wiki=db_wiki["wiki"])
 
 
 
 def shutdown(loop, signal=None):
-	# This is our best attempt at shutting down gently - we save and close the database, wait for messages to be sent,
-	# stop all of the tasks and stop the look effectively shutting down all asyncio operations
 	global main_tasks
 	DBHandler.update_db()
 	db_connection.close()

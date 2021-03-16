@@ -70,7 +70,7 @@ class Wiki:
 		await ratelimiter.timeout_wait()
 		try:
 			async with aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(6.0)) as session:
-				request = await session.get(url, allow_redirects=False)
+				request = await session.get(url)
 				ratelimiter.timeout_add(1.0)
 				request.raise_for_status()
 				json_request = await request.json(encoding="UTF-8")

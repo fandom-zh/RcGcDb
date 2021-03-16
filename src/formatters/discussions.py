@@ -45,20 +45,20 @@ async def feeds_compact_formatter(post_type, post, message_target, wiki, article
 			else:
 				logger.warning("No entry for {event} with params: {params}".format(event=thread_funnel, params=post))
 				event_type = "unknown"
-			message = msg_text.format(author=author, author_url=author_url, title=post["title"], url=wiki, threadId=post["threadId"], forumName=post["forumName"])
+			message = msg_text.format(author=author, author_url=author_url, title=escape_formatting(post["title"]), url=wiki, threadId=post["threadId"], forumName=post["forumName"])
 		else:
 			event_type = "discussion/forum/reply"
-			message = _("[{author}]({author_url}) created a [reply](<{url}f/p/{threadId}/r/{postId}>) to [{title}](<{url}f/p/{threadId}>) in {forumName}").format(author=author, author_url=author_url, url=wiki, threadId=post["threadId"], postId=post["id"], title=post["_embedded"]["thread"][0]["title"], forumName=post["forumName"])
+			message = _("[{author}]({author_url}) created a [reply](<{url}f/p/{threadId}/r/{postId}>) to [{title}](<{url}f/p/{threadId}>) in {forumName}").format(author=author, author_url=author_url, url=wiki, threadId=post["threadId"], postId=post["id"], title=escape_formatting(post["_embedded"]["thread"][0]["title"]), forumName=post["forumName"])
 	elif post_type == "WALL":
 		user_wall = _("unknown")  # Fail safe
 		if post["forumName"].endswith(' Message Wall'):
 			user_wall = post["forumName"][:-13]
 		if not post["isReply"]:
 			event_type = "discussion/wall/post"
-			message = _("[{author}]({author_url}) created [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(author=author, author_url=author_url, title=post["title"], url=wiki, user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"])
+			message = _("[{author}]({author_url}) created [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(author=author, author_url=author_url, title=escape_formatting(post["title"]), url=wiki, user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"])
 		else:
 			event_type = "discussion/wall/reply"
-			message = _("[{author}]({author_url}) created a [reply](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}#{replyId}>) to [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(author=author, author_url=author_url, url=wiki, title=post["_embedded"]["thread"][0]["title"], user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"], replyId=post["id"])
+			message = _("[{author}]({author_url}) created a [reply](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}#{replyId}>) to [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(author=author, author_url=author_url, url=wiki, title=escape_formatting(post["_embedded"]["thread"][0]["title"]), user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"], replyId=post["id"])
 	elif post_type == "ARTICLE_COMMENT":
 		if article_page is None:
 			article_page = {"title": _("unknown"), "fullUrl": wiki}  # No page known
@@ -112,11 +112,11 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 	if post_type == "FORUM":
 		if not post["isReply"]:
 			embed["url"] = "{url}f/p/{threadId}".format(url=wiki, threadId=post["threadId"])
-			embed["title"] = _("Created \"{title}\"").format(title=post["title"])
+			embed["title"] = _("Created \"{title}\"").format(title=escape_formatting(post["title"]))
 			thread_funnel = post.get("funnel")
 			if thread_funnel == "POLL":
 				embed.event_type = "discussion/forum/poll"
-				embed["title"] = _("Created a poll \"{title}\"").format(title=post["title"])
+				embed["title"] = _("Created a poll \"{title}\"").format(title=escape_formatting(post["title"]))
 				if message_target[0][1] > 1:
 					poll = post["poll"]
 					image_type = False
@@ -128,7 +128,7 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 										inline=True)
 			elif thread_funnel == "QUIZ":
 				embed.event_type = "discussion/forum/quiz"
-				embed["title"] = _("Created a quiz \"{title}\"").format(title=post["title"])
+				embed["title"] = _("Created a quiz \"{title}\"").format(title=escape_formatting(post["title"]))
 				if message_target[0][1] > 1:
 					quiz = post["_embedded"]["quizzes"][0]
 					embed["description"] = quiz["title"]
@@ -149,7 +149,7 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 					embed.add_field(_("Tags"), ", ".join(tag_displayname))
 		else:
 			embed.event_type = "discussion/forum/reply"
-			embed["title"] = _("Replied to \"{title}\"").format(title=post["_embedded"]["thread"][0]["title"])
+			embed["title"] = _("Replied to \"{title}\"").format(title=escape_formatting(post["_embedded"]["thread"][0]["title"]))
 			embed["url"] = "{url}f/p/{threadId}/r/{postId}".format(url=wiki, threadId=post["threadId"], postId=post["id"])
 	elif post_type == "WALL":
 		user_wall = _("unknown")  # Fail safe
@@ -158,11 +158,11 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 		if not post["isReply"]:
 			embed.event_type = "discussion/wall/post"
 			embed["url"] = "{url}wiki/Message_Wall:{user_wall}?threadId={threadId}".format(url=wiki, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"])
-			embed["title"] = _("Created \"{title}\" on {user}'s Message Wall").format(title=post["title"], user=user_wall)
+			embed["title"] = _("Created \"{title}\" on {user}'s Message Wall").format(title=escape_formatting(post["title"]), user=user_wall)
 		else:
 			embed.event_type = "discussion/wall/reply"
 			embed["url"] = "{url}wiki/Message_Wall:{user_wall}?threadId={threadId}#{replyId}".format(url=wiki, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"], replyId=post["id"])
-			embed["title"] = _("Replied to \"{title}\" on {user}'s Message Wall").format(title=post["_embedded"]["thread"][0]["title"], user=user_wall)
+			embed["title"] = _("Replied to \"{title}\" on {user}'s Message Wall").format(title=escape_formatting(post["_embedded"]["thread"][0]["title"]), user=user_wall)
 	elif post_type == "ARTICLE_COMMENT":
 		if article_page is None:
 			article_page = {"title": _("unknown"), "fullUrl": wiki}  # No page known
