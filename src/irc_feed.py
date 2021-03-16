@@ -27,7 +27,7 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 	def on_nicknameinuse(self, c, e):
 		c.nick(c.get_nickname() + "_")
 
-	def parse_fandom_message(self, message):
+	def parse_fandom_message(self, message: str):
 		message = message.split("\x035*\x03")
 		# print(asyncio.all_tasks())
 		half = message[0].find("\x0302http")
@@ -41,8 +41,12 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 			self.updated.add(full_url)
 			logger.debug("New website appended to the list! {}".format(full_url))
 
-	def parse_fandom_discussion(self, message):
-		post = json.loads(message)
+	def parse_fandom_discussion(self, message: str):
+		try:
+			post = json.loads(message)
+		except json.JSONDecodeError:
+			logger.warning("Seems like we have invalid JSON in Discussions part, message: {}".format(message))
+			return
 		if post.get('action', 'unknown') != "deleted":  # ignore deletion events
 			url = urlparse(post.get('url'))
 			full_url ="https://"+ url.netloc + recognize_langs(url.path)
