@@ -347,7 +347,7 @@ async def scan_group(group: str):
 		except asyncio.CancelledError:
 			return
 		except QueueEmpty:
-			await asyncio.sleep(21.0)
+			await asyncio.sleep(10.0)
 			continue
 
 
@@ -358,7 +358,7 @@ async def wiki_scanner():
 		async for group, db_wikis in generate_domain_groups():  # First scan
 			await rcqueue.start_group(group, db_wikis)
 		while True:
-			await asyncio.sleep(19.0)
+			await asyncio.sleep(20.0)
 			await rcqueue.update_queues()
 	except asyncio.CancelledError:
 		for item in rcqueue.domain_list.values():  # cancel running tasks
