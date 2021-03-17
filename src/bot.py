@@ -166,15 +166,13 @@ class RcQueue:
 						logger.debug("CURRENT DOMAIN INFO: {}".format(domain))
 						logger.debug("IS WIKI IN A LIST?: {}".format(db_wiki["wiki"] in current_domain["irc"].updated))
 						logger.debug("LAST CHECK FOR THE WIKI {} IS {}".format(db_wiki["wiki"], all_wikis[db_wiki["wiki"]].last_check))
-						if db_wiki["wiki"] not in current_domain["irc"].updated and all_wikis[db_wiki["wiki"]].last_check+settings["irc_overtime"] > time.time():
-							logger.debug('Skipping wiki {}'.format(db_wiki["wiki"]))
-							continue  #  if domain has IRC, has not been updated, and it was updated less than an hour ago
-						else:  # otherwise remove it from the list
-							try:
-								current_domain["irc"].updated.remove(db_wiki["wiki"])
-							except KeyError:
-								pass  # this is to be expected when third condition is not met above
-							current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20), forced=True) #  avoid the queue limit and ROWID logic
+						if db_wiki["wiki"] in current_domain["irc"].updated:  # Priority wikis are the ones with IRC, if they get updated forcefully add them to queue
+							current_domain["irc"].updated.remove(db_wiki["wiki"])
+							current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20), forced=True)
+							continue
+						elif all_wikis[db_wiki["wiki"]].last_check+settings["irc_overtime"] > time.time():  # if time went by and wiki should be updated now use default mechanics
+							pass
+						else:  # Continue without adding
 							continue
 					if not db_wiki["ROWID"] < current_domain["last_rowid"]:
 						current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20))
