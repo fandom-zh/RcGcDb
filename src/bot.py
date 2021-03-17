@@ -114,12 +114,13 @@ class RcQueue:
 		"""Retrives next wiki in the queue for given domain"""
 		if len(self.domain_list[group]["query"]) == 0:
 			# make sure we are not removing the group because entire domain group went down, it's expensive - yes, but could theoretically cause issues
-			if self.check_if_domain_in_db(group):
-				#logger.warning("Domain group {} has 0 elements yet there are still wikis in the db of the same domain group! This may indicate we ran over the list too fast. We are waiting...".format(group))
-				raise QueueEmpty
-			else:
-				await self.stop_task_group(group)
-				return
+			raise QueueEmpty
+			# if self.check_if_domain_in_db(group):
+			# 	#logger.warning("Domain group {} has 0 elements yet there are still wikis in the db of the same domain group! This may indicate we ran over the list too fast. We are waiting...".format(group))
+			# 	raise QueueEmpty
+			# else:
+			# 	await self.stop_task_group(group)
+			# 	return
 		try:
 			yield self.domain_list[group]["query"][0]
 		except asyncio.CancelledError:
