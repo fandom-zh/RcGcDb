@@ -171,7 +171,7 @@ class RcQueue:
 							current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20), forced=True)
 							logger.debug("Updated in IRC so adding to queue.")
 							continue
-						elif all_wikis[db_wiki["wiki"]].last_check+settings["irc_overtime"] > time.time():  # if time went by and wiki should be updated now use default mechanics
+						elif all_wikis[db_wiki["wiki"]].last_check+settings["irc_overtime"] < time.time():  # if time went by and wiki should be updated now use default mechanics
 							logger.debug("Overtime so adding to queue.")
 							pass
 						else:  # Continue without adding
