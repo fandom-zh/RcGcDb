@@ -50,8 +50,8 @@ class LimitedList(list):
 	def __init__(self, *args):
 		list.__init__(self, *args)
 
-	def append(self, obj: QueuedWiki) -> None:
-		if len(self) < queue_limit:
+	def append(self, obj: QueuedWiki, forced: bool = False) -> None:
+		if len(self) < queue_limit or forced:
 			self.insert(len(self), obj)
 			return
 		raise ListFull
@@ -174,6 +174,8 @@ class RcQueue:
 								current_domain["irc"].updated.remove(db_wiki["wiki"])
 							except KeyError:
 								pass  # this is to be expected when third condition is not met above
+							current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20), forced=True) #  avoid the queue limit and ROWID logic
+							continue
 					if not db_wiki["ROWID"] < current_domain["last_rowid"]:
 						current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20))
 				except KeyError:
