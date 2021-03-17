@@ -145,10 +145,10 @@ async def process_cats(event: dict, local_wiki: Wiki, category_msgs: dict, categ
 				wiki_cat_mw_messages = category_msgs[local_wiki.mw_messages]
 				if wiki_cat_mw_messages[0][1] in comment_to_match or wiki_cat_mw_messages[2][1] in comment_to_match:  # Added to category
 					categorize_events[event["revid"]]["new"].add(cat_title)
-					logger.debug("Matched {} to added category for {}".format(cat_title, event["revid"]))
+					#logger.debug("Matched {} to added category for {}".format(cat_title, event["revid"]))
 				elif wiki_cat_mw_messages[1][1] in comment_to_match or wiki_cat_mw_messages[3][1] in comment_to_match:  # Removed from category
 					categorize_events[event["revid"]]["removed"].add(cat_title)
-					logger.debug("Matched {} to removed category for {}".format(cat_title, event["revid"]))
+					#logger.debug("Matched {} to removed category for {}".format(cat_title, event["revid"]))
 				else:
 					logger.debug(
 						"Unknown match for category change with messages {}, {}, {}, {} and comment_to_match {}".format(
@@ -197,7 +197,7 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, tar
 	"""Prepares essential information for both embed and compact message format."""
 	_ = langs[target[0][0]]["wiki"].gettext
 	changed_categories = changed_categories.get(change["revid"], None)
-	logger.debug("List of categories in essential_info: {}".format(changed_categories))
+	#logger.debug("List of categories in essential_info: {}".format(changed_categories))
 	appearance_mode = embed_formatter if target[0][1] > 0 else compact_formatter
 	if "actionhidden" in change or "suppressed" in change:  # if event is hidden using suppression
 		await appearance_mode("suppressed", change, "", changed_categories, local_wiki, target, paths, rate_limiter)

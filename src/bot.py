@@ -162,12 +162,12 @@ class RcQueue:
 				try:
 					current_domain: dict = self[domain]
 					if current_domain["irc"]:
-						logger.debug('CURRENT STATUS:')
 						logger.debug("DOMAIN LIST FOR IRC: {}".format(current_domain["irc"].updated))
 						logger.debug("CURRENT DOMAIN INFO: {}".format(domain))
 						logger.debug("IS WIKI IN A LIST?: {}".format(db_wiki["wiki"] in current_domain["irc"].updated))
 						logger.debug("LAST CHECK FOR THE WIKI {} IS {}".format(db_wiki["wiki"], all_wikis[db_wiki["wiki"]].last_check))
 						if db_wiki["wiki"] not in current_domain["irc"].updated and all_wikis[db_wiki["wiki"]].last_check+settings["irc_overtime"] > time.time():
+							logger.debug('Skipping wiki {}'.format(db_wiki["wiki"]))
 							continue  #  if domain has IRC, has not been updated, and it was updated less than an hour ago
 						else:  # otherwise remove it from the list
 							try:
