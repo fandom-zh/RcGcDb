@@ -7,12 +7,18 @@ logger = logging.getLogger("rcgcdw.irc_feed")
 
 
 class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
+	def connect(self, *args, **kwargs):
+		super().connect(*args, **kwargs)
+		self.connection_details = (args, kwargs)
+
 	def __init__(self, targets, all_wikis):
 		irc.client_aio.SimpleIRCClient.__init__(self)
 		self.targets = targets
 		self.updated = set()  # Storage for edited wikis
 		self.updated_discussions = set()
 		self.wikis = all_wikis
+		self.connection.buffer_class.errors = "replace"  # Ignore encoding errors
+		self.connection_details = None
 
 	def on_welcome(self, connection, event):  # Join IRC channels
 		for channel in self.targets.values():
@@ -28,7 +34,7 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		c.nick(c.get_nickname() + "_")
 
 	def on_disconnect(self, connection, event):
-		connection.reconnect()
+		self.connect(*self.connection_details[0], **self.connection_details[1])  # attempt to reconnect
 
 	def parse_fandom_message(self, message: str):
 		message = message.split("\x035*\x03")
@@ -43,6 +49,7 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		if full_url in self.wikis and self.wikis[full_url].rc_active != -1:
 			self.updated.add(full_url)
 			logger.debug("New website appended to the list! {}".format(full_url))
+
 
 	def parse_fandom_discussion(self, message: str):
 		try:

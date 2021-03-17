@@ -169,10 +169,13 @@ class RcQueue:
 						if db_wiki["wiki"] in current_domain["irc"].updated:  # Priority wikis are the ones with IRC, if they get updated forcefully add them to queue
 							current_domain["irc"].updated.remove(db_wiki["wiki"])
 							current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20), forced=True)
+							logger.debug("Updated in IRC so adding to queue.")
 							continue
 						elif all_wikis[db_wiki["wiki"]].last_check+settings["irc_overtime"] > time.time():  # if time went by and wiki should be updated now use default mechanics
+							logger.debug("Overtime so adding to queue.")
 							pass
 						else:  # Continue without adding
+							logger.debug("No condition fulfilled so skipping.")
 							continue
 					if not db_wiki["ROWID"] < current_domain["last_rowid"]:
 						current_domain["query"].append(QueuedWiki(db_wiki["wiki"], 20))
