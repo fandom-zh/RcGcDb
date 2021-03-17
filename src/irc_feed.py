@@ -27,6 +27,9 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 	def on_nicknameinuse(self, c, e):
 		c.nick(c.get_nickname() + "_")
 
+	def on_disconnect(self, connection, event):
+		connection.reconnect()
+
 	def parse_fandom_message(self, message: str):
 		message = message.split("\x035*\x03")
 		# print(asyncio.all_tasks())
@@ -52,7 +55,7 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 			full_url ="https://"+ url.netloc + recognize_langs(url.path)
 			if full_url in self.wikis:  # POSSIBLE MEMORY LEAK AS WE DON'T HAVE A WAY TO CHECK IF WIKI IS LOOKING FOR DISCUSSIONS OR NOT
 				self.updated_discussions.add("https://"+full_url)
-				logger.debug("New website appended to the list! {}".format(full_url))
+				logger.debug("New website appended to the list (discussions)! {}".format(full_url))
 
 
 def recognize_langs(path):
