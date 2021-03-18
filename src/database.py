@@ -1,6 +1,18 @@
-import sqlite3
+import asyncpg
+from typing import Any, Union, Optional
 from src.config import settings
 
-db_connection = sqlite3.connect(settings.get("database_path", 'rcgcdb.db'))
-db_connection.row_factory = sqlite3.Row
-db_cursor = db_connection.cursor()
+connection: Optional[asyncpg.Connection] = None
+
+
+async def setup_connection():
+    global connection
+    # Establish a connection to an existing database named "test"
+    # as a "postgres" user.
+    connection: asyncpg.connection = await asyncpg.connect(user=settings["pg_user"], host=settings.get("pg_host", "localhost"),
+                                 database=settings.get("pg_db", "RcGcDb"), password=settings.get("pg_pass"))
+
+
+async def shutdown_connection():
+    global connection
+    await connection.close()

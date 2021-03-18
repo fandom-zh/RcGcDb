@@ -3,3 +3,5 @@ aiohttp >= 3.6.2
 lxml >= 4.2.1
 nest-asyncio >= 1.4.0
 irc >= 19.0.1
+beautifulsoup4>=4.9.3
+asyncpg>=0.22.0

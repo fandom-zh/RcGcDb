@@ -11,7 +11,7 @@ from typing import Generator
 from contextlib import asynccontextmanager
 from src.argparser import command_line_args
 from src.config import settings
-from src.database import db_cursor, db_connection
+from src.database import connection, setup_connection, shutdown_connection
 from src.exceptions import *
 from src.misc import get_paths, get_domain
 from src.msgqueue import messagequeue, send_to_discord
@@ -301,7 +301,7 @@ async def scan_group(group: str):
 					else:
 						local_wiki.rc_active = 0
 						DBHandler.add(queued_wiki.url, 0)
-					DBHandler.update_db()
+					await DBHandler.update_db()
 					continue
 				categorize_events = {}
 				targets = generate_targets(queued_wiki.url, "AND (rcid != -1 OR rcid IS NULL)")
@@ -347,7 +347,7 @@ async def scan_group(group: str):
 					if recent_changes:  # we don't have to test for highest_rc being null, because if there are no RC entries recent_changes will be an empty list which will result in false in here and DO NOT save the value
 						local_wiki.rc_active = highest_rc
 						DBHandler.add(queued_wiki.url, highest_rc)
-				DBHandler.update_db()
+				await DBHandler.update_db()
 		except asyncio.CancelledError:
 			return
 		except QueueEmpty:
@@ -426,7 +426,7 @@ async def discussion_handler():
 									                  ("-1", db_wiki["wiki"],))
 								else:
 									await local_wiki.remove(db_wiki["wiki"], 1000)
-								DBHandler.update_db()
+								await DBHandler.update_db()
 								continue
 							raise WikiError
 						discussion_feed = discussion_feed_resp["_embedded"]["doc:posts"]
@@ -445,7 +445,7 @@ async def discussion_handler():
 						DBHandler.add(db_wiki["wiki"], discussion_feed[-1]["id"], True)
 					else:
 						DBHandler.add(db_wiki["wiki"], "0", True)
-					DBHandler.update_db()
+					await DBHandler.update_db()
 					continue
 				comment_events = []
 				targets = generate_targets(db_wiki["wiki"], "AND NOT postid = '-1'")
@@ -496,7 +496,7 @@ async def discussion_handler():
 					DBHandler.add(db_wiki["wiki"], post["id"], True)
 				await asyncio.sleep(delay=2.0)  # hardcoded really doesn't need much more
 			await asyncio.sleep(delay=1.0) # Avoid lock on no wikis
-			DBHandler.update_db()
+			await DBHandler.update_db()
 	except asyncio.CancelledError:
 		pass
 	except:
@@ -510,8 +510,6 @@ async def discussion_handler():
 
 def shutdown(loop, signal=None):
 	global main_tasks
-	DBHandler.update_db()
-	db_connection.close()
 	loop.remove_signal_handler(signal)
 	if len(messagequeue) > 0:
 		logger.warning("Some messages are still queued!")
@@ -558,6 +556,8 @@ async def main_loop():
 		main_tasks["msg_queue_shield"] = asyncio.shield(main_tasks["message_sender"])
 		await asyncio.gather(main_tasks["wiki_scanner"], main_tasks["discussion_handler"], main_tasks["message_sender"])
 	except KeyboardInterrupt:
+		await DBHandler.update_db()
+		await shutdown_connection()
 		shutdown(loop)
 	except asyncio.CancelledError:
 		return
