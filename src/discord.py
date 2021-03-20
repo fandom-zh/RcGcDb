@@ -241,7 +241,7 @@ async def handle_discord_http(code: int, formatted_embed: str, result: aiohttp.C
 	elif code == 401 or code == 404:  # HTTP UNAUTHORIZED AND NOT FOUND
 		logger.error("Webhook URL is invalid or no longer in use, please replace it with proper one.")
 		async with db.pool().acquire() as connection:
-			await connection.execute("DELETE FROM rcgcdw WHERE webhook = $1", (webhook_url,))
+			await connection.execute("DELETE FROM rcgcdw WHERE webhook = $1", webhook_url)
 		await webhook_removal_monitor(webhook_url, code)
 		return 1
 	elif code == 429:
