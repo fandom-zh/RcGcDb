@@ -4,7 +4,6 @@
     },
     "max_requests_per_minute": 30,
     "minimal_cooldown_per_wiki_in_sec": 60,
-    "database_path": "rcgcdb.db",
     "monitoring_webhook": "111111111111111111/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
     "support": "https://discord.gg/v77RTk5",
     "irc_overtime": 3600,
