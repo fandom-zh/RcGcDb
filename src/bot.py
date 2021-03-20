@@ -400,6 +400,7 @@ async def message_sender():
 			await generic_msg_sender_exception_logger(traceback.format_exc(), "Message sender exception")
 
 async def discussion_handler():
+	await asyncio.sleep(3.0)  # Make some time before IRC code is executed, happens only once and saves if inside
 	try:
 		while True:
 			async with db.pool().acquire() as connection:
@@ -410,7 +411,8 @@ async def discussion_handler():
 						except KeyError:
 							local_wiki = all_wikis[db_wiki["wiki"]] = Wiki()
 							local_wiki.rc_active = db_wiki["rcid"]
-						if db_wiki["wiki"] not in rcqueue.irc_mapping["fandom.com"].updated_discussions and local_wiki.last_discussion_check+settings["irc_overtime"] > time.time():  # I swear if another wiki farm ever starts using Fandom discussions I'm gonna use explosion magic
+						if db_wiki["wiki"] not in rcqueue.irc_mapping["fandom.com"].updated_discussions and \
+								local_wiki.last_discussion_check+settings["irc_overtime"] > time.time():  # I swear if another wiki farm ever starts using Fandom discussions I'm gonna use explosion magic
 							continue
 						else:
 							try:
