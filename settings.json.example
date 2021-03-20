@@ -12,6 +12,7 @@
     "pg_host": "localhost",
     "pg_db": "rcgcdb",
     "pg_pass": "secret_password",
+    "pg_port": "5432",
     "irc_servers": {
         "your custom name for the farm": {
             "domains": ["wikipedia.org", "otherwikipedia.org"],
