@@ -19,6 +19,7 @@ class db_connection:
         logger.debug("Database connection established! Connection: {}".format(self.connection))
 
     async def shutdown_connection(self):
+        logger.debug("Shutting down database connection...")
         await self.connection.close()
 
     def pool(self) -> asyncpg.Pool:

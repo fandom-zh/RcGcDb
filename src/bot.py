@@ -151,7 +151,7 @@ class RcQueue:
 			full = set()
 			async with db.pool().acquire() as connection:
 				async with connection.transaction():
-					async for db_wiki in connection.cursor('SELECT DISTINCT wiki, row_number() over (ORDER BY webhook) AS ROWID, webhook, lang, display, rcid FROM rcgcdw WHERE rcid != -1 OR rcid IS NULL order by webhook'):
+					async for db_wiki in connection.cursor('SELECT DISTINCT wiki, row_number() OVER (ORDER BY webhook) AS rowid, webhook, lang, display, rcid FROM rcgcdw WHERE rcid != -1 OR rcid IS NULL ORDER BY webhook'):
 						domain = get_domain(db_wiki["wiki"])
 						try:
 							if db_wiki["wiki"] not in all_wikis:
