@@ -431,8 +431,7 @@ async def discussion_handler():
 									error = discussion_feed_resp["error"]
 									if error == "NotFoundException":  # Discussions disabled
 										if db_wiki["rcid"] != -1:  # RC feed is disabled
-											await connection.execute("UPDATE rcgcdw SET postid = $1 WHERE wiki = $2",
-											                  ("-1", db_wiki["wiki"],))
+											await connection.execute("UPDATE rcgcdw SET postid = $1 WHERE wiki = $2", "-1", db_wiki["wiki"])
 										else:
 											await local_wiki.remove(db_wiki["wiki"], 1000)
 										await DBHandler.update_db()
