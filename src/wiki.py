@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import re
 import logging, aiohttp
 from src.exceptions import *
-from src.database import connection
+from src.database import db
 from src.formatters.rc import embed_formatter, compact_formatter
 from src.formatters.discussions import feeds_embed_formatter, feeds_compact_formatter
 from src.misc import parse_link
@@ -109,7 +109,8 @@ class Wiki:
 		logger.info("Removing a wiki {}".format(wiki_url))
 		await src.discord.wiki_removal(wiki_url, reason)
 		await src.discord.wiki_removal_monitor(wiki_url, reason)
-		result = await connection.execute('DELETE FROM rcgcdw WHERE wiki = ?', wiki_url)
+		async with db.pool().acquire() as connection:
+			result = await connection.execute('DELETE FROM rcgcdw WHERE wiki = $1', wiki_url)
 		logger.warning('{} rows affected by DELETE FROM rcgcdw WHERE wiki = "{}"'.format(result, wiki_url))
 
 	async def pull_comment(self, comment_id, WIKI_API_PATH, rate_limiter):
