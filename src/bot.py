@@ -25,7 +25,7 @@ from src.irc_feed import AioIRCCat
 logging.config.dictConfig(settings["logging"])
 logger = logging.getLogger("rcgcdb.bot")
 logger.debug("Current settings: {settings}".format(settings=settings))
-logger.info("RcGcDb v{} is starting up.".format("1.0"))
+logger.info("RcGcDb v{} is starting up.".format("1.1"))
 
 if command_line_args.debug:
 	logger.info("Debug mode is active!")
