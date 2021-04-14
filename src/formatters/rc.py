@@ -627,16 +627,19 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 			editsize) if editsize > 0 else editsize, new=_("(N!) ") if action == "new" else "",
 		                                                             minor=_("m") if action == "edit" and "minor" in change else "", bot=_('b') if "bot" in change else "", space=" " if "bot" in change or (action == "edit" and "minor" in change) or action == "new" else "")
 		if message_target[0][1] == 3:
-			if action == "new":
-				changed_content = await recent_changes.safe_request(
-				"{wiki}?action=compare&format=json&fromtext=&torev={diff}&topst=1&prop=diff".format(
-					wiki=WIKI_API_PATH, diff=change["revid"]
-				), rate_limiter, "compare", "*")
-			else:
-				changed_content = await recent_changes.safe_request(
-					"{wiki}?action=compare&format=json&fromrev={oldrev}&torev={diff}&topst=1&prop=diff".format(
-						wiki=WIKI_API_PATH, diff=change["revid"],oldrev=change["old_revid"]
+			try:
+				if action == "new":
+					changed_content = await recent_changes.safe_request(
+					"{wiki}?action=compare&format=json&fromtext=&torev={diff}&topst=1&prop=diff".format(
+						wiki=WIKI_API_PATH, diff=change["revid"]
 					), rate_limiter, "compare", "*")
+				else:
+					changed_content = await recent_changes.safe_request(
+						"{wiki}?action=compare&format=json&fromrev={oldrev}&torev={diff}&topst=1&prop=diff".format(
+							wiki=WIKI_API_PATH, diff=change["revid"],oldrev=change["old_revid"]
+						), rate_limiter, "compare", "*")
+			except ClientResponseError:
+				changed_content = None
 			if changed_content:
 				EditDiff = ContentParser(message_target[0][0])
 				EditDiff.feed(changed_content)
