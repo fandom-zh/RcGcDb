@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RcGcDw\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-12-21 15:31+0100\n"
+"POT-Creation-Date: 2021-04-14 16:00+0200\n"
 "PO-Revision-Date: 2020-08-13 19:07+0000\n"
 "Last-Translator: Leo-768 <>\n"
 "Language-Team: Chinese (Traditional) <https://weblate.frisk.space/projects/"
@@ -19,11 +19,11 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: Weblate 4.1.1\n"
 
-#: src/wiki.py:205
+#: src/wiki.py:208
 msgid "~~hidden~~"
 msgstr "~~隱藏~~"
 
-#: src/wiki.py:210
+#: src/wiki.py:213
 msgid "hidden"
 msgstr "隱藏"
 

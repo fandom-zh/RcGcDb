@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RcGcDw\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-11-30 21:48+0100\n"
+"POT-Creation-Date: 2021-04-14 16:00+0200\n"
 "PO-Revision-Date: 2020-11-25 10:16+0000\n"
 "Last-Translator: Creeper <thisisacreeper0101@gmail.com>\n"
 "Language-Team: Hindi <https://weblate.frisk.space/projects/rcgcdw/rc/hi/>\n"
@@ -18,11 +18,11 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
 "X-Generator: Weblate 4.2.1\n"
 
-#: src/wiki.py:205
+#: src/wiki.py:208
 msgid "~~hidden~~"
 msgstr "~~छिपाया गया~~"
 
-#: src/wiki.py:210
+#: src/wiki.py:213
 msgid "hidden"
 msgstr "छिपाया गया"
 
