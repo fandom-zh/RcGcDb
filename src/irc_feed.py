@@ -1,22 +1,26 @@
+from __future__ import annotations
 import irc.client_aio
 import json
 import logging
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse, quote
 
 logger = logging.getLogger("rcgcdw.irc_feed")
 
+if TYPE_CHECKING:
+	from src.domain import Domain
 
 class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 	def connect(self, *args, **kwargs):
 		super().connect(*args, **kwargs)
 		self.connection_details = (args, kwargs)
 
-	def __init__(self, targets, all_wikis):
+	def __init__(self, targets: dict[str, str], domain_object: Domain):
 		irc.client_aio.SimpleIRCClient.__init__(self)
 		self.targets = targets
 		self.updated = set()  # Storage for edited wikis
 		self.updated_discussions = set()
-		self.wikis = all_wikis
+		self.domain = domain_object
 		self.connection.buffer_class.errors = "replace"  # Ignore encoding errors
 		self.connection_details = None
 
@@ -46,9 +50,12 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		# print(message)
 		url = urlparse(message)
 		full_url = "https://"+url.netloc + recognize_langs(url.path)
-		if full_url in self.wikis and self.wikis[full_url].rc_active != -1:
-			self.updated.add(full_url)
-			logger.debug("New website appended to the list! {}".format(full_url))
+		try:
+			if self.domain[full_url].rc_id != -1:
+				self.updated.add(full_url)
+				logger.debug("New website appended to the list! {}".format(full_url))
+		except KeyError:
+			pass
 
 
 	def parse_fandom_discussion(self, message: str):
@@ -60,7 +67,7 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		if post.get('action', 'unknown') != "deleted":  # ignore deletion events
 			url = urlparse(post.get('url'))
 			full_url ="https://"+ url.netloc + recognize_langs(url.path)
-			if full_url in self.wikis:  # POSSIBLE MEMORY LEAK AS WE DON'T HAVE A WAY TO CHECK IF WIKI IS LOOKING FOR DISCUSSIONS OR NOT
+			if full_url in self.domain:  # POSSIBLE MEMORY LEAK AS WE DON'T HAVE A WAY TO CHECK IF WIKI IS LOOKING FOR DISCUSSIONS OR NOT
 				self.updated_discussions.add("https://"+full_url)
 				logger.debug("New website appended to the list (discussions)! {}".format(full_url))
 
