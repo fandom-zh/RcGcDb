@@ -1,8 +1,12 @@
 from __future__ import annotations
+
+import asyncio
+import types
+
 import irc.client_aio
 import json
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 from urllib.parse import urlparse, quote
 
 logger = logging.getLogger("rcgcdw.irc_feed")
@@ -15,11 +19,11 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		super().connect(*args, **kwargs)
 		self.connection_details = (args, kwargs)
 
-	def __init__(self, targets: dict[str, str], domain_object: Domain):
+	def __init__(self, targets: dict[str, str], domain_object: Domain, rc_callback: Callable, discussion_callback: Callable):
 		irc.client_aio.SimpleIRCClient.__init__(self)
 		self.targets = targets
-		self.updated = set()  # Storage for edited wikis
-		self.updated_discussions = set()
+		self.updated_wikis: set[str] = set()
+		self.discussion_callback = discussion_callback
 		self.domain = domain_object
 		self.connection.buffer_class.errors = "replace"  # Ignore encoding errors
 		self.connection_details = None
@@ -50,12 +54,10 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		# print(message)
 		url = urlparse(message)
 		full_url = "https://"+url.netloc + recognize_langs(url.path)
-		try:
-			if self.domain[full_url].rc_id != -1:
-				self.updated.add(full_url)
-				logger.debug("New website appended to the list! {}".format(full_url))
-		except KeyError:
-			pass
+		wiki = self.domain.get_wiki(full_url)
+		if wiki and wiki.rc_id != -1:
+			self.updated_wikis.add(full_url)
+			logger.debug("New website appended to the list! {}".format(full_url))
 
 
 	def parse_fandom_discussion(self, message: str):
@@ -67,9 +69,8 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		if post.get('action', 'unknown') != "deleted":  # ignore deletion events
 			url = urlparse(post.get('url'))
 			full_url ="https://"+ url.netloc + recognize_langs(url.path)
-			if full_url in self.domain:  # POSSIBLE MEMORY LEAK AS WE DON'T HAVE A WAY TO CHECK IF WIKI IS LOOKING FOR DISCUSSIONS OR NOT
-				self.updated_discussions.add("https://"+full_url)
-				logger.debug("New website appended to the list (discussions)! {}".format(full_url))
+			if full_url in self.domain:
+				self.discussion_callback(full_url)
 
 
 def recognize_langs(path):

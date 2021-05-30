@@ -31,7 +31,6 @@ class DomainManager:
         return ".".join(urlunparse((*parsed_url[0:2], "", "", "", "")).split(".")[-2:])
 
     async def new_domain(self, name: str) -> Domain:
-        irc = None
         domain_object = Domain(name)
         for irc_server in settings["irc_servers"].keys():
             if name in settings["irc_servers"][irc_server]["domains"]:

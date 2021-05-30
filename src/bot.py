@@ -41,7 +41,7 @@ main_tasks: dict = {}
 # Reasons for this: 1. we require amount of wikis to calculate the cooldown between requests
 # 2. Easier to code
 
-async def populate_allwikis():
+async def populate_wikis():
     async with db.pool().acquire() as connection:
         async with connection.transaction():
             async for db_wiki in connection.cursor('SELECT DISTINCT wiki, rcid, postid FROM rcgcdw'):
@@ -554,7 +554,7 @@ async def main_loop():
     nest_asyncio.apply(loop)
     await db.setup_connection()
     logger.debug("Connection type: {}".format(db.connection))
-    await populate_allwikis()
+    await populate_wikis()
     try:
         signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
         for s in signals:
