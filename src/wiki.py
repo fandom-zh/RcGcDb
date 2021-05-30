@@ -17,9 +17,18 @@ from bs4 import BeautifulSoup
 
 logger = logging.getLogger("rcgcdb.wiki")
 
+class Wiki:
+	def __init__(self, script_url: str, rc_id: int, discussion_id: int):
+		self.script_url = script_url
+		self.session = aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(6.0))
+		self.statistics = Statistics()
+
+	@property
+	def rc_id(self):
+		return self.statistics.rc_id
 
 @dataclass
-class Wiki:
+class Wiki_old:
 	mw_messages: int = None
 	fail_times: int = 0  # corresponding to amount of times connection with wiki failed for client reasons (400-499)
 	session: aiohttp.ClientSession = None
