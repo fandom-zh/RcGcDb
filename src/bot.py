@@ -9,6 +9,8 @@ from collections import defaultdict, namedtuple
 from typing import Generator
 
 from contextlib import asynccontextmanager
+
+from redis_connector import redis
 from src.argparser import command_line_args
 from src.config import settings
 from src.database import db
@@ -33,7 +35,7 @@ if command_line_args.debug:
 
 # Log Fail states with structure wiki_url: number of fail states
 all_wikis: dict = {}
-mw_msgs: dict = {}  # will have the type of id: tuple
+
 main_tasks: dict = {}
 
 
@@ -50,15 +52,6 @@ async def populate_wikis():
 queue_limit = settings.get("queue_limit", 30)
 QueuedWiki = namedtuple("QueuedWiki", ['url', 'amount'])
 
-class LimitedList(list):
-    def __init__(self, *args):
-        list.__init__(self, *args)
-
-    def append(self, obj: QueuedWiki, forced: bool = False) -> None:
-        if len(self) < queue_limit or forced:
-            self.insert(len(self), obj)
-            return
-        raise ListFull
 
 
 
@@ -550,11 +543,16 @@ def shutdown(loop, signal=None):
 
 async def main_loop():
     global main_tasks
+    # Fix some asyncio problems
     loop = asyncio.get_event_loop()
     nest_asyncio.apply(loop)
+    # Setup database connection
     await db.setup_connection()
     logger.debug("Connection type: {}".format(db.connection))
     await populate_wikis()
+    await redis.connect()
+    await redis.pubsub()
+    domains.run_all_domains()
     try:
         signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
         for s in signals:

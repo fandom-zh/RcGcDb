@@ -39,5 +39,8 @@ class DomainManager:
         self.domains[name] = domain_object
         return self.domains[name]
 
+    async def run_all_domains(self):
+        for domain in self.domains.values():
+            domain.run_domain()
 
 domains = DomainManager()

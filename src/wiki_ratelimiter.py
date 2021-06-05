@@ -17,3 +17,6 @@ class RateLimiter:
 		#logger.debug("Waiting {}".format(calculated_timeout))
 		if calculated_timeout > 0:
 			await asyncio.sleep(calculated_timeout)
+
+	def timeout_raw(self):
+		return self.timeout_until - time.time()

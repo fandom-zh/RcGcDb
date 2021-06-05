@@ -35,8 +35,15 @@ class Domain:
     def set_irc(self, irc_client: src.irc_feed.AioIRCCat):
         self.irc = irc_client
 
+    def stop_task(self):
+        """Cancells the task"""
+        self.task.cancel()  # Be aware that cancelling the task may take time
+
     def run_domain(self):
-        self.task = asyncio.create_task(self.run_wiki_check())
+        if not self.task or self.task.cancelled():
+            self.task = asyncio.create_task(self.run_wiki_check())
+        else:
+            logger.error(f"Tried to start a task for domain {self.name} however the task already exists!")
 
     def add_wiki(self, wiki: src.wiki.Wiki, first=False):
         """Adds a wiki to domain list.
@@ -54,7 +61,7 @@ class Domain:
         self.rate_limiter.timeout_add(1.0)
 
     async def irc_scheduler(self):
-        while 1:
+        while True:
             try:
                 wiki_url = self.irc.updated_wikis.pop()
             except KeyError:
@@ -72,14 +79,15 @@ class Domain:
                 return  # Recently scanned wikis will get at the end of the self.wikis, so we assume what is first hasn't been checked for a while
 
     async def regular_scheduler(self):
-        while 1:
-            additional_time = max((-25*len(self))+150, 0)
-
+        while True:
+            await asyncio.sleep(max((-25*len(self))+150, 1))  # To make sure that we don't spam domains with one wiki every second we calculate a sane timeout for domains with few wikis
+            await self.run_wiki_scan(self.wikis.pop())
 
 
     async def run_wiki_check(self):
         if self.irc:
-            while:
+            while True:
                 await self.irc_scheduler()
+                await asyncio.sleep(10.0)
         else:
             await self.regular_scheduler()

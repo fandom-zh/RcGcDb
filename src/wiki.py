@@ -8,24 +8,142 @@ from src.formatters.discussions import feeds_embed_formatter, feeds_compact_form
 from src.misc import parse_link
 from src.i18n import langs
 from src.wiki_ratelimiter import RateLimiter
+from statistics import Statistics
 import sqlite3
 import src.discord
 import asyncio
 from src.config import settings
 # noinspection PyPackageRequirements
 from bs4 import BeautifulSoup
+from collections import OrderedDict
+from typing import Union
 
 logger = logging.getLogger("rcgcdb.wiki")
 
 class Wiki:
 	def __init__(self, script_url: str, rc_id: int, discussion_id: int):
-		self.script_url = script_url
+		self.script_url: str = script_url
 		self.session = aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(6.0))
-		self.statistics = Statistics()
+		self.statistics: Statistics = Statistics(rc_id, discussion_id)
+		self.fail_times: int = 0
+		self.mw_messages: MWMessagesHashmap = MWMessagesHashmap()
 
 	@property
 	def rc_id(self):
-		return self.statistics.rc_id
+		return self.statistics.last_action
+
+	def downtime_controller(self, down):
+		if down:
+			self.fail_times += 1
+		else:
+			self.fail_times -= 1
+
+	def parse_mw_request_info(self, request_data: dict, url: str):
+		"""A function parsing request JSON message from MediaWiki logging all warnings and raising on MediaWiki errors"""
+		# any([True for k in request_data.keys() if k in ("error", "errors")])
+		errors: list = request_data.get("errors", {})  # Is it ugly? I don't know tbh
+		if errors:
+			raise MediaWikiError(str(errors))
+		warnings: list = request_data.get("warnings", {})
+		if warnings:
+			for warning in warnings:
+				logger.warning("MediaWiki returned the following warning: {code} - {text} on {url}.".format(
+					code=warning["code"], text=warning.get("text", warning.get("*", "")), url=url
+				))
+		return request_data
+
+	async def api_request(self, params: Union[str, OrderedDict], *json_path: str, timeout: int = 10,
+					allow_redirects: bool = False) -> dict:
+		"""Method to GET request data from the wiki's API with error handling including recognition of MediaWiki errors.
+
+		Parameters:
+
+			params (str, OrderedDict): a string or collections.OrderedDict object containing query parameters
+			json_path (str): *args taking strings as values. After request is parsed as json it will extract data from given json path
+			timeout (int, float) (default=10): int or float limiting time required for receiving a full response from a server before returning TimeoutError
+			allow_redirects (bool) (default=False): switches whether the request should follow redirects or not
+
+		Returns:
+
+			request_content (dict): a dict resulting from json extraction of HTTP GET request with given json_path
+			OR
+			One of the following exceptions:
+			ServerError: When connection with the wiki failed due to server error
+			ClientError: When connection with the wiki failed due to client error
+			KeyError: When json_path contained keys that weren't found in response JSON response
+			BadRequest: When params argument is of wrong type
+			MediaWikiError: When MediaWiki returns an error
+		"""
+		# Making request
+		try:
+			if isinstance(params,
+						  str):  # Todo Make it so there are some default arguments like warning/error format appended
+				request = await self.session.get(self.script_url + "api.php?" + params + "&errorformat=raw", timeout=timeout,
+										   allow_redirects=allow_redirects)
+			elif isinstance(params, OrderedDict):
+				params["errorformat"] = "raw"
+				request = await self.session.get(self.script_url + "api.php", params=params, timeout=timeout,
+										   allow_redirects=allow_redirects)
+			else:
+				raise BadRequest(params)
+		except (aiohttp.ServerConnectionError, aiohttp.ServerTimeoutError) as exc:
+			logger.warning("Reached {error} error for request on link {url}".format(error=repr(exc),
+																					url=self.script_url + str(params)))
+			self.downtime_controller(True)
+			raise ServerError
+		# Catching HTTP errors
+		if 499 < request.status < 600:
+			self.downtime_controller(True)
+			raise ServerError
+		elif request.status == 302:
+			logger.critical(
+				"Redirect detected! Either the wiki given in the script settings (wiki field) is incorrect/the wiki got removed or is giving us the false value. Please provide the real URL to the wiki, current URL redirects to {}".format(
+					request.url))
+		elif 399 < request.status < 500:
+			logger.error("Request returned ClientError status code on {url}".format(url=request.url))
+			raise ClientError(request)
+		else:
+			# JSON Extraction
+			try:
+				request_json = self.parse_mw_request_info(await request.json(encoding="UTF-8"), str(request.url))
+				for item in json_path:
+					request_json = request_json[item]
+			except ValueError:
+				logger.warning("ValueError when extracting JSON data on {url}".format(url=request.url))
+				self.downtime_controller(True)
+				raise ServerError
+			except MediaWikiError:
+				logger.exception("MediaWiki error on request: {}".format(request.url))
+				raise
+			except KeyError:
+				logger.exception("KeyError while iterating over json_path, full response: {}".format(request.json()))
+				raise
+		return request_json
+
+	async def fetch_wiki(self, extended, script_path, session: aiohttp.ClientSession, ratelimiter: RateLimiter,
+						 amount=20) -> aiohttp.ClientResponse:
+		await ratelimiter.timeout_wait()
+		if extended:
+			params = OrderedDict({"action": "query", "format": "json", "uselang": "content", "list": "tags|recentchanges",
+					  "meta": "allmessages|siteinfo",
+					  "utf8": 1, "tglimit": "max", "tgprop": "displayname",
+					  "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user",
+					  "rclimit": amount, "rcshow": "!bot", "rctype": "edit|new|log|categorize",
+					  "ammessages": "recentchanges-page-added-to-category|recentchanges-page-removed-from-category|recentchanges-page-added-to-category-bundled|recentchanges-page-removed-from-category-bundled",
+					  "amenableparser": 1, "amincludelocal": 1, "siprop": "namespaces|general"})
+		else:
+			params = OrderedDict({"action": "query", "format": "json", "uselang": "content", "list": "tags|recentchanges",
+					  "meta": "siteinfo", "utf8": 1,
+					  "tglimit": "max", "rcshow": "!bot", "tgprop": "displayname",
+					  "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user",
+					  "rclimit": amount, "rctype": "edit|new|log|categorize", "siprop": "namespaces|general"})
+		try:
+			response = await self.api_request(params=params)
+			ratelimiter.timeout_add(1.0)
+		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
+			logger.error("A connection error occurred while requesting {}".format(params))
+			raise WikiServerError
+		return response
 
 @dataclass
 class Wiki_old:
