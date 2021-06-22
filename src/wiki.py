@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 import re
 import logging, aiohttp
+
+from mw_messages import MWMessages
 from src.exceptions import *
 from src.database import db
 from src.formatters.rc import embed_formatter, compact_formatter
@@ -16,9 +18,10 @@ from src.config import settings
 # noinspection PyPackageRequirements
 from bs4 import BeautifulSoup
 from collections import OrderedDict
-from typing import Union
+from typing import Union, Optional
 
 logger = logging.getLogger("rcgcdb.wiki")
+
 
 class Wiki:
 	def __init__(self, script_url: str, rc_id: int, discussion_id: int):
@@ -26,15 +29,26 @@ class Wiki:
 		self.session = aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(6.0))
 		self.statistics: Statistics = Statistics(rc_id, discussion_id)
 		self.fail_times: int = 0
-		self.mw_messages: MWMessagesHashmap = MWMessagesHashmap()
+		self.mw_messages: Optional[MWMessages] = None  # TODO Need to initialize MWMessages() somewhere
+		self.first_fetch_done: bool = False
 
 	@property
 	def rc_id(self):
 		return self.statistics.last_action
 
-	def downtime_controller(self, down):
+	@staticmethod
+	async def remove(wiki_url, reason):
+		logger.info("Removing a wiki {}".format(wiki_url))
+		await src.discord.wiki_removal(wiki_url, reason)
+		await src.discord.wiki_removal_monitor(wiki_url, reason)
+		async with db.pool().acquire() as connection:
+			result = await connection.execute('DELETE FROM rcgcdw WHERE wiki = $1', wiki_url)
+		logger.warning('{} rows affected by DELETE FROM rcgcdw WHERE wiki = "{}"'.format(result, wiki_url))
+
+	def downtime_controller(self, down):  # TODO Finish this one
 		if down:
 			self.fail_times += 1
+
 		else:
 			self.fail_times -= 1
 
@@ -118,12 +132,11 @@ class Wiki:
 			except KeyError:
 				logger.exception("KeyError while iterating over json_path, full response: {}".format(request.json()))
 				raise
+		self.first_fetch_done = True
 		return request_json
 
-	async def fetch_wiki(self, extended, script_path, session: aiohttp.ClientSession, ratelimiter: RateLimiter,
-						 amount=20) -> aiohttp.ClientResponse:
-		await ratelimiter.timeout_wait()
-		if extended:
+	async def fetch_wiki(self, amount=20) -> dict:
+		if self.first_fetch_done is False:
 			params = OrderedDict({"action": "query", "format": "json", "uselang": "content", "list": "tags|recentchanges",
 					  "meta": "allmessages|siteinfo",
 					  "utf8": 1, "tglimit": "max", "tgprop": "displayname",
@@ -139,11 +152,21 @@ class Wiki:
 					  "rclimit": amount, "rctype": "edit|new|log|categorize", "siprop": "namespaces|general"})
 		try:
 			response = await self.api_request(params=params)
-			ratelimiter.timeout_add(1.0)
 		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
 			logger.error("A connection error occurred while requesting {}".format(params))
 			raise WikiServerError
 		return response
+
+	def scan(self):
+		try:
+			request = await self.fetch_wiki()
+		except WikiServerError:
+			self.downtime_controller(True)
+			return  # TODO Add a log entry?
+		else:
+			self.downtime_controller(False)
+		if not self.mw_messages:
+			mw_messages = request.get("query")
 
 @dataclass
 class Wiki_old:

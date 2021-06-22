@@ -4,6 +4,7 @@ import logging
 from collections import OrderedDict
 from src.config import settings
 from typing import TYPE_CHECKING, Optional
+from functools import cache
 logger = logging.getLogger("rcgcdb.domain")
 
 if TYPE_CHECKING:
@@ -56,7 +57,7 @@ class Domain:
 
     async def run_wiki_scan(self, wiki: src.wiki.Wiki):
         await self.rate_limiter.timeout_wait()
-        await wiki.scan()
+        await wiki.scan(self.rate_limiter)
         self.wikis.move_to_end(wiki.script_url)
         self.rate_limiter.timeout_add(1.0)
 
@@ -80,9 +81,12 @@ class Domain:
 
     async def regular_scheduler(self):
         while True:
-            await asyncio.sleep(max((-25*len(self))+150, 1))  # To make sure that we don't spam domains with one wiki every second we calculate a sane timeout for domains with few wikis
+            await asyncio.sleep(self.calculate_sleep_time(len(self)))  # To make sure that we don't spam domains with one wiki every second we calculate a sane timeout for domains with few wikis
             await self.run_wiki_scan(self.wikis.pop())
 
+    @cache
+    def calculate_sleep_time(self, queue_length: int):
+        return max((-25 * queue_length) + 150, 1)
 
     async def run_wiki_check(self):
         if self.irc:
