@@ -46,11 +46,15 @@ class Domain:
         else:
             logger.error(f"Tried to start a task for domain {self.name} however the task already exists!")
 
+    def remove_wiki(self, script_url: str):
+
+
     def add_wiki(self, wiki: src.wiki.Wiki, first=False):
         """Adds a wiki to domain list.
 
         :parameter wiki - Wiki object
         :parameter first (optional) - bool indicating if wikis should be added as first or last in the ordered dict"""
+        wiki.set_domain(self)
         self.wikis[wiki.script_url] = wiki
         if first:
             self.wikis.move_to_end(wiki.script_url, last=False)

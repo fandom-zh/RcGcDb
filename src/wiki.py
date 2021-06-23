@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass
 import re
 import logging, aiohttp
@@ -17,11 +18,16 @@ import asyncio
 from src.config import settings
 # noinspection PyPackageRequirements
 from bs4 import BeautifulSoup
-from collections import OrderedDict
-from typing import Union, Optional
+from collections import OrderedDict, defaultdict, namedtuple
+from typing import Union, Optional, TYPE_CHECKING
 
 logger = logging.getLogger("rcgcdb.wiki")
 
+wiki_reamoval_reasons = {410: _("wiki deleted"), 404: _("wiki deleted"), 401: _("wiki inaccessible"),
+				           402: _("wiki inaccessible"), 403: _("wiki inaccessible"), 1000: _("discussions disabled")}
+
+if TYPE_CHECKING:
+	from src.domain import Domain
 
 class Wiki:
 	def __init__(self, script_url: str, rc_id: int, discussion_id: int):
@@ -29,28 +35,44 @@ class Wiki:
 		self.session = aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(6.0))
 		self.statistics: Statistics = Statistics(rc_id, discussion_id)
 		self.fail_times: int = 0
-		self.mw_messages: Optional[MWMessages] = None  # TODO Need to initialize MWMessages() somewhere
+		self.mw_messages: Optional[MWMessages] = None
 		self.first_fetch_done: bool = False
+		self.domain: Optional[Domain] = None
 
 	@property
 	def rc_id(self):
 		return self.statistics.last_action
 
-	@staticmethod
-	async def remove(wiki_url, reason):
-		logger.info("Removing a wiki {}".format(wiki_url))
-		await src.discord.wiki_removal(wiki_url, reason)
-		await src.discord.wiki_removal_monitor(wiki_url, reason)
+	async def remove(self, reason):
+		logger.info("Removing a wiki {}".format(self.script_url))
+		await src.discord.wiki_removal(self.script_url, reason)
+		await src.discord.wiki_removal_monitor(self.script_url, reason)
 		async with db.pool().acquire() as connection:
-			result = await connection.execute('DELETE FROM rcgcdw WHERE wiki = $1', wiki_url)
-		logger.warning('{} rows affected by DELETE FROM rcgcdw WHERE wiki = "{}"'.format(result, wiki_url))
+			result = await connection.execute('DELETE FROM rcgcdw WHERE wiki = $1', self.script_url)
+		logger.warning('{} rows affected by DELETE FROM rcgcdw WHERE wiki = "{}"'.format(result, self.script_url))
 
-	def downtime_controller(self, down):  # TODO Finish this one
+	def set_domain(self, domain: Domain):
+		self.domain = domain
+
+	async def downtime_controller(self, down, reason=None):
 		if down:
 			self.fail_times += 1
-
+			if self.fail_times > 20:
+				await self.remove(reason)
 		else:
 			self.fail_times -= 1
+
+	def generate_targets(self) -> defaultdict[namedtuple, list[str]]:
+		"""This function generates all possible varations of outputs that we need to generate messages for.
+
+		:returns defaultdict[namedtuple, list[str]] - where namedtuple is a named tuple with settings for given webhooks in list"""
+		Settings = namedtuple("Settings", ["lang", "display"])
+		target_settings: defaultdict[Settings, list[str]] = defaultdict(list)
+		async with db.pool().acquire() as connection:
+			async with connection.transaction():
+				async for webhook in connection.cursor('SELECT webhook, lang, display FROM rcgcdw WHERE wiki = $1', self.script_url):
+					target_settings[Settings(webhook["lang"], webhook["display"])].append(webhook["webhook"])
+		return target_settings
 
 	def parse_mw_request_info(self, request_data: dict, url: str):
 		"""A function parsing request JSON message from MediaWiki logging all warnings and raising on MediaWiki errors"""
@@ -103,11 +125,9 @@ class Wiki:
 		except (aiohttp.ServerConnectionError, aiohttp.ServerTimeoutError) as exc:
 			logger.warning("Reached {error} error for request on link {url}".format(error=repr(exc),
 																					url=self.script_url + str(params)))
-			self.downtime_controller(True)
 			raise ServerError
 		# Catching HTTP errors
 		if 499 < request.status < 600:
-			self.downtime_controller(True)
 			raise ServerError
 		elif request.status == 302:
 			logger.critical(
@@ -115,6 +135,8 @@ class Wiki:
 					request.url))
 		elif 399 < request.status < 500:
 			logger.error("Request returned ClientError status code on {url}".format(url=request.url))
+			if request.status in wiki_reamoval_reasons:
+				await self.downtime_controller(True, reason=request.status)
 			raise ClientError(request)
 		else:
 			# JSON Extraction
@@ -124,7 +146,6 @@ class Wiki:
 					request_json = request_json[item]
 			except ValueError:
 				logger.warning("ValueError when extracting JSON data on {url}".format(url=request.url))
-				self.downtime_controller(True)
 				raise ServerError
 			except MediaWikiError:
 				logger.exception("MediaWiki error on request: {}".format(request.url))
@@ -161,12 +182,30 @@ class Wiki:
 		try:
 			request = await self.fetch_wiki()
 		except WikiServerError:
-			self.downtime_controller(True)
 			return  # TODO Add a log entry?
 		else:
-			self.downtime_controller(False)
+			await self.downtime_controller(False)
 		if not self.mw_messages:
-			mw_messages = request.get("query")
+			mw_messages = request.get("query", {}).get("allmessages", [])
+			final_mw_messages = dict()
+			for msg in mw_messages:
+				if "missing" not in msg:  # ignore missing strings
+					final_mw_messages[msg["name"]] = re.sub(r'\[\[.*?]]', '', msg["*"])
+				else:
+					logger.warning("Could not fetch the MW message translation for: {}".format(msg["name"]))
+			self.mw_messages = MWMessages(final_mw_messages)
+		try:
+			recent_changes = request["query"]["recentchanges"]
+			recent_changes.reverse()
+		except KeyError:
+			raise WikiError
+		if self.rc_id in (0, None, -1):
+			if len(recent_changes) > 0:
+				self.statistics.last_action = recent_changes[-1]["rcid"]
+			else:
+				self.statistics.last_action = 0
+				db.add(queued_wiki.url, 0)
+			await DBHandler.update_db()
 
 @dataclass
 class Wiki_old:
@@ -282,7 +321,7 @@ class Wiki_old:
 		return ""
 
 
-async def process_cats(event: dict, local_wiki: Wiki, category_msgs: dict, categorize_events: dict):
+async def process_cats(event: dict, local_wiki: Wiki, category_msgs: dict, categorize_events: dict):  # TODO Rewrite this
 	"""Process categories based on local MW messages. """
 	if event["type"] == "categorize":
 		if "commenthidden" not in event:
