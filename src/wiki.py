@@ -6,13 +6,13 @@ import logging, aiohttp
 from mw_messages import MWMessages
 from src.exceptions import *
 from src.database import db
+from src.queue_handler import DBHandler
 from src.formatters.rc import embed_formatter, compact_formatter
 from src.formatters.discussions import feeds_embed_formatter, feeds_compact_formatter
 from src.misc import parse_link
 from src.i18n import langs
 from src.wiki_ratelimiter import RateLimiter
 from statistics import Statistics
-import sqlite3
 import src.discord
 import asyncio
 from src.config import settings
@@ -204,8 +204,7 @@ class Wiki:
 				self.statistics.last_action = recent_changes[-1]["rcid"]
 			else:
 				self.statistics.last_action = 0
-				db.add(queued_wiki.url, 0)
-			await DBHandler.update_db()
+				DBHandler.add("UPDATE rcgcdw SET rcid = 0 WHERE wiki = {} AND ( rcid != -1 OR rcid IS NULL )".format(self.script_url))
 
 @dataclass
 class Wiki_old:

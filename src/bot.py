@@ -430,7 +430,6 @@ async def discussion_handler():
                                             await connection.execute("UPDATE rcgcdw SET postid = $1 WHERE wiki = $2", "-1", db_wiki["wiki"])
                                         else:
                                             await local_wiki.remove(db_wiki["wiki"], 1000)
-                                        await DBHandler.update_db()
                                         continue
                                     raise WikiError
                                 discussion_feed = discussion_feed_resp["_embedded"]["doc:posts"]
@@ -449,7 +448,6 @@ async def discussion_handler():
                                 DBHandler.add(db_wiki["wiki"], discussion_feed[-1]["id"], True)
                             else:
                                 DBHandler.add(db_wiki["wiki"], "0", True)
-                            await DBHandler.update_db()
                             continue
                         comment_events = []
                         targets = await generate_targets(db_wiki["wiki"], "AND NOT postid = '-1'")
@@ -500,7 +498,6 @@ async def discussion_handler():
                             DBHandler.add(db_wiki["wiki"], post["id"], True)
                         await asyncio.sleep(delay=2.0)  # hardcoded really doesn't need much more
             await asyncio.sleep(delay=1.0) # Avoid lock on no wikis
-            await DBHandler.update_db()
     except asyncio.CancelledError:
         pass
     except:
@@ -517,9 +514,10 @@ def shutdown(loop, signal=None):
     loop.remove_signal_handler(signal)
     if len(messagequeue) > 0:
         logger.warning("Some messages are still queued!")
-        for task in (main_tasks["wiki_scanner"], main_tasks["discussion_handler"], main_tasks["msg_queue_shield"]):
+        for task in (main_tasks["wiki_scanner"], main_tasks["discussion_handler"], main_tasks["msg_queue_shield"], main_tasks["database_updates_shield"]):
             task.cancel()
         loop.run_until_complete(main_tasks["message_sender"])
+        loop.run_until_complete(main_tasks["database_updates"])
     for task in asyncio.all_tasks(loop):
         logger.debug("Killing task")
         task.cancel()
@@ -564,12 +562,11 @@ async def main_loop():
     # loop.set_exception_handler(global_exception_handler)
     try:
         main_tasks = {"wiki_scanner": asyncio.create_task(wiki_scanner()), "message_sender": asyncio.create_task(message_sender()),
-                      "discussion_handler": asyncio.create_task(discussion_handler())}
+                      "discussion_handler": asyncio.create_task(discussion_handler()), "database_updates": asyncio.create_task(DBHandler.update_db())}
         main_tasks["msg_queue_shield"] = asyncio.shield(main_tasks["message_sender"])
-        await asyncio.gather(main_tasks["wiki_scanner"], main_tasks["discussion_handler"], main_tasks["message_sender"])
+        main_tasks["database_updates_shield"] = asyncio.shield(main_tasks["database_updates"])
+        await asyncio.gather(main_tasks["wiki_scanner"], main_tasks["discussion_handler"], main_tasks["message_sender"], main_tasks["database_updates"])
     except KeyboardInterrupt:
-        await DBHandler.update_db()
-        await db.shutdown_connection()
         shutdown(loop)
     except asyncio.CancelledError:
         return
