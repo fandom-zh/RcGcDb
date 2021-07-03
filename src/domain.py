@@ -61,7 +61,7 @@ class Domain:
 
     async def run_wiki_scan(self, wiki: src.wiki.Wiki):
         await self.rate_limiter.timeout_wait()
-        await wiki.scan(self.rate_limiter)
+        await wiki.scan()
         self.wikis.move_to_end(wiki.script_url)
         self.rate_limiter.timeout_add(1.0)
 

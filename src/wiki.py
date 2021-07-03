@@ -62,16 +62,14 @@ class Wiki:
 		else:
 			self.fail_times -= 1
 
-	def generate_targets(self) -> defaultdict[namedtuple, list[str]]:
+	async def generate_targets(self) -> defaultdict[namedtuple, list[str]]:
 		"""This function generates all possible varations of outputs that we need to generate messages for.
 
 		:returns defaultdict[namedtuple, list[str]] - where namedtuple is a named tuple with settings for given webhooks in list"""
 		Settings = namedtuple("Settings", ["lang", "display"])
 		target_settings: defaultdict[Settings, list[str]] = defaultdict(list)
-		async with db.pool().acquire() as connection:
-			async with connection.transaction():
-				async for webhook in connection.cursor('SELECT webhook, lang, display FROM rcgcdw WHERE wiki = $1', self.script_url):
-					target_settings[Settings(webhook["lang"], webhook["display"])].append(webhook["webhook"])
+		async for webhook in DBHandler.fetch_rows("SELECT webhook, lang, display FROM rcgcdw WHERE wiki = $1 AND (rcid != -1 OR rcid IS NULL)", self.script_url):
+			target_settings[Settings(webhook["lang"], webhook["display"])].append(webhook["webhook"])
 		return target_settings
 
 	def parse_mw_request_info(self, request_data: dict, url: str):
@@ -178,7 +176,7 @@ class Wiki:
 			raise WikiServerError
 		return response
 
-	def scan(self):
+	async def scan(self):
 		try:
 			request = await self.fetch_wiki()
 		except WikiServerError:
@@ -202,9 +200,15 @@ class Wiki:
 		if self.rc_id in (0, None, -1):
 			if len(recent_changes) > 0:
 				self.statistics.last_action = recent_changes[-1]["rcid"]
+				DBHandler.add(("UPDATE rcgcdw SET rcid = $1 WHERE wiki = $2 AND ( rcid != -1 OR rcid IS NULL )",
+							   (recent_changes[-1]["rcid"], self.script_url)))
 			else:
 				self.statistics.last_action = 0
-				DBHandler.add("UPDATE rcgcdw SET rcid = 0 WHERE wiki = {} AND ( rcid != -1 OR rcid IS NULL )".format(self.script_url))
+				DBHandler.add(("UPDATE rcgcdw SET rcid = 0 WHERE wiki = $1 AND ( rcid != -1 OR rcid IS NULL )", (self.script_url)))
+			return   # TODO Add a log entry?
+		categorize_events = {}
+		targets = await self.generate_targets()
+
 
 @dataclass
 class Wiki_old:
