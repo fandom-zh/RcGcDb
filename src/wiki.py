@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import time
 from dataclasses import dataclass
 import re
 import logging, aiohttp
@@ -154,7 +156,7 @@ class Wiki:
 		self.first_fetch_done = True
 		return request_json
 
-	async def fetch_wiki(self, amount=20) -> dict:
+	async def fetch_wiki(self, amount=10) -> dict:
 		if self.first_fetch_done is False:
 			params = OrderedDict({"action": "query", "format": "json", "uselang": "content", "list": "tags|recentchanges",
 					  "meta": "allmessages|siteinfo",
@@ -176,38 +178,59 @@ class Wiki:
 			raise WikiServerError
 		return response
 
-	async def scan(self):
-		try:
-			request = await self.fetch_wiki()
-		except WikiServerError:
-			return  # TODO Add a log entry?
-		else:
-			await self.downtime_controller(False)
-		if not self.mw_messages:
-			mw_messages = request.get("query", {}).get("allmessages", [])
-			final_mw_messages = dict()
-			for msg in mw_messages:
-				if "missing" not in msg:  # ignore missing strings
-					final_mw_messages[msg["name"]] = re.sub(r'\[\[.*?]]', '', msg["*"])
-				else:
-					logger.warning("Could not fetch the MW message translation for: {}".format(msg["name"]))
-			self.mw_messages = MWMessages(final_mw_messages)
-		try:
-			recent_changes = request["query"]["recentchanges"]
-			recent_changes.reverse()
-		except KeyError:
-			raise WikiError
-		if self.rc_id in (0, None, -1):
-			if len(recent_changes) > 0:
-				self.statistics.last_action = recent_changes[-1]["rcid"]
-				DBHandler.add(("UPDATE rcgcdw SET rcid = $1 WHERE wiki = $2 AND ( rcid != -1 OR rcid IS NULL )",
-							   (recent_changes[-1]["rcid"], self.script_url)))
+	async def scan(self, amount=10):
+		while True:  # Trap event in case there are more changes needed to be fetched
+			try:
+				request = await self.fetch_wiki(amount=amount)
+			except WikiServerError:
+				return  # TODO Add a log entry?
 			else:
-				self.statistics.last_action = 0
-				DBHandler.add(("UPDATE rcgcdw SET rcid = 0 WHERE wiki = $1 AND ( rcid != -1 OR rcid IS NULL )", (self.script_url)))
-			return   # TODO Add a log entry?
-		categorize_events = {}
-		targets = await self.generate_targets()
+				await self.downtime_controller(False)
+			if not self.mw_messages:
+				mw_messages = request.get("query", {}).get("allmessages", [])
+				final_mw_messages = dict()
+				for msg in mw_messages:
+					if "missing" not in msg:  # ignore missing strings
+						final_mw_messages[msg["name"]] = re.sub(r'\[\[.*?]]', '', msg["*"])
+					else:
+						logger.warning("Could not fetch the MW message translation for: {}".format(msg["name"]))
+				self.mw_messages = MWMessages(final_mw_messages)
+			try:
+				recent_changes = request["query"]["recentchanges"]
+				recent_changes.reverse()
+			except KeyError:
+				raise WikiError
+			if self.rc_id in (0, None, -1):
+				if len(recent_changes) > 0:
+					self.statistics.last_action = recent_changes[-1]["rcid"]
+					DBHandler.add(("UPDATE rcgcdw SET rcid = $1 WHERE wiki = $2 AND ( rcid != -1 OR rcid IS NULL )",
+								   (recent_changes[-1]["rcid"], self.script_url)))
+				else:
+					self.statistics.last_action = 0
+					DBHandler.add(("UPDATE rcgcdw SET rcid = 0 WHERE wiki = $1 AND ( rcid != -1 OR rcid IS NULL )", (self.script_url)))
+				return   # TODO Add a log entry?
+			categorize_events = {}
+			new_events = 0
+			self.statistics.last_checked_rc = int(time.time())
+			highest_id = self.rc_id  # Pretty sure that will be faster
+			for change in recent_changes:
+				if change["rcid"] > highest_id and amount != 450:
+					new_events += 1
+					if new_events == 10:
+						# call the function again with max limit for more results, ignore the ones in this request
+						logger.debug("There were too many new events, queuing wiki with 450 limit.")
+						amount = 450
+						break
+				await process_cats(change, self, categorize_events)
+			else:  # adequate amount of changes
+				targets = await self.generate_targets()
+				message_list = defaultdict(list)
+				for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
+					if change["rcid"] > self.rc_id:
+						if highest_id is None or change["rcid"] > highest_id:  # make sure that the highest_rc is really highest rcid but do allow other entries with potentially lesser rcids come after without breaking the cycle
+							highest_id = change["rcid"]
+						for combination, webhooks in targets.items():
+
 
 
 @dataclass
@@ -324,7 +347,7 @@ class Wiki_old:
 		return ""
 
 
-async def process_cats(event: dict, local_wiki: Wiki, category_msgs: dict, categorize_events: dict):  # TODO Rewrite this
+async def process_cats(event: dict, local_wiki: Wiki, categorize_events: dict):
 	"""Process categories based on local MW messages. """
 	if event["type"] == "categorize":
 		if "commenthidden" not in event:
@@ -334,18 +357,15 @@ async def process_cats(event: dict, local_wiki: Wiki, category_msgs: dict, categ
 				if event["revid"] not in categorize_events:
 					categorize_events[event["revid"]] = {"new": set(), "removed": set()}
 				comment_to_match = re.sub(r'<.*?a>', '', event["parsedcomment"])
-				wiki_cat_mw_messages = category_msgs[local_wiki.mw_messages]
-				if wiki_cat_mw_messages[0][1] in comment_to_match or wiki_cat_mw_messages[2][1] in comment_to_match:  # Added to category
+				if local_wiki.mw_messages["recentchanges-page-added-to-category"] in comment_to_match or local_wiki.mw_messages["recentchanges-page-added-to-category-bundled"] in comment_to_match:  # Added to category
 					categorize_events[event["revid"]]["new"].add(cat_title)
 					#logger.debug("Matched {} to added category for {}".format(cat_title, event["revid"]))
-				elif wiki_cat_mw_messages[1][1] in comment_to_match or wiki_cat_mw_messages[3][1] in comment_to_match:  # Removed from category
+				elif local_wiki.mw_messages["recentchanges-page-removed-from-category"] in comment_to_match or local_wiki.mw_messages["recentchanges-page-removed-from-category-bundled"] in comment_to_match:  # Removed from category
 					categorize_events[event["revid"]]["removed"].add(cat_title)
 					#logger.debug("Matched {} to removed category for {}".format(cat_title, event["revid"]))
 				else:
 					logger.debug(
-						"Unknown match for category change with messages {}, {}, {}, {} and comment_to_match {}".format(
-							wiki_cat_mw_messages[0], wiki_cat_mw_messages[1], wiki_cat_mw_messages[2], wiki_cat_mw_messages[3],
-							comment_to_match))
+						"Unknown match for category change with messages {} and comment_to_match {}".format(local_wiki.mw_messages,comment_to_match))
 			else:
 				logger.warning(
 					"Init information not available, could not read category information. Please restart the bot.")
