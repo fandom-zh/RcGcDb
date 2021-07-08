@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import re
 import logging, aiohttp
 
+from api.util import default_message
 from mw_messages import MWMessages
 from src.exceptions import *
 from src.database import db
@@ -230,7 +231,83 @@ class Wiki:
 						if highest_id is None or change["rcid"] > highest_id:  # make sure that the highest_rc is really highest rcid but do allow other entries with potentially lesser rcids come after without breaking the cycle
 							highest_id = change["rcid"]
 						for combination, webhooks in targets.items():
+							message = await rc_processor(self, change, categorize_events, )
 
+
+async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, display_options: namedtuple("Settings", ["lang", "display"]), webhooks: list):
+	from src.misc import LinkParser
+	LinkParser = LinkParser()
+	metadata = src.discord.DiscordMessageMetadata("POST", rev_id=change.get("revid", None), log_id=change.get("logid", None),
+									  page_id=change.get("pageid", None))
+	context = Context(display_options, webhooks, client)
+	if ("actionhidden" in change or "suppressed" in change) and "suppressed" not in settings[
+		"ignored"]:  # if event is hidden using suppression
+		context.event = "suppressed"
+		try:
+			discord_message: Optional[src.discord.DiscordMessage] = default_message("suppressed", formatter_hooks)(context, change)
+		except NoFormatter:
+			return
+		except:
+			if settings.get("error_tolerance", 1) > 0:
+				discord_message: Optional[src.discord.DiscordMessage] = None  # It's handled by send_to_discord, we still want other code to run
+			else:
+				raise
+	else:
+		if "commenthidden" not in change:
+			LinkParser.feed(change.get("parsedcomment", ""))
+			parsed_comment = LinkParser.new_string
+		else:
+			parsed_comment = _("~~hidden~~")
+		if not parsed_comment and context.message_type == "embed" and settings["appearance"].get("embed", {}).get(
+				"show_no_description_provided", True):
+			parsed_comment = _("No description provided")
+		context.set_parsedcomment(parsed_comment)
+		if "userhidden" in change:
+			change["user"] = _("hidden")
+		if change.get("ns", -1) in settings.get("ignored_namespaces", ()):
+			return
+		if change["type"] in ["edit", "new"]:
+			logger.debug("List of categories in essential_info: {}".format(changed_categories))
+			identification_string = change["type"]
+			context.set_categories(changed_categories)
+		elif change["type"] == "categorize":
+			return
+		elif change["type"] == "log":
+			identification_string = "{logtype}/{logaction}".format(logtype=change["logtype"],
+																   logaction=change["logaction"])
+		else:
+			identification_string = change.get("type", "unknown")  # If event doesn't have a type
+		if identification_string in settings["ignored"]:
+			return
+		context.event = identification_string
+		try:
+			discord_message: Optional[src.discord.DiscordMessage] = default_message(identification_string, formatter_hooks)(context,
+																												change)
+		except:
+			if settings.get("error_tolerance", 1) > 0:
+				discord_message: Optional[
+					src.discord.DiscordMessage] = None  # It's handled by send_to_discord, we still want other code to run
+			else:
+				raise
+		if identification_string in (
+		"delete/delete", "delete/delete_redir") and AUTO_SUPPRESSION_ENABLED:  # TODO Move it into a hook?
+			delete_messages(dict(pageid=change.get("pageid")))
+		elif identification_string == "delete/event" and AUTO_SUPPRESSION_ENABLED:
+			logparams = change.get('logparams', {"ids": []})
+			if settings["appearance"]["mode"] == "embed":
+				redact_messages(logparams.get("ids", []), 1, logparams.get("new", {}))
+			else:
+				for logid in logparams.get("ids", []):
+					delete_messages(dict(logid=logid))
+		elif identification_string == "delete/revision" and AUTO_SUPPRESSION_ENABLED:
+			logparams = change.get('logparams', {"ids": []})
+			if settings["appearance"]["mode"] == "embed":
+				redact_messages(logparams.get("ids", []), 0, logparams.get("new", {}))
+			else:
+				for revid in logparams.get("ids", []):
+					delete_messages(dict(revid=revid))
+	discord_message.finish_embed()
+	return discord_message, metadata
 
 
 @dataclass

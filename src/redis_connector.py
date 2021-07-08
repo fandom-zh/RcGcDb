@@ -19,16 +19,19 @@ class Redis:
                 async with async_timeout.timeout(1):
                     message = await self.pub_connection.get_message(ignore_subscribe_messages=True)
                     if message is not None:
+                        print(f"(Reader) Message Received: {message}")
                         logger.debug(f"(Reader) Message Received: {message}")
                     await asyncio.sleep(1.0)
             except asyncio.TimeoutError:  # TODO Better handler
                 pass
+            except aioredis.exceptions.ConnectionError:
+                pass
 
     async def connect(self):
-        self.pub_connection = await aioredis.create_connection("redis://" + settings["redis_host"], encoding="UTF-8")
-        self.stat_connection = await aioredis.create_connection("redis://" + settings["redis_host"], encoding="UTF-8")
+        self.stat_connection = await aioredis.from_url("redis://" + settings["redis_host"], encoding="UTF-8")
 
     async def pubsub(self):
+        self.pub_connection = self.stat_connection.pubsub()
         await self.pub_connection.subscribe("rcgcdb_updates")
         asyncio.create_task(self.reader())
 

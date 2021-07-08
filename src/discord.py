@@ -131,6 +131,7 @@ class DiscordMessage:
 	def set_name(self, name):
 		self.webhook_object["username"] = name
 
+
 def stack_message_list(messages: list) -> list:
 	if len(messages) > 1:
 		if messages[0].message_type() == "embed":
@@ -254,3 +255,16 @@ async def handle_discord_http(code: int, formatted_embed: str, result: aiohttp.C
 		return 3
 	else:
 		return 4
+
+
+class DiscordMessageMetadata:
+	def __init__(self, method, log_id = None, page_id = None, rev_id = None, webhook_url = None, new_data = None):
+		self.method = method
+		self.page_id = page_id
+		self.log_id = log_id
+		self.rev_id = rev_id
+		self.webhook_url = webhook_url
+		self.new_data = new_data
+
+	def dump_ids(self) -> (int, int, int):
+		return self.page_id, self.rev_id, self.log_id
