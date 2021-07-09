@@ -10,7 +10,7 @@ from typing import Generator
 
 from contextlib import asynccontextmanager
 
-from redis_connector import redis
+from redis_connector import Redis
 from src.argparser import command_line_args
 from src.config import settings
 from src.database import db
@@ -47,7 +47,7 @@ async def populate_wikis():
     async with db.pool().acquire() as connection:
         async with connection.transaction():
             async for db_wiki in connection.cursor('SELECT DISTINCT wiki, rcid, postid FROM rcgcdw'):
-                domains.new_wiki(Wiki(db_wiki["wiki"], db_wiki["rcid"], db_wiki["postid"]))
+                await domains.new_wiki(Wiki(db_wiki["wiki"], db_wiki["rcid"], db_wiki["postid"]))
 
 queue_limit = settings.get("queue_limit", 30)
 QueuedWiki = namedtuple("QueuedWiki", ['url', 'amount'])
@@ -548,6 +548,7 @@ async def main_loop():
     await db.setup_connection()
     logger.debug("Connection type: {}".format(db.connection))
     await populate_wikis()
+    redis = Redis(domains)
     await redis.connect()
     await redis.pubsub()
     domains.run_all_domains()
@@ -562,7 +563,8 @@ async def main_loop():
     # loop.set_exception_handler(global_exception_handler)
     try:
         main_tasks = {"wiki_scanner": asyncio.create_task(wiki_scanner()), "message_sender": asyncio.create_task(message_sender()),
-                      "discussion_handler": asyncio.create_task(discussion_handler()), "database_updates": asyncio.create_task(DBHandler.update_db())}
+                      "discussion_handler": asyncio.create_task(discussion_handler()), "database_updates": asyncio.create_task(DBHandler.update_db()),
+                      "redis_updates": asyncio.create_task(redis.reader())}
         main_tasks["msg_queue_shield"] = asyncio.shield(main_tasks["message_sender"])
         main_tasks["database_updates_shield"] = asyncio.shield(main_tasks["database_updates"])
         await asyncio.gather(main_tasks["wiki_scanner"], main_tasks["discussion_handler"], main_tasks["message_sender"], main_tasks["database_updates"])

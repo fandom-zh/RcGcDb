@@ -27,8 +27,7 @@ class Client:
 	"""
 		A client for interacting with RcGcDw when creating formatters or hooks.
 	"""
-	def __init__(self, hooks, wiki):
-		self._formatters = hooks
+	def __init__(self, wiki):
 		self.__recent_changes: Wiki = wiki
 		self.WIKI_API_PATH: str = src.misc.WIKI_API_PATH
 		self.WIKI_ARTICLE_PATH: str = src.misc.WIKI_ARTICLE_PATH
@@ -38,10 +37,6 @@ class Client:
 		self.tags = self.__recent_changes.tags
 		self.LinkParser: type(src.misc.LinkParser) = src.misc.LinkParser
 		#self.make_api_request: src.rc.wiki.__recent_changes.api_request = self.__recent_changes.api_request
-
-	def refresh_internal_data(self):
-		"""Refreshes internal storage data for wiki tags and MediaWiki messages."""
-		self.__recent_changes.init_info()
 
 	@property
 	def namespaces(self) -> dict:
@@ -87,9 +82,6 @@ class Client:
 					MediaWikiError: When MediaWiki returns an error
 				"""
 		return self.__recent_changes.api_request(params, *json_path, timeout=timeout, allow_redirects=allow_redirects)
-
-	def get_formatters(self):
-		return self._formatters
 
 	def get_ipmapper(self) -> dict:
 		"""Returns a dict mapping IPs with amount of their edits"""

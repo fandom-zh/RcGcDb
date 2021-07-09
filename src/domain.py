@@ -47,7 +47,7 @@ class Domain:
             logger.error(f"Tried to start a task for domain {self.name} however the task already exists!")
 
     def remove_wiki(self, script_url: str):
-
+        self.wikis.pop(script_url)
 
     def add_wiki(self, wiki: src.wiki.Wiki, first=False):
         """Adds a wiki to domain list.

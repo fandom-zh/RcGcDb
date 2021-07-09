@@ -14,7 +14,7 @@ class DomainManager:
     def __init__(self):
         self.domains: dict[str, Domain] = {}
 
-    def new_wiki(self, wiki: Wiki):
+    async def new_wiki(self, wiki: Wiki):
         """Finds a domain for the wiki and adds a wiki to the domain object.
 
         :parameter wiki - Wiki object to be added"""
@@ -22,7 +22,17 @@ class DomainManager:
         try:
             self.domains[wiki_domain].add_wiki(wiki)
         except KeyError:
-            self.new_domain(wiki_domain).add_wiki(wiki)
+            new_domain = await self.new_domain(wiki_domain)
+            new_domain.add_wiki(wiki)
+
+    def remove_wiki(self, script_url: str):
+        wiki_domain = self.get_domain(script_url)
+        try:
+            domain = self.domains[wiki_domain]
+        except KeyError:
+            raise NoDomain
+        else:
+            domain.remove_wiki(script_url)
 
     @staticmethod
     def get_domain(url: str) -> str:

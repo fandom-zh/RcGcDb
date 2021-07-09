@@ -12,6 +12,8 @@ from src.database import db
 from src.queue_handler import DBHandler
 from src.formatters.rc import embed_formatter, compact_formatter
 from src.formatters.discussions import feeds_embed_formatter, feeds_compact_formatter
+from src.api.hooks import formatter_hooks
+from src.api.client import Client
 from src.misc import parse_link
 from src.i18n import langs
 from src.wiki_ratelimiter import RateLimiter
@@ -41,6 +43,7 @@ class Wiki:
 		self.mw_messages: Optional[MWMessages] = None
 		self.first_fetch_done: bool = False
 		self.domain: Optional[Domain] = None
+		self.client: Client = Client(self)
 
 	@property
 	def rc_id(self):
@@ -224,6 +227,11 @@ class Wiki:
 						break
 				await process_cats(change, self, categorize_events)
 			else:  # adequate amount of changes
+				for tag in request["query"]["tags"]:
+					try:
+						self.tags[tag["name"]] = (BeautifulSoup(tag["displayname"], "lxml")).get_text()
+					except KeyError:
+						self.tags[tag["name"]] = None
 				targets = await self.generate_targets()
 				message_list = defaultdict(list)
 				for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
@@ -231,7 +239,7 @@ class Wiki:
 						if highest_id is None or change["rcid"] > highest_id:  # make sure that the highest_rc is really highest rcid but do allow other entries with potentially lesser rcids come after without breaking the cycle
 							highest_id = change["rcid"]
 						for combination, webhooks in targets.items():
-							message = await rc_processor(self, change, categorize_events, )
+							message = await rc_processor(self, change, categorize_events, combination, webhooks)
 
 
 async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, display_options: namedtuple("Settings", ["lang", "display"]), webhooks: list):
@@ -239,12 +247,12 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 	LinkParser = LinkParser()
 	metadata = src.discord.DiscordMessageMetadata("POST", rev_id=change.get("revid", None), log_id=change.get("logid", None),
 									  page_id=change.get("pageid", None))
-	context = Context(display_options, webhooks, client)
+	context = Context(display_options, webhooks, wiki.client)
 	if ("actionhidden" in change or "suppressed" in change) and "suppressed" not in settings[
 		"ignored"]:  # if event is hidden using suppression
 		context.event = "suppressed"
 		try:
-			discord_message: Optional[src.discord.DiscordMessage] = default_message("suppressed", formatter_hooks)(context, change)
+			discord_message: Optional[src.discord.DiscordMessage] = default_message("suppressed", display_options.display, formatter_hooks)(context, change)
 		except NoFormatter:
 			return
 		except:
@@ -290,16 +298,16 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 			else:
 				raise
 		if identification_string in (
-		"delete/delete", "delete/delete_redir") and AUTO_SUPPRESSION_ENABLED:  # TODO Move it into a hook?
+		"delete/delete", "delete/delete_redir"):  # TODO Move it into a hook?
 			delete_messages(dict(pageid=change.get("pageid")))
-		elif identification_string == "delete/event" and AUTO_SUPPRESSION_ENABLED:
+		elif identification_string == "delete/event":
 			logparams = change.get('logparams', {"ids": []})
 			if settings["appearance"]["mode"] == "embed":
 				redact_messages(logparams.get("ids", []), 1, logparams.get("new", {}))
 			else:
 				for logid in logparams.get("ids", []):
 					delete_messages(dict(logid=logid))
-		elif identification_string == "delete/revision" and AUTO_SUPPRESSION_ENABLED:
+		elif identification_string == "delete/revision":
 			logparams = change.get('logparams', {"ids": []})
 			if settings["appearance"]["mode"] == "embed":
 				redact_messages(logparams.get("ids", []), 0, logparams.get("new", {}))
