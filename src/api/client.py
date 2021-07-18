@@ -16,9 +16,12 @@
 
 from __future__ import annotations
 import src.misc
-from typing import Union
+from src.exceptions import TagNotFound
+from bs4 import BeautifulSoup
+from typing import Union, TYPE_CHECKING, Optional
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Optional
+from functools import cache
+from urllib.parse import urlparse, urlunparse
 
 if TYPE_CHECKING:
 	from src.wiki import Wiki
@@ -29,13 +32,9 @@ class Client:
 	"""
 	def __init__(self, wiki):
 		self.__recent_changes: Wiki = wiki
-		self.WIKI_API_PATH: str = src.misc.WIKI_API_PATH
-		self.WIKI_ARTICLE_PATH: str = src.misc.WIKI_ARTICLE_PATH
-		self.WIKI_SCRIPT_PATH: str = src.misc.WIKI_SCRIPT_PATH
-		self.WIKI_JUST_DOMAIN: str = src.misc.WIKI_JUST_DOMAIN
 		self.content_parser = src.misc.ContentParser
-		self.tags = self.__recent_changes.tags
 		self.LinkParser: type(src.misc.LinkParser) = src.misc.LinkParser
+		self.last_request: Optional[dict] = None
 		#self.make_api_request: src.rc.wiki.__recent_changes.api_request = self.__recent_changes.api_request
 
 	@property
@@ -45,6 +44,37 @@ class Client:
 			return self.__recent_changes.namespaces
 		else:
 			return dict()
+
+	@cache
+	def tag(self, tag_name: str):
+		for tag in self.last_request["tags"]:
+			if tag["name"] == tag_name:
+				try:
+					return (BeautifulSoup(tag["displayname"], "lxml")).get_text()
+				except KeyError:
+					return None  # Tags with no display name are hidden and should not appear on RC as well
+		raise TagNotFound
+
+	@property
+	def WIKI_API_PATH(self):
+		return self.__recent_changes.script_url + "api.php"
+
+	@property
+	def WIKI_SCRIPT_PATH(self):
+		return self.__recent_changes.script_url
+
+	@property
+	def WIKI_JUST_DOMAIN(self):
+		parsed_url = urlparse(self.__recent_changes.script_url)
+		return urlunparse((*parsed_url[0:2], "", "", "", ""))
+
+	@property
+	def WIKI_ARTICLE_PATH(self):
+		parsed_url = urlparse(self.__recent_changes.script_url)
+		try:
+			return urlunparse((*parsed_url[0:2], "", "", "", "")) + self.last_request["query"]["general"]["articlepath"]
+		except KeyError:
+			return urlunparse((*parsed_url[0:2], "", "", "", "")) + "wiki/"
 
 	def parse_links(self, summary: str):
 		link_parser = self.LinkParser()

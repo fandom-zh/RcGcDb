@@ -17,7 +17,7 @@ import re
 from urllib.parse import quote
 from typing import Optional, Callable, TYPE_CHECKING
 
-from src.exceptions import ServerError, MediaWikiError
+from src.exceptions import ServerError, MediaWikiError, TagNotFound
 from src.discord.message import DiscordMessage
 from src.configloader import settings
 import src.misc
@@ -148,16 +148,17 @@ def embed_helper(ctx: Context, message: DiscordMessage, change: dict, set_user=T
 		if settings["appearance"]["embed"]["show_footer"]:
 			message["timestamp"] = change["timestamp"]
 		if "tags" in change and change["tags"]:
-			tag_displayname = []
+			tags_displayname = []
 			for tag in change["tags"]:
-				if tag in ctx.client.tags:
-					if ctx.client.tags[tag] is None:
+				try:
+					tag_display = ctx.client.tag(tag)
+					if tag_display is None:
 						continue  # Ignore hidden tags
 					else:
-						tag_displayname.append(ctx.client.tags[tag])
-				else:
-					tag_displayname.append(tag)
-			message.add_field(formatters_i18n.pgettext("recent changes Tags", "Tags"), ", ".join(tag_displayname))
+						tags_displayname.append(tag_display)
+				except TagNotFound:
+					tags_displayname.append(tag)
+			message.add_field(formatters_i18n.pgettext("recent changes Tags", "Tags"), ", ".join(tags_displayname))
 		if ctx.categories is not None and not (len(ctx.categories["new"]) == 0 and len(ctx.categories["removed"]) == 0):
 			new_cat = (_("**Added**: ") + ", ".join(list(ctx.categories["new"])[0:16]) + (
 				"\n" if len(ctx.categories["new"]) <= 15 else _(" and {} more\n").format(

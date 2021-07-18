@@ -14,6 +14,7 @@ from src.formatters.rc import embed_formatter, compact_formatter
 from src.formatters.discussions import feeds_embed_formatter, feeds_compact_formatter
 from src.api.hooks import formatter_hooks
 from src.api.client import Client
+from src.api.context import Context
 from src.misc import parse_link
 from src.i18n import langs
 from src.wiki_ratelimiter import RateLimiter
@@ -186,6 +187,7 @@ class Wiki:
 		while True:  # Trap event in case there are more changes needed to be fetched
 			try:
 				request = await self.fetch_wiki(amount=amount)
+				self.client.last_request = request
 			except WikiServerError:
 				return  # TODO Add a log entry?
 			else:
@@ -248,8 +250,7 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 	metadata = src.discord.DiscordMessageMetadata("POST", rev_id=change.get("revid", None), log_id=change.get("logid", None),
 									  page_id=change.get("pageid", None))
 	context = Context(display_options, webhooks, wiki.client)
-	if ("actionhidden" in change or "suppressed" in change) and "suppressed" not in settings[
-		"ignored"]:  # if event is hidden using suppression
+	if ("actionhidden" in change or "suppressed" in change) and "suppressed" not in settings["ignored"]:  # if event is hidden using suppression
 		context.event = "suppressed"
 		try:
 			discord_message: Optional[src.discord.DiscordMessage] = default_message("suppressed", display_options.display, formatter_hooks)(context, change)

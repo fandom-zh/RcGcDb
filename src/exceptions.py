@@ -25,6 +25,9 @@ class ListFull(Exception):
 class EmbedListFull(Exception):
 	pass
 
+class TagNotFound(Exception):
+	pass
+
 class ServerError(Exception):
 	"""Exception for when a request fails because of Server error"""
 	pass

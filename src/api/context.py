@@ -14,6 +14,7 @@
 #  along with RcGcDb.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from collections import namedtuple
 
 if TYPE_CHECKING:
 	from src.api.client import Client
@@ -21,10 +22,11 @@ if TYPE_CHECKING:
 
 class Context:
 	"""Context object containing client and some metadata regarding specific formatter call"""
-	def __init__(self, message_type: str, webhook_url: str, client: Client):
+	def __init__(self, display_options: namedtuple("Settings", ["lang", "display"]), webhook_url: list, client: Client):
 		self.client = client
 		self.webhook_url = webhook_url
-		self.message_type = message_type
+		self.display_options = display_options
+		self.message_type = display_options.display
 		self.categories = None
 		self.parsedcomment = None
 		self.event = None
