@@ -118,14 +118,15 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 				embed.event_type = "discussion/forum/poll"
 				embed["title"] = _("Created a poll \"{title}\"").format(title=escape_formatting(post["title"]))
 				if message_target[0][1] > 1:
-					poll = post["poll"]
-					image_type = False
-					if poll["answers"][0]["image"] is not None:
-						image_type = True
-					for num, option in enumerate(poll["answers"]):
-						embed.add_field(option["text"] if image_type is True else _("Option {}").format(num+1),
-										option["text"] if image_type is False else _("__[View image]({image_url})__").format(image_url=option["image"]["url"]),
-										inline=True)
+					poll = post.get("poll", None)
+					if poll is not None:
+						image_type = False
+						if poll["answers"][0]["image"] is not None:
+							image_type = True
+						for num, option in enumerate(poll["answers"]):
+							embed.add_field(option["text"] if image_type is True else _("Option {}").format(num+1),
+											option["text"] if image_type is False else _("__[View image]({image_url})__").format(image_url=option["image"]["url"]),
+											inline=True)
 			elif thread_funnel == "QUIZ":
 				embed.event_type = "discussion/forum/quiz"
 				embed["title"] = _("Created a quiz \"{title}\"").format(title=escape_formatting(post["title"]))
