@@ -1149,5 +1149,9 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		new_cat = (_("**Added**: ") + ", ".join(list(categories["new"])[0:16]) + ("\n" if len(categories["new"])<=15 else _(" and {} more\n").format(len(categories["new"])-15))) if categories["new"] else ""
 		del_cat = (_("**Removed**: ") + ", ".join(list(categories["removed"])[0:16]) + ("" if len(categories["removed"])<=15 else _(" and {} more").format(len(categories["removed"])-15))) if categories["removed"] else ""
 		embed.add_field(_("Changed categories"), new_cat + del_cat)
+	if "?" in embed["url"]:
+		embed["url"] = embed["url"] + "&_rcid={}".format(change["rcid"])
+	else:
+		embed["url"] = embed["url"] + "?_rcid={}".format(change["rcid"])
 	embed.finish_embed()
 	return embed

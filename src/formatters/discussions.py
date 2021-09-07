@@ -186,6 +186,10 @@ async def feeds_embed_formatter(post_type, post, message_target, wiki, article_p
 				embed.add_field(_("Report this on the support server"), settings["support"])
 			else:
 				embed.add_field(_("Report this on the support server"), change_params)
+	if "?" in embed["url"]:
+		embed["url"] = embed["url"] + "&_rcid={}".format(post["id"])
+	else:
+		embed["url"] = embed["url"] + "?_rcid={}".format(post["id"])
 	embed.finish_embed()
 	return embed
 

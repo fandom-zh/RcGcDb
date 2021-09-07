@@ -7,37 +7,37 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RcGcDb\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-04-14 16:00+0200\n"
-"PO-Revision-Date: 2021-05-22 12:08+0000\n"
-"Last-Translator: MakandIv <makushkin_andrey@mail.ru>\n"
-"Language-Team: Ukrainian <https://translate.wikibot.de/projects/rcgcdw/"
-"rcgcdb/uk/>\n"
-"Language: uk\n"
+"POT-Creation-Date: 2021-04-14 16:42+0200\n"
+"PO-Revision-Date: 2021-05-27 21:02+0000\n"
+"Last-Translator: Spisen <spisen11@gmail.com>\n"
+"Language-Team: Swedish <https://translate.wikibot.de/projects/rcgcdw/rcgcdb/"
+"sv/>\n"
+"Language: sv\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
-"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Weblate 4.6\n"
 
 #: src/discord.py:29
 msgid "wiki deleted"
-msgstr "вікі видалена"
+msgstr "wiki raderad"
 
 #: src/discord.py:29 src/discord.py:30
 msgid "wiki inaccessible"
-msgstr "вікі недоступна"
+msgstr "wiki oåtkomlig"
 
 #: src/discord.py:30
 msgid "discussions disabled"
-msgstr "обговорення відключені"
+msgstr "diskussioner inaktiverade"
 
 #: src/discord.py:31
 msgid "unknown error"
-msgstr "невідома помилка"
+msgstr "okänt fel"
 
 #: src/discord.py:32
 #, python-brace-format
 msgid "This recent changes webhook has been removed for `{reason}`!"
 msgstr ""
-"Цей вебхук нових редагувань був видалений з наступних причин: `{reason}`!"
+"Denna \"senaste ändringarna\"-webhooken har tagits bort på grund av "
+"`{reason}`!"
