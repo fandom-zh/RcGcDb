@@ -241,10 +241,10 @@ class Wiki:
 						if highest_id is None or change["rcid"] > highest_id:  # make sure that the highest_rc is really highest rcid but do allow other entries with potentially lesser rcids come after without breaking the cycle
 							highest_id = change["rcid"]
 						for combination, webhooks in targets.items():
-							message = await rc_processor(self, change, categorize_events, combination, webhooks)
+							message, metadata = await rc_processor(self, change, categorize_events, combination, webhooks)
 
 
-async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, display_options: namedtuple("Settings", ["lang", "display"]), webhooks: list):
+async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, display_options: namedtuple("Settings", ["lang", "display"]), webhooks: list) -> tuple[src.discord.DiscordMessage, src.discord.DiscordMessageMetadata]:
 	from src.misc import LinkParser
 	LinkParser = LinkParser()
 	metadata = src.discord.DiscordMessageMetadata("POST", rev_id=change.get("revid", None), log_id=change.get("logid", None),
@@ -298,8 +298,7 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 					src.discord.DiscordMessage] = None  # It's handled by send_to_discord, we still want other code to run
 			else:
 				raise
-		if identification_string in (
-		"delete/delete", "delete/delete_redir"):  # TODO Move it into a hook?
+		if identification_string in ("delete/delete", "delete/delete_redir"):  # TODO Move it into a hook?
 			delete_messages(dict(pageid=change.get("pageid")))
 		elif identification_string == "delete/event":
 			logparams = change.get('logparams', {"ids": []})
@@ -525,7 +524,7 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, tar
 	return await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, paths, rate_limiter, additional_data=additional_data)
 
 
-async def essential_feeds(change: dict, comment_pages: dict, db_wiki: sqlite3.Row, target: tuple) -> src.discord.DiscordMessage:
+async def essential_feeds(change: dict, comment_pages: dict, db_wiki, target: tuple) -> src.discord.DiscordMessage:
 	"""Prepares essential information for both embed and compact message format."""
 	appearance_mode = feeds_embed_formatter if target[0][1] > 0 else feeds_compact_formatter
 	identification_string = change["_embedded"]["thread"][0]["containerType"]
