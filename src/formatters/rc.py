@@ -132,8 +132,8 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 						else:
 							restriction_description = _(" on namespaces: ")
 						for namespace in change["logparams"]["restrictions"]["namespaces"]:
-							if str(namespace) in additional_data.namespaces:  # if we have cached namespace name for given namespace number, add its name to the list
-								namespaces.append("*{ns}*".format(ns=additional_data.namespaces[str(namespace)]["*"]))
+							if str(namespace) in additional_data["namespaces"]:  # if we have cached namespace name for given namespace number, add its name to the list
+								namespaces.append("*{ns}*".format(ns=additional_data["namespaces"][str(namespace)]["*"]))
 							else:
 								namespaces.append("*{ns}*".format(ns=namespace))
 						restriction_description = restriction_description + ", ".join(namespaces)
@@ -768,8 +768,8 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 					else:
 						restriction_description = _("Blocked from editing pages on following namespaces: ")
 					for namespace in change["logparams"]["restrictions"]["namespaces"]:
-						if str(namespace) in additional_data.namespaces:  # if we have cached namespace name for given namespace number, add its name to the list
-							namespaces.append("*{ns}*".format(ns=additional_data.namespaces[str(namespace)]["*"]))
+						if str(namespace) in additional_data["namespaces"]:  # if we have cached namespace name for given namespace number, add its name to the list
+							namespaces.append("*{ns}*".format(ns=additional_data["namespaces"][str(namespace)]["*"]))
 						else:
 							namespaces.append("*{ns}*".format(ns=namespace))
 					restriction_description = restriction_description + ", ".join(namespaces)
