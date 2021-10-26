@@ -16,7 +16,7 @@ class db_connection:
         logger.debug("Setting up the Database connection...")
         self.connection = await asyncpg.create_pool(user=settings["pg_user"], host=settings.get("pg_host", "localhost"),
                                      database=settings.get("pg_db", "rcgcdb"), password=settings.get("pg_pass"),
-                                                    port=settings.get("pg_port", 5432))
+                                                    port=settings.get("pg_port", 5432), min_size=10, max_size=40)
         logger.debug("Database connection established! Connection: {}".format(self.connection))
 
     async def shutdown_connection(self):
