@@ -48,7 +48,7 @@ class Wiki:
 		try:
 			response = await session.get(url_path, params=params)
 			ratelimiter.timeout_add(1.0)
-		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
+		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError, aiohttp.TooManyRedirects):
 			logger.error("A connection error occurred while requesting {}".format(url_path))
 			raise WikiServerError
 		return response
@@ -60,7 +60,7 @@ class Wiki:
 		try:
 			response = await session.get(url_path, params=params)
 			response.raise_for_status()
-		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError, aiohttp.ClientResponseError):
+		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError, aiohttp.ClientResponseError, aiohttp.TooManyRedirects):
 			logger.error("A connection error occurred while requesting {}".format(url_path))
 			raise WikiServerError
 		return response
@@ -74,7 +74,7 @@ class Wiki:
 				ratelimiter.timeout_add(1.0)
 				request.raise_for_status()
 				json_request = await request.json(encoding="UTF-8")
-		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
+		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError, aiohttp.TooManyRedirects):
 			logger.error("Reached connection error for request on link {url}".format(url=url))
 		else:
 			try:
