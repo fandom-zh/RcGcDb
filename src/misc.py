@@ -83,11 +83,7 @@ def escape_formatting(data: str) -> str:
 
 def create_article_path(article: str, WIKI_ARTICLE_PATH: str) -> str:
 	"""Takes the string and creates an URL with it as the article name"""
-	article = article.replace(" ", "_").replace("%", "%25").replace("\\", "%5C")
-	if "?" in WIKI_ARTICLE_PATH:
-		article = article.replace("&", "%26")
-	else:
-		article = article.replace("?", "%3F")
+	article = article.replace(" ", "_").replace("%", "%25").replace("\\", "%5C").replace("?", "%3F").replace("&", "%26")
 	return WIKI_ARTICLE_PATH.replace("$1", article)
 
 

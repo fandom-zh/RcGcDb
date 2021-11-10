@@ -622,7 +622,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 			embed["color"] = 8750469
 		link = "{wiki}index.php?title={article}&curid={pageid}&diff={diff}&oldid={oldrev}".format(
 			wiki=WIKI_SCRIPT_PATH, pageid=change["pageid"], diff=change["revid"], oldrev=change["old_revid"],
-			article=change["title"].replace(" ", "_").replace("%", "%25").replace("\\", "%5C").replace("&", "%26"))
+			article=change["title"].replace(" ", "_").replace("%", "%25").replace("\\", "%5C").replace("&", "%26").replace("?", "%3F"))
 		embed["title"] = "{redirect}{article} ({new}{minor}{bot}{space}{editsize})".format(redirect="⤷ " if "redirect" in change else "", article=change["title"], editsize="+" + str(
 			editsize) if editsize > 0 else editsize, new=_("(N!) ") if action == "new" else "",
 		                                                             minor=_("m") if action == "edit" and "minor" in change else "", bot=_('b') if "bot" in change else "", space=" " if "bot" in change or (action == "edit" and "minor" in change) or action == "new" else "")
@@ -688,7 +688,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 			logger.warning("Request for additional image information have failed. The preview will not be shown.")
 		if action in ("upload/overwrite", "upload/revert"):
 			if additional_info_retrieved:
-				article_encoded = change["title"].replace(" ", "_").replace("%", "%25").replace("\\", "%5C").replace("&", "%26").replace(')', '\\)')
+				article_encoded = change["title"].replace(" ", "_").replace("%", "%25").replace("\\", "%5C").replace("&", "%26").replace("?", "%3F").replace(')', '\\)')
 				try:
 					revision = img_info[num+1]
 				except IndexError:
