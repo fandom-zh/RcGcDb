@@ -1,3 +1,5 @@
+import asyncio
+
 import irc.client_aio
 import json
 import logging
@@ -19,12 +21,15 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		self.wikis = all_wikis
 		self.connection.buffer_class.errors = "replace"  # Ignore encoding errors
 		self.connection_details = None
+		self.active = True
+		asyncio.get_event_loop().create_task(self.testactivity())
 
 	def on_welcome(self, connection, event):  # Join IRC channels
 		for channel in self.targets.values():
 			connection.join(channel)
 
 	def on_pubmsg(self, connection, event):
+		self.active = True
 		if event.target == self.targets["rc"]:
 			self.parse_fandom_message(' '.join(event.arguments))
 		elif event.target == self.targets["discussion"]:
@@ -50,7 +55,6 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 			self.updated.add(full_url)
 			logger.debug("New website appended to the list! {}".format(full_url))
 
-
 	def parse_fandom_discussion(self, message: str):
 		try:
 			post = json.loads(message)
@@ -64,6 +68,12 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 				self.updated_discussions.add("https://"+full_url)
 				logger.debug("New website appended to the list (discussions)! {}".format(full_url))
 
+	async def testactivity(self):
+		await asyncio.sleep(100.0)
+		if not self.active:
+			logger.error("There were no new messages in the feed!")
+			self.on_disconnect(None, None)
+		self.active = False
 
 def recognize_langs(path):
 	lang = ""
