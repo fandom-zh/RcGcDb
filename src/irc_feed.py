@@ -22,7 +22,7 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		self.connection.buffer_class.errors = "replace"  # Ignore encoding errors
 		self.connection_details = None
 		self.active = True
-		asyncio.get_event_loop().create_task(self.testactivity())
+		self.activity_tester = asyncio.get_event_loop().create_task(self.testactivity())
 
 	def on_welcome(self, connection, event):  # Join IRC channels
 		for channel in self.targets.values():
@@ -69,11 +69,12 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 				logger.debug("New website appended to the list (discussions)! {}".format(full_url))
 
 	async def testactivity(self):
-		await asyncio.sleep(100.0)
-		if not self.active:
-			logger.error("There were no new messages in the feed!")
-			self.on_disconnect(None, None)
-		self.active = False
+		while True:
+			await asyncio.sleep(100.0)
+			if not self.active:
+				logger.error("There were no new messages in the feed!")
+				self.on_disconnect(None, None)
+			self.active = False
 
 def recognize_langs(path):
 	lang = ""
