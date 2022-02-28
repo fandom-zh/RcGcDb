@@ -1,5 +1,5 @@
 import asyncio
-
+import re
 import irc.client_aio
 import json
 import logging
@@ -26,14 +26,15 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 
 	def on_welcome(self, connection, event):  # Join IRC channels
 		for channel in self.targets.values():
-			connection.join(channel)
+			if channel is not None:
+				connection.join(channel)
 
 	def on_pubmsg(self, connection, event):
 		self.active = True
 		if event.target == self.targets["rc"]:
-			self.parse_fandom_message(' '.join(event.arguments))
+			self.parse_rc_message(' '.join(event.arguments))
 		elif event.target == self.targets["discussion"]:
-			self.parse_fandom_discussion(' '.join(event.arguments))
+			self.parse_discussion_message(' '.join(event.arguments))
 
 	def on_nicknameinuse(self, c, e):
 		c.nick(c.get_nickname() + "_")
@@ -41,9 +42,10 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 	def on_disconnect(self, connection, event):
 		self.connect(*self.connection_details[0], **self.connection_details[1])  # attempt to reconnect
 
-	def parse_fandom_message(self, message: str):
+	def parse_rc_message(self, message: str):
 		message = message.split("\x035*\x03")
 		# print(asyncio.all_tasks())
+		message[0] = re.sub(r"^(\w+)wiki $", "\x0302https://\\1.miraheze.org/w/", message[0]) # Convert miraheze database name to wiki script path
 		half = message[0].find("\x0302http")
 		if half == -1:
 			return
@@ -55,7 +57,7 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 			self.updated.add(full_url)
 			logger.debug("New website appended to the list! {}".format(full_url))
 
-	def parse_fandom_discussion(self, message: str):
+	def parse_discussion_message(self, message: str):
 		try:
 			post = json.loads(message)
 		except json.JSONDecodeError:
