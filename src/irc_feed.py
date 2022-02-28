@@ -45,7 +45,8 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 	def parse_rc_message(self, message: str):
 		message = message.split("\x035*\x03")
 		# print(asyncio.all_tasks())
-		message[0] = re.sub(r"^(\w+)wiki $", "\x0302https://\\1.miraheze.org/w/", message[0]) # Convert miraheze database name to wiki script path
+		if self.targets["rc"] == "#miraheze-feed":
+			message[0] = re.sub(r"^(\w+)wiki $", "\x0302https://\\1.miraheze.org/w/", message[0]) # Convert miraheze database name to wiki script path
 		half = message[0].find("\x0302http")
 		if half == -1:
 			return
