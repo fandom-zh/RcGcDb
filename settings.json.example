@@ -336,6 +336,11 @@
             "color": 65280,
             "emoji": "🗿"
         },
+        "newusers/reclaim": {
+            "icon": "",
+            "color": 65280,
+            "emoji": "🗿"
+        },
         "managewiki/delete": {
             "icon": "",
             "color": 8421504,
