@@ -106,6 +106,17 @@ def profile_field_name(name, embed, lang):
 			return _("unknown")
 
 
+def class_searcher(attribs: list) -> str:
+	"""Function to return classes of given element in HTMLParser on handle_starttag
+
+	:returns a string with all of the classes of element
+	"""
+	for attr in attribs:
+		if attr[0] == "class":
+			return attr[1]
+	return ""
+
+
 class ContentParser(HTMLParser):
 	current_tag = ""
 	last_ins = None
@@ -121,15 +132,16 @@ class ContentParser(HTMLParser):
 		self.del_length = len(self.more)
 
 	def handle_starttag(self, tagname, attribs):
+		classes = class_searcher(attribs).split(' ')
 		if tagname == "ins" or tagname == "del":
 			self.current_tag = tagname
-		if tagname == "td" and "diff-addedline" in attribs[0] and self.ins_length <= 1000:
+		if tagname == "td" and "diff-addedline" in classes and self.ins_length <= 1000:
 			self.current_tag = "tda"
 			self.last_ins = ""
-		if tagname == "td" and "diff-deletedline" in attribs[0] and self.del_length <= 1000:
+		if tagname == "td" and "diff-deletedline" in classes and self.del_length <= 1000:
 			self.current_tag = "tdd"
 			self.last_del = ""
-		if tagname == "td" and "diff-empty" in attribs[0]:
+		if tagname == "td" and "diff-empty" in classes:
 			self.empty = True
 
 	def handle_data(self, data):
