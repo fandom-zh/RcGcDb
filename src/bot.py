@@ -1,3 +1,5 @@
+import sys
+
 import aiohttp
 import asyncio
 import logging.config
@@ -299,7 +301,7 @@ async def scan_group(group: str):
 						recent_changes = recent_changes_resp['query']['recentchanges']
 						recent_changes.reverse()
 					except KeyError:
-						logger.error("recent_changes_resp returned KeyError. skipping this check. (usually this happens when the wiki doesn't respond properly, it's pretty normal)")
+						logger.error("recent_changes_resp returned KeyError on {}. skipping this check. (usually this happens when the wiki doesn't respond properly, it's pretty normal)".format(queued_wiki.url))
 						continue
 				if extended:
 					await process_mwmsgs(recent_changes_resp, local_wiki, mw_msgs)
