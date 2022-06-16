@@ -53,4 +53,5 @@ class DomainManager:
         for domain in self.domains.values():
             domain.run_domain()
 
+
 domains = DomainManager()

@@ -1141,7 +1141,8 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 					tag_displayname.append(additional_data["tags"][tag])
 			else:
 				tag_displayname.append(tag)
-		embed.add_field(_("Tags"), ", ".join(tag_displayname))
+		if tag_displayname:
+			embed.add_field(_("Tags"), ", ".join(tag_displayname))
 	if len(embed["title"]) > 254:
 		embed["title"] = embed["title"][0:253]+"…"
 	logger.debug("Current params in edit action: {}".format(change))
