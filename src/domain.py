@@ -55,6 +55,8 @@ class Domain:
         :parameter wiki - Wiki object
         :parameter first (optional) - bool indicating if wikis should be added as first or last in the ordered dict"""
         wiki.set_domain(self)
+        if wiki.script_url in self.wikis:
+            raise WikiExists("Wiki {} exists in domain {}".format(wiki.script_url, self.name))
         self.wikis[wiki.script_url] = wiki
         if first:
             self.wikis.move_to_end(wiki.script_url, last=False)

@@ -1,6 +1,9 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 from urllib.parse import urlparse, urlunparse
+
+import asyncpg
+
 from src.config import settings
 from src.domain import Domain
 from src.irc_feed import AioIRCCat
@@ -13,6 +16,19 @@ if TYPE_CHECKING:
 class DomainManager:
     def __init__(self):
         self.domains: dict[str, Domain] = {}
+
+    async def webhook_update(self, connection: asyncpg.Connection, pid: int, channel: str, payload: str):
+        """Callback for database listener. Used to update our domain cache on changes such as new wikis or removed wikis"""
+        # TODO Write a trigger for pub/sub in database/Wiki-Bot repo
+        split_payload = payload.split(" ")
+        if len(split_payload) < 2:
+            raise ValueError("Improper pub/sub message! Pub/sub payload: {}".format(payload))
+        if split_payload[0] == "ADD":
+            await self.new_wiki(Wiki(split_payload[1], None, None))
+        elif split_payload[0] == "REMOVE":
+            self.remove_wiki(split_payload[1])
+        else:
+            raise ValueError("Unknown pub/sub command! Payload: {}".format(payload))
 
     async def new_wiki(self, wiki: Wiki):
         """Finds a domain for the wiki and adds a wiki to the domain object.

@@ -18,7 +18,7 @@ from src.api.context import Context
 from src.misc import parse_link
 from src.i18n import langs
 from src.wiki_ratelimiter import RateLimiter
-from statistics import Statistics
+from statistics import Statistics, Log, LogType
 import src.discord
 import asyncio
 from src.config import settings
@@ -36,11 +36,10 @@ if TYPE_CHECKING:
 	from src.domain import Domain
 
 class Wiki:
-	def __init__(self, script_url: str, rc_id: int, discussion_id: int):
+	def __init__(self, script_url: str, rc_id: Optional[int], discussion_id: Optional[int]):
 		self.script_url: str = script_url
 		self.session = aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(6.0))
 		self.statistics: Statistics = Statistics(rc_id, discussion_id)
-		self.fail_times: int = 0
 		self.mw_messages: Optional[MWMessages] = None
 		self.first_fetch_done: bool = False
 		self.domain: Optional[Domain] = None
@@ -50,24 +49,24 @@ class Wiki:
 	def rc_id(self):
 		return self.statistics.last_action
 
-	async def remove(self, reason):
-		logger.info("Removing a wiki {}".format(self.script_url))
-		await src.discord.wiki_removal(self.script_url, reason)
-		await src.discord.wiki_removal_monitor(self.script_url, reason)
-		async with db.pool().acquire() as connection:
-			result = await connection.execute('DELETE FROM rcgcdw WHERE wiki = $1', self.script_url)
-		logger.warning('{} rows affected by DELETE FROM rcgcdw WHERE wiki = "{}"'.format(result, self.script_url))
+	# async def remove(self, reason):
+	# 	logger.info("Removing a wiki {}".format(self.script_url))
+	# 	await src.discord.wiki_removal(self.script_url, reason)
+	# 	await src.discord.wiki_removal_monitor(self.script_url, reason)
+	# 	async with db.pool().acquire() as connection:
+	# 		result = await connection.execute('DELETE FROM rcgcdw WHERE wiki = $1', self.script_url)
+	# 	logger.warning('{} rows affected by DELETE FROM rcgcdw WHERE wiki = "{}"'.format(result, self.script_url))
 
 	def set_domain(self, domain: Domain):
 		self.domain = domain
 
-	async def downtime_controller(self, down, reason=None):
-		if down:
-			self.fail_times += 1
-			if self.fail_times > 20:
-				await self.remove(reason)
-		else:
-			self.fail_times -= 1
+	# async def downtime_controller(self, down, reason=None):
+	# 	if down:
+	# 		self.fail_times += 1
+	# 		if self.fail_times > 20:
+	# 			await self.remove(reason)
+	# 	else:
+	# 		self.fail_times -= 1
 
 	async def generate_targets(self) -> defaultdict[namedtuple, list[str]]:
 		"""This function generates all possible varations of outputs that we need to generate messages for.
@@ -141,7 +140,7 @@ class Wiki:
 		elif 399 < request.status < 500:
 			logger.error("Request returned ClientError status code on {url}".format(url=request.url))
 			if request.status in wiki_reamoval_reasons:
-				await self.downtime_controller(True, reason=request.status)
+				self.statistics.update(Log(type=LogType.HTTP_ERROR, title="{} error".format(request.status), details=str(request.headers) + "\n" + str(request.url)))
 			raise ClientError(request)
 		else:
 			# JSON Extraction
@@ -158,11 +157,10 @@ class Wiki:
 			except KeyError:
 				logger.exception("KeyError while iterating over json_path, full response: {}".format(request.json()))
 				raise
-		self.first_fetch_done = True
 		return request_json
 
 	async def fetch_wiki(self, amount=10) -> dict:
-		if self.first_fetch_done is False:
+		if self.mw_messages is None:
 			params = OrderedDict({"action": "query", "format": "json", "uselang": "content", "list": "tags|recentchanges",
 					  "meta": "allmessages|siteinfo",
 					  "utf8": 1, "tglimit": "max", "tgprop": "displayname",
@@ -188,10 +186,8 @@ class Wiki:
 			try:
 				request = await self.fetch_wiki(amount=amount)
 				self.client.last_request = request
-			except WikiServerError:
-				return  # TODO Add a log entry?
-			else:
-				await self.downtime_controller(False)
+			except WikiServerError as e:
+				self.statistics.update(Log(type=LogType.CONNECTION_ERROR, title=e.))  # We need more details in WIkiServerError exception
 			if not self.mw_messages:
 				mw_messages = request.get("query", {}).get("allmessages", [])
 				final_mw_messages = dict()
@@ -234,7 +230,7 @@ class Wiki:
 						self.tags[tag["name"]] = (BeautifulSoup(tag["displayname"], "lxml")).get_text()
 					except KeyError:
 						self.tags[tag["name"]] = None
-				targets = await self.generate_targets()
+				targets = await self.generate_targets()  # TODO Cache this in Wiki and update based on Redis updates
 				message_list = defaultdict(list)
 				for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
 					if change["rcid"] > self.rc_id:
@@ -242,6 +238,7 @@ class Wiki:
 							highest_id = change["rcid"]
 						for combination, webhooks in targets.items():
 							message, metadata = await rc_processor(self, change, categorize_events, combination, webhooks)
+				break
 
 
 async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, display_options: namedtuple("Settings", ["lang", "display"]), webhooks: list) -> tuple[src.discord.DiscordMessage, src.discord.DiscordMessageMetadata]:

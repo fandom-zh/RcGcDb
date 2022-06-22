@@ -1,4 +1,4 @@
-python_version >= '3.6'
+python_version >= '3.9'
 aiohttp >= 3.6.2
 lxml >= 4.2.1
 nest-asyncio >= 1.4.0
