@@ -24,8 +24,15 @@ class DomainManager:
         if len(split_payload) < 2:
             raise ValueError("Improper pub/sub message! Pub/sub payload: {}".format(payload))
         if split_payload[0] == "ADD":
-            await self.new_wiki(Wiki(split_payload[1], None, None))
+            await self.new_wiki(Wiki(split_payload[1], None, None))  # TODO Can already exist
         elif split_payload[0] == "REMOVE":
+            try:
+                results = await connection.fetch("SELECT * FROM rcgcdw WHERE wiki = $1;", split_payload[1])
+                if len(results) > 0:
+                    return
+            except asyncpg.IdleSessionTimeoutError:
+                logger.error("Couldn't check amount of webhooks with {} wiki!".format(split_payload[1]))
+                return
             self.remove_wiki(split_payload[1])
         else:
             raise ValueError("Unknown pub/sub command! Payload: {}".format(payload))

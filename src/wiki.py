@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 import time
 from dataclasses import dataclass
 import re
 import logging, aiohttp
+from functools import cache
 
 from api.util import default_message
 from mw_messages import MWMessages
@@ -27,6 +29,7 @@ from bs4 import BeautifulSoup
 from collections import OrderedDict, defaultdict, namedtuple
 from typing import Union, Optional, TYPE_CHECKING
 
+Settings = namedtuple("Settings", ["lang", "display"])
 logger = logging.getLogger("rcgcdb.wiki")
 
 wiki_reamoval_reasons = {410: _("wiki deleted"), 404: _("wiki deleted"), 401: _("wiki inaccessible"),
@@ -41,13 +44,25 @@ class Wiki:
 		self.session = aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(6.0))
 		self.statistics: Statistics = Statistics(rc_id, discussion_id)
 		self.mw_messages: Optional[MWMessages] = None
+		self.tags: dict[str, Optional[str]] = {}  # Tag can be None if hidden
 		self.first_fetch_done: bool = False
 		self.domain: Optional[Domain] = None
-		self.client: Client = Client(self)
+		self.targets: Optional[defaultdict[Settings, list[str]]] = None
+		self.client: Client = Client(formatter_hooks, self)
+
+		self.update_targets()
 
 	@property
 	def rc_id(self):
 		return self.statistics.last_action
+
+	@property
+	def last_request(self):
+		return self.statistics.last_request
+
+	@last_request.setter
+	def last_request(self, value):
+		self.statistics.last_request = value
 
 	# async def remove(self, reason):
 	# 	logger.info("Removing a wiki {}".format(self.script_url))
@@ -68,7 +83,7 @@ class Wiki:
 	# 	else:
 	# 		self.fail_times -= 1
 
-	async def generate_targets(self) -> defaultdict[namedtuple, list[str]]:
+	async def update_targets(self) -> None:
 		"""This function generates all possible varations of outputs that we need to generate messages for.
 
 		:returns defaultdict[namedtuple, list[str]] - where namedtuple is a named tuple with settings for given webhooks in list"""
@@ -76,7 +91,7 @@ class Wiki:
 		target_settings: defaultdict[Settings, list[str]] = defaultdict(list)
 		async for webhook in DBHandler.fetch_rows("SELECT webhook, lang, display FROM rcgcdw WHERE wiki = $1 AND (rcid != -1 OR rcid IS NULL)", self.script_url):
 			target_settings[Settings(webhook["lang"], webhook["display"])].append(webhook["webhook"])
-		return target_settings
+		self.targets = target_settings
 
 	def parse_mw_request_info(self, request_data: dict, url: str):
 		"""A function parsing request JSON message from MediaWiki logging all warnings and raising on MediaWiki errors"""
@@ -189,6 +204,7 @@ class Wiki:
 			except WikiServerError as e:
 				self.statistics.update(Log(type=LogType.CONNECTION_ERROR, title=e.))  # We need more details in WIkiServerError exception
 			if not self.mw_messages:
+				# TODO Split into other function
 				mw_messages = request.get("query", {}).get("allmessages", [])
 				final_mw_messages = dict()
 				for msg in mw_messages:
@@ -197,6 +213,7 @@ class Wiki:
 					else:
 						logger.warning("Could not fetch the MW message translation for: {}".format(msg["name"]))
 				self.mw_messages = MWMessages(final_mw_messages)
+			# TODO Split into other function
 			try:
 				recent_changes = request["query"]["recentchanges"]
 				recent_changes.reverse()
@@ -230,15 +247,23 @@ class Wiki:
 						self.tags[tag["name"]] = (BeautifulSoup(tag["displayname"], "lxml")).get_text()
 					except KeyError:
 						self.tags[tag["name"]] = None
-				targets = await self.generate_targets()  # TODO Cache this in Wiki and update based on Redis updates
 				message_list = defaultdict(list)
 				for change in recent_changes:  # Yeah, second loop since the categories require to be all loaded up
 					if change["rcid"] > self.rc_id:
 						if highest_id is None or change["rcid"] > highest_id:  # make sure that the highest_rc is really highest rcid but do allow other entries with potentially lesser rcids come after without breaking the cycle
 							highest_id = change["rcid"]
-						for combination, webhooks in targets.items():
+						for combination, webhooks in self.targets.items():
 							message, metadata = await rc_processor(self, change, categorize_events, combination, webhooks)
 				break
+
+@cache
+def prepare_settings(display_mode: int) -> dict:
+	"""Prepares dict of RcGcDw compatible settings based on a template and display mode of given call"""
+	with open("src/api/template_settings.json", "r") as template_json:
+		template = json.load(template_json)
+	template["appearance"]["embed"]["embed_images"] = True if display_mode > 1 else False
+	template["appearance"]["embed"]["show_edit_changes"] = True if display_mode > 2 else False
+	return template
 
 
 async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, display_options: namedtuple("Settings", ["lang", "display"]), webhooks: list) -> tuple[src.discord.DiscordMessage, src.discord.DiscordMessageMetadata]:
@@ -246,7 +271,7 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 	LinkParser = LinkParser()
 	metadata = src.discord.DiscordMessageMetadata("POST", rev_id=change.get("revid", None), log_id=change.get("logid", None),
 									  page_id=change.get("pageid", None))
-	context = Context(display_options, webhooks, wiki.client)
+	context = Context("embed" if display_options.display > 0 else "compact", "recentchanges", webhook, wiki.client, langs[display_options.lang]["rc_formatters"], prepare_settings(display_options.display))
 	if ("actionhidden" in change or "suppressed" in change) and "suppressed" not in settings["ignored"]:  # if event is hidden using suppression
 		context.event = "suppressed"
 		try:

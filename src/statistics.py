@@ -1,4 +1,7 @@
 import time
+
+import aiohttp.web_request
+
 from src.config import settings
 from typing import Union, Optional
 from enum import Enum
@@ -32,6 +35,7 @@ class LimitedList(list):
 
 class Statistics:
     def __init__(self, rc_id: Optional[int], discussion_id: Optional[int]):
+        self.last_request: Optional[aiohttp.web_request.Request] = None
         self.last_checked_rc: Optional[int] = None
         self.last_action: Optional[int] = rc_id
         self.last_checked_discussion: Optional[int] = None

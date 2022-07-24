@@ -1,6 +1,6 @@
-#  This file is part of Recent changes Goat compatible Discord bot (RcGcDb).
+#  This file is part of Recent changes Goat compatible Discord webhook (RcGcDw).
 #
-#  RcGcDb is free software: you can redistribute it and/or modify
+#  RcGcDw is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
@@ -11,24 +11,18 @@
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with RcGcDb.  If not, see <http://www.gnu.org/licenses/>.
+#  along with RcGcDw.  If not, see <http://www.gnu.org/licenses/>.
 
 # Discussions - Custom Fandom technology which apparently doesn't have any documentation or homepage, not even open-source, go figure
 
 import json
 import datetime, logging
-import gettext
 from urllib.parse import quote_plus
-
-from src.configloader import settings
 from src.api.util import create_article_path, clean_link, sanitize_to_markdown
 from src.api.context import Context
 from src.discord.queue import send_to_discord
 from src.discord.message import DiscordMessage, DiscordMessageMetadata
 from src.api import formatter
-from src.i18n import formatters_i18n
-
-_ = formatters_i18n.gettext
 
 
 logger = logging.getLogger("rcgcdw.discussion_formatter")
@@ -38,12 +32,13 @@ class DiscussionsFromHellParser:
     """This class converts fairly convoluted Fandom jsonModal of a discussion post into Markdown formatted usable thing.
     Takes string, returns string. Kudos to MarkusRost for allowing me to implement this formatter based on his code in Wiki-Bot."""
 
-    def __init__(self, post):
+    def __init__(self, post, ctx):
         self.post = post
         self.jsonModal = json.loads(post.get("jsonModel", "{}"))
         self.markdown_text = ""
         self.item_num = 1
         self.image_last = None
+        self.ctx = ctx
 
     def parse(self) -> str:
         """Main parsing logic"""
@@ -103,14 +98,13 @@ class DiscussionsFromHellParser:
             elif item["type"] == "listItem":
                 self.parse_content(item["content"], item["type"])
 
-    @staticmethod
-    def convert_marks(marks):
+    def convert_marks(self, marks):
         prefix = ""
         suffix = ""
         for mark in marks:
             if mark["type"] == "mention":
                 prefix += "["
-                suffix = "]({wiki}f/u/{userid}){suffix}".format(wiki=settings["fandom_discussions"]["wiki_url"],
+                suffix = "]({wiki}f/u/{userid}){suffix}".format(wiki=self.ctx.settings["fandom_discussions"]["wiki_url"],
                                                                 userid=mark["attrs"]["userId"], suffix=suffix)
             elif mark["type"] == "strong":
                 prefix += "**"
@@ -124,11 +118,11 @@ class DiscussionsFromHellParser:
         return prefix, suffix
 
 
-def common_discussions(post: dict, embed: DiscordMessage):
+def common_discussions(post: dict, embed: DiscordMessage, ctx: Context):
     """A method to setup embeds with common info shared between all types of discussion posts"""
-    if settings["fandom_discussions"]["appearance"]["embed"]["show_content"]:
+    if ctx.settings["fandom_discussions"]["appearance"]["embed"]["show_content"]:
         if post.get("jsonModel") is not None:
-            npost = DiscussionsFromHellParser(post)
+            npost = DiscussionsFromHellParser(post, ctx)
             embed["description"] = npost.parse()
             if npost.image_last:
                 embed["image"]["url"] = npost.image_last
@@ -143,36 +137,36 @@ def common_discussions(post: dict, embed: DiscordMessage):
 
 @formatter.embed(event="discussion/forum")
 def embed_discussion_forum(ctx: Context, post: dict):
-    embed = DiscordMessage("embed", "discussion", settings["fandom_discussions"]["webhookURL"])
-    common_discussions(post, embed)
-    author = _("unknown")  # Fail safe
+    embed = DiscordMessage("embed", "discussion", ctx.settings["fandom_discussions"]["webhookURL"])
+    common_discussions(post, embed, ctx)
+    author = ctx._("unknown")  # Fail safe
     if post["createdBy"]["name"]:
         author = post["createdBy"]["name"]
-    embed.set_author(author, "{url}f/u/{creatorId}".format(url=settings["fandom_discussions"]["wiki_url"],
+    embed.set_author(author, "{url}f/u/{creatorId}".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
                                                            creatorId=post["creatorId"]),
                                                            icon_url=post["createdBy"]["avatarUrl"])
     if not post["isReply"]:
-        embed["url"] = "{url}f/p/{threadId}".format(url=settings["fandom_discussions"]["wiki_url"],
+        embed["url"] = "{url}f/p/{threadId}".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
                                                     threadId=post["threadId"])
-        embed["title"] = _("Created \"{title}\"").format(title=post["title"])
+        embed["title"] = ctx._("Created \"{title}\"").format(title=post["title"])
         thread_funnel = post.get("funnel")
         if thread_funnel == "POLL":
             embed.event_type = "discussion/forum/poll"
-            embed["title"] = _("Created a poll \"{title}\"").format(title=post["title"])
-            if settings["fandom_discussions"]["appearance"]["embed"]["show_content"]:
+            embed["title"] = ctx._("Created a poll \"{title}\"").format(title=post["title"])
+            if ctx.settings["fandom_discussions"]["appearance"]["embed"]["show_content"]:
                 poll = post["poll"]
                 image_type = False
                 if poll["answers"][0]["image"] is not None:
                     image_type = True
                 for num, option in enumerate(poll["answers"]):
-                    embed.add_field(option["text"] if image_type is True else _("Option {}").format(num + 1),
-                                    option["text"] if image_type is False else _(
+                    embed.add_field(option["text"] if image_type is True else ctx._("Option {}").format(num + 1),
+                                    option["text"] if image_type is False else ctx._(
                                         "__[View image]({image_url})__").format(image_url=option["image"]["url"]),
                                     inline=True)
         elif thread_funnel == "QUIZ":
             embed.event_type = "discussion/forum/quiz"
-            embed["title"] = _("Created a quiz \"{title}\"").format(title=post["title"])
-            if settings["fandom_discussions"]["appearance"]["embed"]["show_content"]:
+            embed["title"] = ctx._("Created a quiz \"{title}\"").format(title=post["title"])
+            if ctx.settings["fandom_discussions"]["appearance"]["embed"]["show_content"]:
                 quiz = post["_embedded"]["quizzes"][0]
                 embed["description"] = quiz["title"]
                 if quiz["image"] is not None:
@@ -190,13 +184,13 @@ def embed_discussion_forum(ctx: Context, post: dict):
                 tag_displayname.append("[{title}]({url})".format(title=tag["articleTitle"], url=create_article_path(
                     quote_plus(tag["articleTitle"].replace(" ", "_"), "/:?=&"))))
             if len(", ".join(tag_displayname)) > 1000:
-                embed.add_field(formatters_i18n.pgettext("Fandom discussions Tags/Forums", "Tags"), formatters_i18n.pgettext("Fandom discussions amount of Tags/Forums", "{} tags").format(len(post["_embedded"]["thread"][0]["tags"])))
+                embed.add_field(ctx.pgettext("Fandom discussions Tags/Forums", "Tags"), ctx.pgettext("Fandom discussions amount of Tags/Forums", "{} tags").format(len(post["_embedded"]["thread"][0]["tags"])))
             else:
-                embed.add_field(formatters_i18n.pgettext("Fandom discussions Tags/Forums", "Tags"), ", ".join(tag_displayname))
+                embed.add_field(ctx.pgettext("Fandom discussions Tags/Forums", "Tags"), ", ".join(tag_displayname))
     else:
         embed.event_type = "discussion/forum/reply"
-        embed["title"] = _("Replied to \"{title}\"").format(title=post["_embedded"]["thread"][0]["title"])
-        embed["url"] = "{url}f/p/{threadId}/r/{postId}".format(url=settings["fandom_discussions"]["wiki_url"],
+        embed["title"] = ctx._("Replied to \"{title}\"").format(title=post["_embedded"]["thread"][0]["title"])
+        embed["url"] = "{url}f/p/{threadId}/r/{postId}".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
                                                                threadId=post["threadId"], postId=post["id"])
     return embed
 
@@ -204,20 +198,20 @@ def embed_discussion_forum(ctx: Context, post: dict):
 @formatter.compact(event="discussion/forum")
 def compact_discussion_forum(ctx: Context, post: dict):
     message = None
-    author = _("unknown")  # Fail safe
+    author = ctx._("unknown")  # Fail safe
     if post["createdBy"]["name"]:
         author = post["createdBy"]["name"]
-    author_url = "<{url}f/u/{creatorId}>".format(url=settings["fandom_discussions"]["wiki_url"],
+    author_url = "<{url}f/u/{creatorId}>".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
                                                  creatorId=post["creatorId"])
     if not post["isReply"]:
         thread_funnel = post.get("funnel")
-        msg_text = _("[{author}]({author_url}) created [{title}](<{url}f/p/{threadId}>) in {forumName}")
+        msg_text = ctx._("[{author}]({author_url}) created [{title}](<{url}f/p/{threadId}>) in {forumName}")
         if thread_funnel == "POLL":
             event_type = "discussion/forum/poll"
-            msg_text = _("[{author}]({author_url}) created a poll [{title}](<{url}f/p/{threadId}>) in {forumName}")
+            msg_text = ctx._("[{author}]({author_url}) created a poll [{title}](<{url}f/p/{threadId}>) in {forumName}")
         elif thread_funnel == "QUIZ":
             event_type = "discussion/forum/quiz"
-            msg_text = _("[{author}]({author_url}) created a quiz [{title}](<{url}f/p/{threadId}>) in {forumName}")
+            msg_text = ctx._("[{author}]({author_url}) created a quiz [{title}](<{url}f/p/{threadId}>) in {forumName}")
         elif thread_funnel == "TEXT":
             event_type = "discussion/forum/post"
         else:
@@ -226,13 +220,13 @@ def compact_discussion_forum(ctx: Context, post: dict):
                     thread_funnel))
             event_type = "unknown"
         message = msg_text.format(author=author, author_url=author_url, title=post["title"],
-                                  url=settings["fandom_discussions"]["wiki_url"], threadId=post["threadId"],
+                                  url=ctx.settings["fandom_discussions"]["wiki_url"], threadId=post["threadId"],
                                   forumName=post["forumName"])
     else:
         event_type = "discussion/forum/reply"
-        message = _(
+        message = ctx._(
             "[{author}]({author_url}) created a [reply](<{url}f/p/{threadId}/r/{postId}>) to [{title}](<{url}f/p/{threadId}>) in {forumName}").format(
-            author=author, author_url=author_url, url=settings["fandom_discussions"]["wiki_url"],
+            author=author, author_url=author_url, url=ctx.settings["fandom_discussions"]["wiki_url"],
             threadId=post["threadId"], postId=post["id"], title=post["_embedded"]["thread"][0]["title"],
             forumName=post["forumName"])
     return DiscordMessage("compact", event_type, ctx.webhook_url, content=message)
@@ -240,83 +234,83 @@ def compact_discussion_forum(ctx: Context, post: dict):
 # discussion/wall - Wall posts/replies
 
 
-def compact_author_discussions(post: dict):
+def compact_author_discussions(post: dict, ctx: Context):
     """A common function for a few discussion related foramtters, it's formatting author's name and URL to their profile"""
-    author = _("unknown")  # Fail safe
+    author = ctx._("unknown")  # Fail safe
     if post["creatorIp"]:
-        author = post["creatorIp"][1:] if settings.get("hide_ips", False) is False else _("Unregistered user")
-        author_url = "<{url}wiki/Special:Contributions{creatorIp}>".format(url=settings["fandom_discussions"]["wiki_url"],
+        author = post["creatorIp"][1:] if ctx.settings.get("hide_ips", False) is False else ctx._("Unregistered user")
+        author_url = "<{url}wiki/Special:Contributions{creatorIp}>".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
                                                                            creatorIp=post["creatorIp"])
     else:
         if post["createdBy"]["name"]:
             author = post["createdBy"]["name"]
             author_url = clean_link(create_article_path("User:{user}".format(user=author)))
         else:
-            author_url = "<{url}f/u/{creatorId}>".format(url=settings["fandom_discussions"]["wiki_url"],
+            author_url = "<{url}f/u/{creatorId}>".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
                                                      creatorId=post["creatorId"])
     return author, author_url
 
 
-def embed_author_discussions(post: dict, embed: DiscordMessage):
-    author = _("unknown")  # Fail safe
+def embed_author_discussions(post: dict, embed: DiscordMessage, ctx: Context):
+    author = ctx._("unknown")  # Fail safe
     if post["creatorIp"]:
         author = post["creatorIp"][1:]
-        embed.set_author(author if settings.get("hide_ips", False) is False else _("Unregistered user"),
+        embed.set_author(author if ctx.settings.get("hide_ips", False) is False else ctx._("Unregistered user"),
                          "{url}wiki/Special:Contributions{creatorIp}".format(
-                             url=settings["fandom_discussions"]["wiki_url"], creatorIp=post["creatorIp"]))
+                             url=ctx.settings["fandom_discussions"]["wiki_url"], creatorIp=post["creatorIp"]))
     else:
         if post["createdBy"]["name"]:
             author = post["createdBy"]["name"]
-            embed.set_author(author, "{url}wiki/User:{creator}".format(url=settings["fandom_discussions"]["wiki_url"],
+            embed.set_author(author, "{url}wiki/User:{creator}".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
                                                                        creator=author.replace(" ", "_")),
                              icon_url=post["createdBy"]["avatarUrl"])
         else:
-            embed.set_author(author, "{url}f/u/{creatorId}".format(url=settings["fandom_discussions"]["wiki_url"],
+            embed.set_author(author, "{url}f/u/{creatorId}".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
                                                                    creatorId=post["creatorId"]),
                              icon_url=post["createdBy"]["avatarUrl"])
 
 
 @formatter.embed(event="discussion/wall")
 def embed_discussion_wall(ctx: Context, post: dict):
-    embed = DiscordMessage("embed", "discussion", settings["fandom_discussions"]["webhookURL"])
+    embed = DiscordMessage("embed", "discussion", ctx.settings["fandom_discussions"]["webhookURL"])
     common_discussions(post, embed)
-    embed_author_discussions(post, embed)
-    user_wall = _("unknown")  # Fail safe
+    embed_author_discussions(post, embed, ctx)
+    user_wall = ctx._("unknown")  # Fail safe
     if post["forumName"].endswith(' Message Wall'):
         user_wall = post["forumName"][:-13]
     if not post["isReply"]:
         embed.event_type = "discussion/wall/post"
         embed["url"] = "{url}wiki/Message_Wall:{user_wall}?threadId={threadId}".format(
-            url=settings["fandom_discussions"]["wiki_url"], user_wall=quote_plus(user_wall.replace(" ", "_")),
+            url=ctx.settings["fandom_discussions"]["wiki_url"], user_wall=quote_plus(user_wall.replace(" ", "_")),
             threadId=post["threadId"])
-        embed["title"] = _("Created \"{title}\" on {user}'s Message Wall").format(title=post["title"], user=user_wall)
+        embed["title"] = ctx._("Created \"{title}\" on {user}'s Message Wall").format(title=post["title"], user=user_wall)
     else:
         embed.event_type = "discussion/wall/reply"
         embed["url"] = "{url}wiki/Message_Wall:{user_wall}?threadId={threadId}#{replyId}".format(
-            url=settings["fandom_discussions"]["wiki_url"], user_wall=quote_plus(user_wall.replace(" ", "_")),
+            url=ctx.settings["fandom_discussions"]["wiki_url"], user_wall=quote_plus(user_wall.replace(" ", "_")),
             threadId=post["threadId"], replyId=post["id"])
-        embed["title"] = _("Replied to \"{title}\" on {user}'s Message Wall").format(
+        embed["title"] = ctx._("Replied to \"{title}\" on {user}'s Message Wall").format(
             title=post["_embedded"]["thread"][0]["title"], user=user_wall)
     return embed
 
 
 @formatter.compact(event="discussion/wall")
 def compact_discussion_wall(ctx: Context, post: dict):
-    author, author_url = compact_author_discussions(post)
-    user_wall = _("unknown")  # Fail safe
+    author, author_url = compact_author_discussions(post, ctx)
+    user_wall = ctx._("unknown")  # Fail safe
     if post["forumName"].endswith(' Message Wall'):
         user_wall = post["forumName"][:-13]
     if not post["isReply"]:
         event_type = "discussion/wall/post"
-        message = _(
+        message = ctx._(
             "[{author}]({author_url}) created [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(
-            author=author, author_url=author_url, title=post["title"], url=settings["fandom_discussions"]["wiki_url"],
+            author=author, author_url=author_url, title=post["title"], url=ctx.settings["fandom_discussions"]["wiki_url"],
             user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"])
     else:
         event_type = "discussion/wall/reply"
-        message = _(
+        message = ctx._(
             "[{author}]({author_url}) created a [reply](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}#{replyId}>) to [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(
-            author=author, author_url=author_url, url=settings["fandom_discussions"]["wiki_url"],
+            author=author, author_url=author_url, url=ctx.settings["fandom_discussions"]["wiki_url"],
             title=post["_embedded"]["thread"][0]["title"], user=user_wall,
             user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"], replyId=post["id"])
     return DiscordMessage("compact", event_type, ctx.webhook_url, content=message)
@@ -326,42 +320,42 @@ def compact_discussion_wall(ctx: Context, post: dict):
 
 @formatter.embed(event="discussion/article_comment")
 def embed_discussion_article_comment(ctx: Context, post: dict):
-    embed = DiscordMessage("embed", "discussion", settings["fandom_discussions"]["webhookURL"])
+    embed = DiscordMessage("embed", "discussion", ctx.settings["fandom_discussions"]["webhookURL"])
     common_discussions(post, embed)
-    embed_author_discussions(post, embed)
+    embed_author_discussions(post, embed, ctx)
     article_paths = ctx.comment_page
     if article_paths is None:
-        article_page = {"title": _("unknown"), "fullUrl": settings["fandom_discussions"]["wiki_url"]}  # No page known
+        article_paths = {"title": ctx._("unknown"), "fullUrl": ctx.settings["fandom_discussions"]["wiki_url"]}  # No page known
     if not post["isReply"]:
         embed.event_type = "discussion/comment/post"
         embed["url"] = "{url}?commentId={commentId}".format(url=article_paths["fullUrl"], commentId=post["threadId"])
-        embed["title"] = _("Commented on {article}").format(article=article_paths["title"])
+        embed["title"] = ctx._("Commented on {article}").format(article=article_paths["title"])
     else:
         embed.event_type = "discussion/comment/reply"
         embed["url"] = "{url}?commentId={commentId}&replyId={replyId}".format(url=article_paths["fullUrl"],
                                                                               commentId=post["threadId"],
                                                                               replyId=post["id"])
-        embed["title"] = _("Replied to a comment on {article}").format(article=article_paths["title"])
+        embed["title"] = ctx._("Replied to a comment on {article}").format(article=article_paths["title"])
     embed["footer"]["text"] = article_paths["title"]
     return embed
 
 
 @formatter.compact(event="discussion/article_comment")
 def compact_discussion_article_comment(ctx: Context, post: dict):
-    author, author_url = compact_author_discussions(post)
+    author, author_url = compact_author_discussions(post, ctx)
     article_paths = ctx.comment_page
     if article_paths is None:
-        article_paths = {"title": _("unknown"), "fullUrl": settings["fandom_discussions"]["wiki_url"]}  # No page known
+        article_paths = {"title": ctx._("unknown"), "fullUrl": ctx.settings["fandom_discussions"]["wiki_url"]}  # No page known
     article_paths["fullUrl"] = article_paths["fullUrl"].replace(")", "\)").replace("()", "\(")
     if not post["isReply"]:
         event_type = "discussion/comment/post"
-        message = _(
+        message = ctx._(
             "[{author}]({author_url}) created a [comment](<{url}?commentId={commentId}>) on [{article}](<{url}>)").format(
             author=author, author_url=author_url, url=article_paths["fullUrl"], article=article_paths["title"],
             commentId=post["threadId"])
     else:
         event_type = "discussion/comment/reply"
-        message = _(
+        message = ctx._(
             "[{author}]({author_url}) created a [reply](<{url}?commentId={commentId}&replyId={replyId}>) to a [comment](<{url}?commentId={commentId}>) on [{article}](<{url}>)").format(
             author=author, author_url=author_url, url=article_paths["fullUrl"], article=article_paths["title"],
             commentId=post["threadId"], replyId=post["id"])

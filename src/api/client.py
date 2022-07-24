@@ -1,6 +1,6 @@
-#  This file is part of Recent changes Goat compatible Discord bot (RcGcDb).
+#  This file is part of Recent changes Goat compatible Discord webhook (RcGcDw).
 #
-#  RcGcDb is free software: you can redistribute it and/or modify
+#  RcGcDw is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
@@ -11,17 +11,16 @@
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with RcGcDb.  If not, see <http://www.gnu.org/licenses/>.
+#  along with RcGcDw.  If not, see <http://www.gnu.org/licenses/>.
 
 
 from __future__ import annotations
+from datetime import datetime
 import src.misc
-from src.exceptions import TagNotFound
-from bs4 import BeautifulSoup
-from typing import Union, TYPE_CHECKING, Optional
+import sched
+from typing import Union, Callable
 from collections import OrderedDict
-from functools import cache
-from urllib.parse import urlparse, urlunparse
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
 	from src.wiki import Wiki
@@ -30,12 +29,54 @@ class Client:
 	"""
 		A client for interacting with RcGcDw when creating formatters or hooks.
 	"""
-	def __init__(self, wiki):
+	def __init__(self, hooks, wiki):
+		self._formatters = hooks
 		self.__recent_changes: Wiki = wiki
+		self.WIKI_API_PATH: str = src.misc.WIKI_API_PATH
+		self.WIKI_ARTICLE_PATH: str = src.misc.WIKI_ARTICLE_PATH
+		self.WIKI_SCRIPT_PATH: str = src.misc.WIKI_SCRIPT_PATH
+		self.WIKI_JUST_DOMAIN: str = src.misc.WIKI_JUST_DOMAIN
 		self.content_parser = src.misc.ContentParser
+		self.tags = self.__recent_changes.tags
 		self.LinkParser: type(src.misc.LinkParser) = src.misc.LinkParser
-		self.last_request: Optional[dict] = None
+		self.scheduler: sched.scheduler = sched.scheduler()
 		#self.make_api_request: src.rc.wiki.__recent_changes.api_request = self.__recent_changes.api_request
+
+	def schedule(self, function: Callable, *args: list, every: Optional[float] = None, at: Optional[str] = None,
+				 priority: int = 5, **kwargs: dict):
+		"""Schedules a function indefinitely, does not execute function immediately
+
+			Parameters:
+
+				function (callable): a function to call each scheduled execution
+				*args: arguments provided to callable function
+				every (float): float of time between each execution
+				at (str): string of time
+				priority (int): priority of the task (lower - more important, RcGcDw tasks are executed at 5)
+				**kwargs: key-value provided to callable function
+
+			Returns:
+
+				FIRST sched.event, later cycles have their own sched.event and will be viewable by client.scheduler.queue
+		"""
+		def return_delay(given_time: Union[float, str]) -> float:
+			"""Converts UTC time to amount of seconds from now, if amount of seconds given returns seconds as a float"""
+			if isinstance(given_time, float) or isinstance(given_time, int):
+				return float(given_time)
+			now = datetime.utcnow()
+			then = datetime(now.year, now.month, now.day, *(map(int, given_time.split(':'))), 0, 0)
+			return float((then - now).seconds)
+		def wrap_reschedule(function, period: float, *args, **kwargs):
+			"""Function for rescheduling a function every period of times. It provides args and kwargs to the function"""
+			self.schedule(function, every=period, *args, **kwargs)
+			function(*args, **kwargs)
+		if not any([every, at]) or all([every, at]):
+			raise ValueError("Either every or at (and not both) has to be set for client.schedule function.")
+		return self.scheduler.enter(return_delay(every or at), priority, wrap_reschedule, argument=(function, every or 86400.0, *args), kwargs=kwargs)
+
+	def refresh_internal_data(self):
+		"""Refreshes internal storage data for wiki tags and MediaWiki messages."""
+		self.__recent_changes.init_info()
 
 	@property
 	def namespaces(self) -> dict:
@@ -44,37 +85,6 @@ class Client:
 			return self.__recent_changes.namespaces
 		else:
 			return dict()
-
-	@cache
-	def tag(self, tag_name: str):
-		for tag in self.last_request["tags"]:
-			if tag["name"] == tag_name:
-				try:
-					return (BeautifulSoup(tag["displayname"], "lxml")).get_text()
-				except KeyError:
-					return None  # Tags with no display name are hidden and should not appear on RC as well
-		raise TagNotFound
-
-	@property
-	def WIKI_API_PATH(self):
-		return self.__recent_changes.script_url + "api.php"
-
-	@property
-	def WIKI_SCRIPT_PATH(self):
-		return self.__recent_changes.script_url
-
-	@property
-	def WIKI_JUST_DOMAIN(self):
-		parsed_url = urlparse(self.__recent_changes.script_url)
-		return urlunparse((*parsed_url[0:2], "", "", "", ""))
-
-	@property
-	def WIKI_ARTICLE_PATH(self):
-		parsed_url = urlparse(self.__recent_changes.script_url)
-		try:
-			return urlunparse((*parsed_url[0:2], "", "", "", "")) + self.last_request["query"]["general"]["articlepath"]
-		except KeyError:
-			return urlunparse((*parsed_url[0:2], "", "", "", "")) + "wiki/"
 
 	def parse_links(self, summary: str):
 		link_parser = self.LinkParser()
@@ -112,6 +122,9 @@ class Client:
 					MediaWikiError: When MediaWiki returns an error
 				"""
 		return self.__recent_changes.api_request(params, *json_path, timeout=timeout, allow_redirects=allow_redirects)
+
+	def get_formatters(self):
+		return self._formatters
 
 	def get_ipmapper(self) -> dict:
 		"""Returns a dict mapping IPs with amount of their edits"""

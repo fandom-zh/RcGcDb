@@ -1,6 +1,6 @@
-#  This file is part of Recent changes Goat compatible Discord bot (RcGcDb).
+#  This file is part of Recent changes Goat compatible Discord webhook (RcGcDw).
 #
-#  RcGcDb is free software: you can redistribute it and/or modify
+#  RcGcDw is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
@@ -11,13 +11,13 @@
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with RcGcDb.  If not, see <http://www.gnu.org/licenses/>.
+#  along with RcGcDw.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 import re
 from urllib.parse import quote
 from typing import Optional, Callable, TYPE_CHECKING
 
-from src.exceptions import ServerError, MediaWikiError, TagNotFound
+from src.exceptions import ServerError, MediaWikiError
 from src.discord.message import DiscordMessage
 from src.configloader import settings
 import src.misc
@@ -32,9 +32,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger("src.api.util")
 
 
-def default_message(event: str, display: str, formatter_hooks: dict) -> Callable:
+def default_message(event: str, formatter_hooks: dict) -> Callable:
 	"""Returns a method of a formatter responsible for the event or None if such does not exist."""
-	return formatter_hooks[display].get(event, formatter_hooks.get("generic", formatter_hooks["no_formatter"]))
+	return formatter_hooks.get(event, formatter_hooks.get("generic", formatter_hooks["no_formatter"]))
 
 
 def clean_link(link: str) -> str:
@@ -57,15 +57,15 @@ def parse_mediawiki_changes(ctx: Context, content: str, embed: DiscordMessage) -
 	edit_diff = ctx.client.content_parser()
 	edit_diff.feed(content)
 	if edit_diff.small_prev_del:
-		if edit_diff.small_prev_del.replace("~~", "").isspace():
+		if edit_diff.small_prev_del.replace("~~", "").replace("__", "").isspace():
 			edit_diff.small_prev_del = _('__Only whitespace__')
 		else:
-			edit_diff.small_prev_del = edit_diff.small_prev_del.replace("~~~~", "")
+			edit_diff.small_prev_del = edit_diff.small_prev_del.replace("~~~~", "").replace("____", "")
 	if edit_diff.small_prev_ins:
-		if edit_diff.small_prev_ins.replace("**", "").isspace():
+		if edit_diff.small_prev_ins.replace("**", "").replace("__", "").isspace():
 			edit_diff.small_prev_ins = _('__Only whitespace__')
 		else:
-			edit_diff.small_prev_ins = edit_diff.small_prev_ins.replace("****", "")
+			edit_diff.small_prev_ins = edit_diff.small_prev_ins.replace("****", "").replace("____", "")
 	logger.debug("Changed content: {}".format(edit_diff.small_prev_ins))
 	if edit_diff.small_prev_del and not ctx.event == "new":
 		embed.add_field(_("Removed"), "{data}".format(data=edit_diff.small_prev_del), inline=True)
@@ -148,17 +148,17 @@ def embed_helper(ctx: Context, message: DiscordMessage, change: dict, set_user=T
 		if settings["appearance"]["embed"]["show_footer"]:
 			message["timestamp"] = change["timestamp"]
 		if "tags" in change and change["tags"]:
-			tags_displayname = []
+			tag_displayname = []
 			for tag in change["tags"]:
-				try:
-					tag_display = ctx.client.tag(tag)
-					if tag_display is None:
+				if tag in ctx.client.tags:
+					if ctx.client.tags[tag] is None:
 						continue  # Ignore hidden tags
 					else:
-						tags_displayname.append(tag_display)
-				except TagNotFound:
-					tags_displayname.append(tag)
-			message.add_field(formatters_i18n.pgettext("recent changes Tags", "Tags"), ", ".join(tags_displayname))
+						tag_displayname.append(ctx.client.tags[tag])
+				else:
+					tag_displayname.append(tag)
+			if tag_displayname:
+				message.add_field(formatters_i18n.pgettext("recent changes Tags", "Tags"), ", ".join(tag_displayname))
 		if ctx.categories is not None and not (len(ctx.categories["new"]) == 0 and len(ctx.categories["removed"]) == 0):
 			new_cat = (_("**Added**: ") + ", ".join(list(ctx.categories["new"])[0:16]) + (
 				"\n" if len(ctx.categories["new"]) <= 15 else _(" and {} more\n").format(

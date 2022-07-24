@@ -1,17 +1,17 @@
-#  This file is part of Recent changes Goat compatible Discord bot (RcGcDb).
-#
-#  RcGcDb is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  RcGcDw is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with RcGcDb.  If not, see <http://www.gnu.org/licenses/>.
+# This file is part of Recent changes Goat compatible Discord webhook (RcGcDw).
+
+# RcGcDw is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# RcGcDw is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with RcGcDw.  If not, see <http://www.gnu.org/licenses/>.
 import src.api.hooks
 import logging
 from src.configloader import settings
@@ -20,6 +20,7 @@ from src.discord.message import DiscordMessage
 from typing import Optional, Callable
 
 logger = logging.getLogger("src.api.formatter")
+
 
 def _register_formatter(func, kwargs, formatter_type: str, action_type=None):
 	"""
@@ -34,12 +35,13 @@ def _register_formatter(func, kwargs, formatter_type: str, action_type=None):
 	action_type = kwargs.get("event", action_type)
 	if action_type is None:
 		raise FormatterBreaksAPISpec("event type")
-	for act in [action_type] + kwargs.get("aliases", []):  # Make action_type string a list and merge with aliases
-		if act in src.api.hooks.formatter_hooks[formatter_type]:
-			logger.warning(f"Action {act} is already defined inside of "
-						   f"{src.api.hooks.formatter_hooks[formatter_type][act].__module__}! "
-						   f"Overwriting it with one from {func.__module__}")
-		src.api.hooks.formatter_hooks[formatter_type][act] = func
+	if settings["appearance"]["mode"] == formatter_type:
+		for act in [action_type] + kwargs.get("aliases", []):  # Make action_type string a list and merge with aliases
+			if act in src.api.hooks.formatter_hooks:
+				logger.warning(f"Action {act} is already defined inside of "
+				               f"{src.api.hooks.formatter_hooks[act].__module__}! "
+				               f"Overwriting it with one from {func.__module__}")
+			src.api.hooks.formatter_hooks[act] = func
 
 
 def embed(**kwargs):
