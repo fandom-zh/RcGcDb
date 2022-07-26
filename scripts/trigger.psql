@@ -1,0 +1,15 @@
+create or replace function public.webhook_notify() returns trigger as
+$BODY$
+begin
+   IF (TG_OP = 'DELETE') THEN
+       perform pg_notify('webhookupdates', concat('REMOVE ', old.wiki));
+   ELSIF (TG_OP = 'INSERT') then
+       perform pg_notify('webhookupdates', concat('ADD ', new.wiki));
+   end if;
+   return new;
+end;
+$BODY$
+   language plpgsql;
+
+CREATE TRIGGER RCGCDB_WEBHOOK_UPDATE BEFORE INSERT OR DELETE ON rcgcdw
+    FOR EACH ROW EXECUTE FUNCTION webhook_notify();

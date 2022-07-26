@@ -54,3 +54,10 @@ class MediaWikiError(Exception):
 		self.message = f"MediaWiki returned the following errors: {errors}!"
 		super().__init__(self.message)
 
+class NoDomain(Exception):
+	"""When given domain does not exist"""
+	pass
+
+class WikiExists(Exception):
+	"""When given wiki already exists"""
+	pass

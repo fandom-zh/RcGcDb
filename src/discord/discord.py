@@ -40,7 +40,7 @@ async def wiki_removal(wiki_url, status):
 async def webhook_removal_monitor(webhook_url: str, reason: int):
 	await send_to_discord_webhook_monitoring(DiscordMessage("compact", "webhook/remove", None, content="The webhook {} has been removed due to {}.".format("https://discord.com/api/webhooks/" + webhook_url, reason), wiki=None))
 
-
+#What about Discord message that would hold all embeds in a list and only combine them when sending the webhook? Saving stacked message would be easier then
 class DiscordMessage:
 	"""A class defining a typical Discord JSON representation of webhook payload."""
 	def __init__(self, message_type: str, event_type: str, webhook_url: list, wiki, content=None):

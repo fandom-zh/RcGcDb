@@ -17,7 +17,7 @@ class Domain:
     def __init__(self, name: str):
         self.name = name  # This should be always in format of topname.extension for example fandom.com
         self.task: Optional[asyncio.Task] = None
-        self.wikis: OrderedDict[str, src.wiki.Wiki] = OrderedDict()
+        self.wikis: OrderedDict[str, src.wiki.Wiki] = OrderedDict()  # TODO Check if we can replace with https://docs.python.org/3/library/asyncio-queue.html
         self.rate_limiter: src.wiki_ratelimiter = src.wiki_ratelimiter.RateLimiter()
         self.irc: Optional[src.irc_feed.AioIRCCat] = None
 
@@ -56,7 +56,7 @@ class Domain:
         :parameter first (optional) - bool indicating if wikis should be added as first or last in the ordered dict"""
         wiki.set_domain(self)
         if wiki.script_url in self.wikis:
-            raise WikiExists("Wiki {} exists in domain {}".format(wiki.script_url, self.name))
+            self.wikis[wiki.script_url].update_targets()
         self.wikis[wiki.script_url] = wiki
         if first:
             self.wikis.move_to_end(wiki.script_url, last=False)
@@ -88,7 +88,7 @@ class Domain:
     async def regular_scheduler(self):
         while True:
             await asyncio.sleep(self.calculate_sleep_time(len(self)))  # To make sure that we don't spam domains with one wiki every second we calculate a sane timeout for domains with few wikis
-            await self.run_wiki_scan(self.wikis.pop())
+            await self.run_wiki_scan(next(iter(self.wikis.values())))
 
     @cache
     def calculate_sleep_time(self, queue_length: int):

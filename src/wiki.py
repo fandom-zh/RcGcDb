@@ -21,7 +21,6 @@ from src.misc import parse_link
 from src.i18n import langs
 from src.wiki_ratelimiter import RateLimiter
 from statistics import Statistics, Log, LogType
-import src.discord
 import asyncio
 from src.config import settings
 # noinspection PyPackageRequirements
@@ -266,21 +265,22 @@ def prepare_settings(display_mode: int) -> dict:
 	return template
 
 
-async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, display_options: namedtuple("Settings", ["lang", "display"]), webhooks: list) -> tuple[src.discord.DiscordMessage, src.discord.DiscordMessageMetadata]:
+async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, display_options: namedtuple("Settings", ["lang", "display"]), webhooks: list) -> tuple[
+	discord.discord.DiscordMessage, discord.discord.DiscordMessageMetadata]:
 	from src.misc import LinkParser
 	LinkParser = LinkParser()
-	metadata = src.discord.DiscordMessageMetadata("POST", rev_id=change.get("revid", None), log_id=change.get("logid", None),
-									  page_id=change.get("pageid", None))
+	metadata = discord.discord.DiscordMessageMetadata("POST", rev_id=change.get("revid", None), log_id=change.get("logid", None),
+													  page_id=change.get("pageid", None))
 	context = Context("embed" if display_options.display > 0 else "compact", "recentchanges", webhook, wiki.client, langs[display_options.lang]["rc_formatters"], prepare_settings(display_options.display))
 	if ("actionhidden" in change or "suppressed" in change) and "suppressed" not in settings["ignored"]:  # if event is hidden using suppression
 		context.event = "suppressed"
 		try:
-			discord_message: Optional[src.discord.DiscordMessage] = default_message("suppressed", display_options.display, formatter_hooks)(context, change)
+			discord_message: Optional[discord.discord.DiscordMessage] = default_message("suppressed", display_options.display, formatter_hooks)(context, change)
 		except NoFormatter:
 			return
 		except:
 			if settings.get("error_tolerance", 1) > 0:
-				discord_message: Optional[src.discord.DiscordMessage] = None  # It's handled by send_to_discord, we still want other code to run
+				discord_message: Optional[discord.discord.DiscordMessage] = None  # It's handled by send_to_discord, we still want other code to run
 			else:
 				raise
 	else:
@@ -312,12 +312,12 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 			return
 		context.event = identification_string
 		try:
-			discord_message: Optional[src.discord.DiscordMessage] = default_message(identification_string, formatter_hooks)(context,
-																												change)
+			discord_message: Optional[discord.discord.DiscordMessage] = default_message(identification_string, formatter_hooks)(context,
+																																change)
 		except:
 			if settings.get("error_tolerance", 1) > 0:
 				discord_message: Optional[
-					src.discord.DiscordMessage] = None  # It's handled by send_to_discord, we still want other code to run
+					discord.discord.DiscordMessage] = None  # It's handled by send_to_discord, we still want other code to run
 			else:
 				raise
 		if identification_string in ("delete/delete", "delete/delete_redir"):  # TODO Move it into a hook?
@@ -429,8 +429,8 @@ class Wiki_old:
 	@staticmethod
 	async def remove(wiki_url, reason):
 		logger.info("Removing a wiki {}".format(wiki_url))
-		await src.discord.wiki_removal(wiki_url, reason)
-		await src.discord.wiki_removal_monitor(wiki_url, reason)
+		await discord.discord.wiki_removal(wiki_url, reason)
+		await discord.discord.wiki_removal_monitor(wiki_url, reason)
 		async with db.pool().acquire() as connection:
 			result = await connection.execute('DELETE FROM rcgcdw WHERE wiki = $1', wiki_url)
 		logger.warning('{} rows affected by DELETE FROM rcgcdw WHERE wiki = "{}"'.format(result, wiki_url))
@@ -512,7 +512,7 @@ async def process_mwmsgs(wiki_response: dict, local_wiki: Wiki, mw_msgs: dict):
 
 # db_wiki: webhook, wiki, lang, display, rcid, postid
 async def essential_info(change: dict, changed_categories, local_wiki: Wiki, target: tuple, paths: tuple, request: dict,
-                         rate_limiter: RateLimiter) -> src.discord.DiscordMessage:
+                         rate_limiter: RateLimiter) -> discord.discord.DiscordMessage:
 	"""Prepares essential information for both embed and compact message format."""
 	_ = langs[target[0][0]]["wiki"].gettext
 	changed_categories = changed_categories.get(change["revid"], None)
@@ -546,7 +546,7 @@ async def essential_info(change: dict, changed_categories, local_wiki: Wiki, tar
 	return await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, paths, rate_limiter, additional_data=additional_data)
 
 
-async def essential_feeds(change: dict, comment_pages: dict, db_wiki, target: tuple) -> src.discord.DiscordMessage:
+async def essential_feeds(change: dict, comment_pages: dict, db_wiki, target: tuple) -> discord.discord.DiscordMessage:
 	"""Prepares essential information for both embed and compact message format."""
 	appearance_mode = feeds_embed_formatter if target[0][1] > 0 else feeds_compact_formatter
 	identification_string = change["_embedded"]["thread"][0]["containerType"]

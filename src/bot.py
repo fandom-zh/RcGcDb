@@ -18,7 +18,7 @@ from src.misc import get_paths, get_domain
 from src.msgqueue import messagequeue, send_to_discord
 from src.queue_handler import DBHandler
 from src.wiki import Wiki, process_cats, process_mwmsgs, essential_info, essential_feeds
-from src.discord import DiscordMessage, generic_msg_sender_exception_logger, stack_message_list
+from src.discord.discord import DiscordMessage, generic_msg_sender_exception_logger, stack_message_list
 from src.wiki_ratelimiter import RateLimiter
 from src.irc_feed import AioIRCCat
 from src.domain_manager import domains
@@ -233,6 +233,7 @@ async def main_loop():
     logger.debug("Connection type: {}".format(db.connection_pool))
     await populate_wikis()
     # START LISTENER CONNECTION
+    # We are here
     domains.run_all_domains()
     try:
         signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)

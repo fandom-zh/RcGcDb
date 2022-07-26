@@ -1,9 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 from urllib.parse import urlparse, urlunparse
-
+import logging
 import asyncpg
 
+from exceptions import NoDomain
 from src.config import settings
 from src.domain import Domain
 from src.irc_feed import AioIRCCat
@@ -12,6 +13,7 @@ from src.irc_feed import AioIRCCat
 if TYPE_CHECKING:
     from src.wiki import Wiki
 
+logger = logging.getLogger("rcgcdb.domain_manager")
 
 class DomainManager:
     def __init__(self):
