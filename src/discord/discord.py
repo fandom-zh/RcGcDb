@@ -40,97 +40,6 @@ async def wiki_removal(wiki_url, status):
 async def webhook_removal_monitor(webhook_url: str, reason: int):
 	await send_to_discord_webhook_monitoring(DiscordMessage("compact", "webhook/remove", None, content="The webhook {} has been removed due to {}.".format("https://discord.com/api/webhooks/" + webhook_url, reason), wiki=None))
 
-#What about Discord message that would hold all embeds in a list and only combine them when sending the webhook? Saving stacked message would be easier then
-class DiscordMessage:
-	"""A class defining a typical Discord JSON representation of webhook payload."""
-	def __init__(self, message_type: str, event_type: str, webhook_url: list, wiki, content=None):
-		self.webhook_object = dict(allowed_mentions={"parse": []})
-		self.webhook_url = webhook_url
-		self.wiki = wiki
-		self.length = 0
-
-		if message_type == "embed":
-			self._setup_embed()
-		elif message_type == "compact":
-			if settings["event_appearance"].get(event_type, {"emoji": None})["emoji"]:
-				content = settings["event_appearance"][event_type]["emoji"] + " " + content
-			self.webhook_object["content"] = content
-			self.length = len(content)
-
-		self.event_type = event_type
-
-	def message_type(self):
-		if "content" in self.webhook_object:
-			return "compact"
-		return "embed"
-
-	def __setitem__(self, key, value):
-		"""Set item is used only in embeds."""
-		try:
-			if key in ('title', 'description'):
-				self.length += len(value) - len(self.embed.get(key, ""))
-			self.embed[key] = value
-		except NameError:
-			raise TypeError("Tried to assign a value when message type is plain message!")
-
-	def __getitem__(self, item):
-		return self.embed[item]
-
-	def __repr__(self):
-		"""Return the Discord webhook object ready to be sent"""
-		return json.dumps(self.webhook_object)
-
-	def _setup_embed(self):
-		"""Setup another embed"""
-		self.embed = defaultdict(dict)
-		self.embed["color"] = None
-
-	def __len__(self):
-		return self.length
-
-	def finish_embed(self):
-		if self.embed["color"] is None:
-			if settings["event_appearance"].get(self.event_type, {"color": None})["color"] is None:
-				self.embed["color"] = random.randrange(1, 16777215)
-			else:
-				self.embed["color"] = settings["event_appearance"][self.event_type]["color"]
-		else:
-			self.embed["color"] = math.floor(self.embed["color"])
-		if not self.embed["author"].get("icon_url", None) and settings["event_appearance"].get(self.event_type, {"icon": None})["icon"]:
-			self.embed["author"]["icon_url"] = settings["event_appearance"][self.event_type]["icon"]
-		self.finish_embed_message()
-
-	def finish_embed_message(self):
-		if "embeds" not in self.webhook_object:
-			self.webhook_object["embeds"] = [self.embed]
-		else:
-			if len(self.webhook_object["embeds"]) > 9:
-				raise EmbedListFull
-			self.webhook_object["embeds"].append(self.embed)
-
-	def set_author(self, name: str, url="", icon_url=""):
-		self.length += len(name)
-		self.embed["author"]["name"] = name
-		self.embed["author"]["url"] = url
-		self.embed["author"]["icon_url"] = icon_url
-
-	def set_footer(self, text: str, icon_url=""):
-		self.length += len(text)
-		self.embed["footer"]["text"] = text
-		self.embed["footer"]["icon_url"] = icon_url
-
-	def add_field(self, name, value, inline=False):
-		if "fields" not in self.embed:
-			self.embed["fields"] = []
-		self.length += len(name) + len(value)
-		self.embed["fields"].append(dict(name=name, value=value, inline=inline))
-
-	def set_avatar(self, url):
-		self.webhook_object["avatar_url"] = url
-
-	def set_name(self, name):
-		self.webhook_object["username"] = name
-
 
 def stack_message_list(messages: list) -> list:
 	if len(messages) > 1:
@@ -165,24 +74,7 @@ def stack_message_list(messages: list) -> list:
 	return messages
 
 
-class StackedDiscordMessage(DiscordMessage):
-	def __init__(self, discordmessage: DiscordMessage):
-		if isinstance(discordmessage, StackedDiscordMessage):
-			raise TypeError("Cannot transform StackedDiscordMessage")
-		self.__dict__ = discordmessage.__dict__
-		self.event_type = "StackedDiscordMessage"
 
-	def stack(self, messages: list):
-		for message in messages:
-			self.add_embed(message)
-
-	def add_embed(self, message):
-		if len(self) + len(message) > 6000:
-			raise EmbedListFull
-		self.length += len(message)
-		self._setup_embed()
-		self.embed = message.embed
-		self.finish_embed_message()
 
 
 # Monitoring webhook functions
