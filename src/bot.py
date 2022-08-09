@@ -233,8 +233,8 @@ async def main_loop():
     logger.debug("Connection type: {}".format(db.connection_pool))
     await populate_wikis()
     # START LISTENER CONNECTION
-    # We are here
     domains.run_all_domains()
+    # We are here
     try:
         signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
         for s in signals:

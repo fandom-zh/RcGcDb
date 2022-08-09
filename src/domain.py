@@ -5,6 +5,7 @@ from collections import OrderedDict
 from src.config import settings
 from typing import TYPE_CHECKING, Optional
 from functools import cache
+from src.discussions import Discussions
 logger = logging.getLogger("rcgcdb.domain")
 
 if TYPE_CHECKING:
@@ -17,9 +18,10 @@ class Domain:
     def __init__(self, name: str):
         self.name = name  # This should be always in format of topname.extension for example fandom.com
         self.task: Optional[asyncio.Task] = None
-        self.wikis: OrderedDict[str, src.wiki.Wiki] = OrderedDict()  # TODO Check if we can replace with https://docs.python.org/3/library/asyncio-queue.html
+        self.wikis: OrderedDict[str, src.wiki.Wiki] = OrderedDict()
         self.rate_limiter: src.wiki_ratelimiter = src.wiki_ratelimiter.RateLimiter()
         self.irc: Optional[src.irc_feed.AioIRCCat] = None
+        self.discussions_handler: Optional[Discussions] = None
 
     def __iter__(self):
         return iter(self.wikis)
@@ -42,7 +44,7 @@ class Domain:
 
     def run_domain(self):
         if not self.task or self.task.cancelled():
-            self.task = asyncio.create_task(self.run_wiki_check())
+            self.task = asyncio.create_task(self.run_wiki_check(), name=self.name)
         else:
             logger.error(f"Tried to start a task for domain {self.name} however the task already exists!")
 
@@ -57,7 +59,8 @@ class Domain:
         wiki.set_domain(self)
         if wiki.script_url in self.wikis:
             self.wikis[wiki.script_url].update_targets()
-        self.wikis[wiki.script_url] = wiki
+        else:
+            self.wikis[wiki.script_url] = wiki
         if first:
             self.wikis.move_to_end(wiki.script_url, last=False)
 

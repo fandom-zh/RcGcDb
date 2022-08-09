@@ -26,7 +26,7 @@ from src.api.util import embed_helper, compact_summary, clean_link, compact_auth
 
 @formatter.embed(event="renameuser/renameuser")
 def embed_renameuser_renameuser(ctx: Context, change: dict) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     edits = change["logparams"]["edits"]
     if edits > 0:
@@ -62,4 +62,4 @@ def compact_renameuser_renameuser(ctx: Context, change: dict) -> DiscordMessage:
             author=author, author_url=author_url, old_name=sanitize_to_markdown(change["logparams"]["olduser"]),
             new_name=sanitize_to_markdown(change["logparams"]["newuser"]), link=link, comment=parsed_comment
         )
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content)

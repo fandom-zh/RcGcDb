@@ -18,8 +18,11 @@ import math
 import random
 from collections import defaultdict
 
+from typing import Optional
+
 with open("src/api/template_settings.json", "r") as template_json:
 	settings: dict = json.load(template_json)
+
 
 class DiscordMessageMetadata:
 	def __init__(self, method, log_id = None, page_id = None, rev_id = None, webhook_url = None, new_data = None):
@@ -42,11 +45,10 @@ class DiscordMessageMetadata:
 
 class DiscordMessage:
 	"""A class defining a typical Discord JSON representation of webhook payload."""
-	def __init__(self, message_type: str, event_type: str, webhook_url: str, metadata: DiscordMessageMetadata, content=None):
+	def __init__(self, message_type: str, event_type: str, content=None):
 		self.webhook_object = dict(allowed_mentions={"parse": []})
-		self.webhook_url = webhook_url
 		self.length = 0
-		self.metadata = metadata
+		self.metadata: Optional[DiscordMessageMetadata] = None
 
 		if message_type == "embed":
 			self.__setup_embed()

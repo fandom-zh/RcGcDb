@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import concurrent.futures
+import functools
 import json
 import time
 from dataclasses import dataclass
@@ -17,6 +19,7 @@ from src.formatters.discussions import feeds_embed_formatter, feeds_compact_form
 from src.api.hooks import formatter_hooks
 from src.api.client import Client
 from src.api.context import Context
+from src.discord.message import DiscordMessage, DiscordMessageMetadata
 from src.misc import parse_link
 from src.i18n import langs
 from src.wiki_ratelimiter import RateLimiter
@@ -48,6 +51,7 @@ class Wiki:
 		self.domain: Optional[Domain] = None
 		self.targets: Optional[defaultdict[Settings, list[str]]] = None
 		self.client: Client = Client(formatter_hooks, self)
+		self.message_history = 
 
 		self.update_targets()
 
@@ -252,7 +256,7 @@ class Wiki:
 						if highest_id is None or change["rcid"] > highest_id:  # make sure that the highest_rc is really highest rcid but do allow other entries with potentially lesser rcids come after without breaking the cycle
 							highest_id = change["rcid"]
 						for combination, webhooks in self.targets.items():
-							message, metadata = await rc_processor(self, change, categorize_events, combination, webhooks)
+							message = await rc_processor(self, change, categorize_events, combination, webhooks)
 				break
 
 @cache
@@ -265,22 +269,22 @@ def prepare_settings(display_mode: int) -> dict:
 	return template
 
 
-async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, display_options: namedtuple("Settings", ["lang", "display"]), webhooks: list) -> tuple[
-	discord.discord.DiscordMessage, discord.discord.DiscordMessageMetadata]:
+async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, display_options: namedtuple("Settings", ["lang", "display"]), webhooks: list) -> DiscordMessage:
 	from src.misc import LinkParser
 	LinkParser = LinkParser()
-	metadata = discord.discord.DiscordMessageMetadata("POST", rev_id=change.get("revid", None), log_id=change.get("logid", None),
+	metadata = DiscordMessageMetadata("POST", rev_id=change.get("revid", None), log_id=change.get("logid", None),
 													  page_id=change.get("pageid", None))
-	context = Context("embed" if display_options.display > 0 else "compact", "recentchanges", webhook, wiki.client, langs[display_options.lang]["rc_formatters"], prepare_settings(display_options.display))
+	context = Context("embed" if display_options.display > 0 else "compact", "recentchanges", webhooks, wiki.client, langs[display_options.lang]["rc_formatters"], prepare_settings(display_options.display))
 	if ("actionhidden" in change or "suppressed" in change) and "suppressed" not in settings["ignored"]:  # if event is hidden using suppression
 		context.event = "suppressed"
 		try:
-			discord_message: Optional[discord.discord.DiscordMessage] = default_message("suppressed", display_options.display, formatter_hooks)(context, change)
+			discord_message: Optional[DiscordMessage] = await asyncio.get_event_loop().run_in_executor(
+				None, functools.partial(default_message("suppressed", display_options.display, formatter_hooks), context, change))
 		except NoFormatter:
 			return
 		except:
 			if settings.get("error_tolerance", 1) > 0:
-				discord_message: Optional[discord.discord.DiscordMessage] = None  # It's handled by send_to_discord, we still want other code to run
+				discord_message: Optional[DiscordMessage] = None  # It's handled by send_to_discord, we still want other code to run
 			else:
 				raise
 	else:
@@ -312,12 +316,12 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 			return
 		context.event = identification_string
 		try:
-			discord_message: Optional[discord.discord.DiscordMessage] = default_message(identification_string, formatter_hooks)(context,
-																																change)
+			discord_message: Optional[DiscordMessage] = await asyncio.get_event_loop().run_in_executor(None,
+				functools.partial(default_message(identification_string, display_options.display, formatter_hooks), context,
+								  change))
 		except:
 			if settings.get("error_tolerance", 1) > 0:
-				discord_message: Optional[
-					discord.discord.DiscordMessage] = None  # It's handled by send_to_discord, we still want other code to run
+				discord_message: Optional[DiscordMessage] = None  # It's handled by send_to_discord, we still want other code to run
 			else:
 				raise
 		if identification_string in ("delete/delete", "delete/delete_redir"):  # TODO Move it into a hook?
@@ -337,7 +341,9 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 				for revid in logparams.get("ids", []):
 					delete_messages(dict(revid=revid))
 	discord_message.finish_embed()
-	return discord_message, metadata
+	if discord_message:
+		discord_message.metadata = metadata
+	return discord_message
 
 
 @dataclass

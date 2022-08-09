@@ -44,7 +44,7 @@ def abuse_filter_format_user(change, settings):
 @formatter.embed(event="abuselog")
 def embed_abuselog(ctx: Context, change: dict):
 	action = "abuselog/{}".format(change["result"])
-	embed = DiscordMessage(ctx.message_type, action, ctx.webhook_url)
+	embed = DiscordMessage(ctx.message_type, action)
 	author = abuse_filter_format_user(change, ctx.settings)
 	embed["title"] = ctx._("{user} triggered \"{abuse_filter}\"").format(user=author, abuse_filter=sanitize_to_markdown(change["filter"]))
 	embed.add_field(ctx._("Performed"), abusefilter_translatable(change["action"], ctx._, ctx._("Unknown")))
@@ -63,14 +63,14 @@ def compact_abuselog(ctx: Context, change: dict):
 		action=abusefilter_translatable(change["action"], ctx._, ctx._("Unknown")), target=change.get("title", ctx._("Unknown")),
 		target_url=clean_link(create_article_path(sanitize_to_url(change.get("title", ctx._("Unknown"))))),
 		result=abusefilter_translatable(change["result"], ctx._, ctx._("Unknown")))
-	return DiscordMessage(ctx.message_type, action, ctx.webhook_url, content=message)
+	return DiscordMessage(ctx.message_type, action, content=message)
 
 # abusefilter/modify - AbuseFilter filter modification
 
 
 @formatter.embed(event="abusefilter/modify")
 def embed_abuselog_modify(ctx: Context, change: dict):
-	embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+	embed = DiscordMessage(ctx.message_type, ctx.event)
 	embed_helper(ctx, embed, change)
 	embed["url"] = create_article_path(
 		"Special:AbuseFilter/history/{number}/diff/prev/{historyid}".format(number=change["logparams"]['newId'],
@@ -93,14 +93,14 @@ def compact_abuselog_modify(ctx: Context, change: dict):
 																										   "logparams"][
 																										   'newId'],
 																									   filter_url=link)
-	return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+	return DiscordMessage(ctx.message_type, ctx.event, content=content)
 
 # abusefilter/create - AbuseFilter filter creation
 
 
 @formatter.embed(event="abusefilter/create")
 def embed_abuselog_create(ctx: Context, change: dict):
-	embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+	embed = DiscordMessage(ctx.message_type, ctx.event)
 	embed_helper(ctx, embed, change)
 	embed["url"] = create_article_path("Special:AbuseFilter/{number}".format(number=change["logparams"]['newId']))
 	embed["title"] = ctx._("Created abuse filter number {number}").format(number=change["logparams"]['newId'])
@@ -118,4 +118,4 @@ def compact_abuselog_create(ctx: Context, change: dict):
 																											"logparams"][
 																											'newId'],
 																										filter_url=link)
-	return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+	return DiscordMessage(ctx.message_type, ctx.event, content=content)

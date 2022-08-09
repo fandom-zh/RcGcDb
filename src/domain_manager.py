@@ -26,7 +26,7 @@ class DomainManager:
         if len(split_payload) < 2:
             raise ValueError("Improper pub/sub message! Pub/sub payload: {}".format(payload))
         if split_payload[0] == "ADD":
-            await self.new_wiki(Wiki(split_payload[1], None, None))  # TODO Can already exist
+            await self.new_wiki(Wiki(split_payload[1], None, None))
         elif split_payload[0] == "REMOVE":
             try:
                 results = await connection.fetch("SELECT * FROM rcgcdw WHERE wiki = $1;", split_payload[1])
@@ -65,6 +65,9 @@ class DomainManager:
         parsed_url = urlparse(url)
         return ".".join(urlunparse((*parsed_url[0:2], "", "", "", "")).split(".")[-2:])
 
+    def return_domain(self, domain: str):
+        return self.domains[domain]
+
     async def new_domain(self, name: str) -> Domain:
         domain_object = Domain(name)
         for irc_server in settings["irc_servers"].keys():
@@ -74,7 +77,7 @@ class DomainManager:
         self.domains[name] = domain_object
         return self.domains[name]
 
-    async def run_all_domains(self):
+    def run_all_domains(self):
         for domain in self.domains.values():
             domain.run_domain()
 

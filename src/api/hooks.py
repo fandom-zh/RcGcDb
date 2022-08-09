@@ -18,6 +18,6 @@ from typing import Callable, List, Dict
 from src.discord.message import DiscordMessage, DiscordMessageMetadata
 from src.api.context import Context
 
-formatter_hooks: Dict[str, Callable[[Context, dict], DiscordMessage]] = {}
+formatter_hooks: Dict[str, dict[str, Callable[[Context, dict], DiscordMessage]]] = {"embed": {}, "compact": {}}
 pre_hooks: List[Callable[[Context, dict], None]] = []
 post_hooks: List[Callable[[DiscordMessage, DiscordMessageMetadata, Context, dict], None]] = []

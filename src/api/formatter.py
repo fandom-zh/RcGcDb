@@ -35,13 +35,12 @@ def _register_formatter(func, kwargs, formatter_type: str, action_type=None):
 	action_type = kwargs.get("event", action_type)
 	if action_type is None:
 		raise FormatterBreaksAPISpec("event type")
-	if settings["appearance"]["mode"] == formatter_type:
-		for act in [action_type] + kwargs.get("aliases", []):  # Make action_type string a list and merge with aliases
-			if act in src.api.hooks.formatter_hooks:
-				logger.warning(f"Action {act} is already defined inside of "
-				               f"{src.api.hooks.formatter_hooks[act].__module__}! "
-				               f"Overwriting it with one from {func.__module__}")
-			src.api.hooks.formatter_hooks[act] = func
+	for act in [action_type] + kwargs.get("aliases", []):  # Make action_type string a list and merge with aliases
+		if act in src.api.hooks.formatter_hooks[formatter_type]:
+			logger.warning(f"Action {act} is already defined inside of "
+						   f"{src.api.hooks.formatter_hooks[formatter_type][act].__module__}! "
+						   f"Overwriting it with one from {func.__module__}")
+		src.api.hooks.formatter_hooks[formatter_type][act] = func
 
 
 def embed(**kwargs):

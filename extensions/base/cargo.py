@@ -25,7 +25,7 @@ from src.api.util import embed_helper, compact_author, create_article_path, sani
 
 @formatter.embed(event="cargo/createtable")
 def embed_cargo_createtable(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     table = re.search(r"\[(.*?)]\(<(.*?)>\)", ctx.client.parse_links(change["logparams"]["0"]))
     embed["url"] = table.group(2)
@@ -40,7 +40,7 @@ def compact_cargo_createtable(ctx: Context, change: dict):
     content = ctx._("[{author}]({author_url}) created the Cargo table \"{table}\"").format(author=author,
                                                                                        author_url=author_url,
                                                                                        table=table)
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content)
 
 
 # cargo/recreatetable - Recreating a Cargo table
@@ -48,7 +48,7 @@ def compact_cargo_createtable(ctx: Context, change: dict):
 
 @formatter.embed(event="cargo/recreatetable")
 def embed_cargo_recreatetable(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     table = re.search(r"\[(.*?)]\(<(.*?)>\)", ctx.client.parse_links(change["logparams"]["0"]))
     embed["url"] = table.group(2)
@@ -63,7 +63,7 @@ def compact_cargo_recreatetable(ctx: Context, change: dict):
     content = ctx._("[{author}]({author_url}) recreated the Cargo table \"{table}\"").format(author=author,
                                                                                          author_url=author_url,
                                                                                          table=table)
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content)
 
 
 # cargo/replacetable - Replacing a Cargo table
@@ -71,7 +71,7 @@ def compact_cargo_recreatetable(ctx: Context, change: dict):
 
 @formatter.embed(event="cargo/replacetable")
 def embed_cargo_replacetable(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     table = re.search(r"\[(.*?)]\(<(.*?)>\)", ctx.client.parse_links(change["logparams"]["0"]))
     embed["url"] = table.group(2)
@@ -86,7 +86,7 @@ def compact_cargo_replacetable(ctx: Context, change: dict):
     content = ctx._("[{author}]({author_url}) replaced the Cargo table \"{table}\"").format(author=author,
                                                                                         author_url=author_url,
                                                                                         table=table)
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content)
 
 
 # cargo/deletetable - Deleting a table in Cargo
@@ -94,7 +94,7 @@ def compact_cargo_replacetable(ctx: Context, change: dict):
 
 @formatter.embed(event="cargo/deletetable")
 def embed_cargo_deletetable(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     embed["url"] = create_article_path("Special:CargoTables")
     embed["title"] = ctx._("Deleted the Cargo table \"{table}\"").format(table=sanitize_to_markdown(change["logparams"]["0"]))
@@ -107,4 +107,4 @@ def compact_cargo_deletetable(ctx: Context, change: dict):
     content = ctx._("[{author}]({author_url}) deleted the Cargo table \"{table}\"").format(author=author,
                                                                                        author_url=author_url,
                                                                                        table=sanitize_to_markdown(change["logparams"]["0"]))
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content)

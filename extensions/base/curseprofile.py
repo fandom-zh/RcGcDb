@@ -28,7 +28,7 @@ from src.misc import profile_field_name
 
 @formatter.embed(event="curseprofile/profile-edited")
 def embed_curseprofile_profile_edited(ctx: Context, change: dict) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     target_user = change["title"].split(':', 1)[1]
     if target_user != change["user"]:
@@ -62,7 +62,7 @@ def compact_curseprofile_profile_edited(ctx: Context, change: dict) -> DiscordMe
             edit_clear_message = ctx._("[{author}]({author_url}) edited the {field} on [their own]({target_url}) profile. *({desc})*")
         content = edit_clear_message.format(author=author, author_url=author_url, target_url=link,
             field=profile_field_name(change["logparams"]['4:section'], False), desc=ctx.parsedcomment)
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content)
 
 
 # curseprofile/comment-created - Creating comment on user profile
@@ -70,7 +70,7 @@ def compact_curseprofile_profile_edited(ctx: Context, change: dict) -> DiscordMe
 
 @formatter.embed(event="curseprofile/comment-created")
 def embed_curseprofile_comment_created(ctx: Context, change: dict) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     target_user = change["title"].split(':', 1)[1]
     if target_user != change["user"]:
@@ -93,7 +93,7 @@ def compact_curseprofile_comment_created(ctx: Context, change: dict) -> DiscordM
             author=author, author_url=author_url, comment=link, target=sanitize_to_markdown(target_user))
     else:
         content = ctx._("[{author}]({author_url}) left a [comment]({comment}) on their own profile.").format(author=author, author_url=author_url, comment=link)
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content)
 
 
 # curseprofile/comment-edited - Editing comment on user profile
@@ -101,7 +101,7 @@ def compact_curseprofile_comment_created(ctx: Context, change: dict) -> DiscordM
 
 @formatter.embed(event="curseprofile/comment-edited")
 def embed_curseprofile_comment_edited(ctx: Context, change: dict) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     target_user = change["title"].split(':', 1)[1]
     if target_user != change["user"]:
@@ -124,7 +124,7 @@ def compact_curseprofile_comment_edited(ctx: Context, change: dict) -> DiscordMe
             author=author, author_url=author_url, comment=link, target=sanitize_to_markdown(target_user))
     else:
         content = ctx._("[{author}]({author_url}) edited a [comment]({comment}) on their own profile.").format(author=author, author_url=author_url, comment=link)
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content)
 
 
 # curseprofile/comment-replied - Replying to comment on user profile
@@ -132,7 +132,7 @@ def compact_curseprofile_comment_edited(ctx: Context, change: dict) -> DiscordMe
 
 @formatter.embed(event="curseprofile/comment-replied")
 def embed_curseprofile_comment_replied(ctx: Context, change: dict) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     target_user = change["title"].split(':', 1)[1]
     if target_user != change["user"]:
@@ -155,7 +155,7 @@ def compact_curseprofile_comment_replied(ctx: Context, change: dict) -> DiscordM
             author=author, author_url=author_url, comment=link, target=sanitize_to_markdown(target_user))
     else:
         content = ctx._("[{author}]({author_url}) replied to a [comment]({comment}) on their own profile.").format(author=author, author_url=author_url, comment=link)
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content)
 
 
 # curseprofile/comment-deleted - Deleting comment on user profile
@@ -163,7 +163,7 @@ def compact_curseprofile_comment_replied(ctx: Context, change: dict) -> DiscordM
 
 @formatter.embed(event="curseprofile/comment-deleted")
 def embed_curseprofile_comment_deleted(ctx: Context, change: dict) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     target_user = change["title"].split(':', 1)[1]
     if target_user != change["user"]:
@@ -194,7 +194,7 @@ def compact_curseprofile_comment_deleted(ctx: Context, change: dict) -> DiscordM
     else:
         content = ctx._("[{author}]({author_url}) deleted a [comment]({comment}) on their own profile.{reason}").format(
             author=author, author_url=author_url, comment=link, reason=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content)
 
 
 # curseprofile/comment-purged - Purging comment on user profile
@@ -202,7 +202,7 @@ def compact_curseprofile_comment_deleted(ctx: Context, change: dict) -> DiscordM
 
 @formatter.embed(event="curseprofile/comment-purged")
 def embed_curseprofile_comment_purged(ctx: Context, change: dict) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     target_user = change["title"].split(':', 1)[1]
     if target_user != change["user"]:
@@ -226,4 +226,4 @@ def compact_curseprofile_comment_purged(ctx: Context, change: dict) -> DiscordMe
             author=author, author_url=author_url, link=link, target=sanitize_to_markdown(target_user), reason=parsed_comment)
     else:
         content = ctx._("[{author}]({author_url}) purged a comment on [their own]({link}) profile.{reason}").format(author=author, author_url=author_url, link=link)
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content, reason=parsed_comment)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content, reason=parsed_comment)

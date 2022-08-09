@@ -6,7 +6,7 @@ import types
 import irc.client_aio
 import json
 import logging
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Optional
 from urllib.parse import urlparse, quote
 
 logger = logging.getLogger("rcgcdw.irc_feed")
@@ -19,10 +19,11 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		super().connect(*args, **kwargs)
 		self.connection_details = (args, kwargs)
 
-	def __init__(self, targets: dict[str, str], domain_object: Domain, rc_callback: Callable, discussion_callback: Callable):
+	def __init__(self, targets: dict[str, str], domain_object: Domain, rc_callback: Optional[Callable], discussion_callback: Optional[Callable]):
 		irc.client_aio.SimpleIRCClient.__init__(self)
 		self.targets = targets
 		self.updated_wikis: set[str] = set()
+		self.rc_callback = rc_callback
 		self.discussion_callback = discussion_callback
 		self.domain = domain_object
 		self.connection.buffer_class.errors = "replace"  # Ignore encoding errors

@@ -32,9 +32,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger("src.api.util")
 
 
-def default_message(event: str, formatter_hooks: dict) -> Callable:
+def default_message(event: str, display: str, formatter_hooks: dict) -> Callable:
 	"""Returns a method of a formatter responsible for the event or None if such does not exist."""
-	return formatter_hooks.get(event, formatter_hooks.get("generic", formatter_hooks["no_formatter"]))
+	return formatter_hooks.get(display, {}).get(event, formatter_hooks.get("generic", formatter_hooks["no_formatter"]))
 
 
 def clean_link(link: str) -> str:

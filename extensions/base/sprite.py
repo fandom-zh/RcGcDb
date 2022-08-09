@@ -27,7 +27,7 @@ from src.api.util import embed_helper, compact_author, create_article_path, sani
 
 @formatter.embed(event="sprite/sprite")
 def embed_sprite_sprite(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     embed["url"] = create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Edited the sprite for {article}").format(article=sanitize_to_markdown(change["title"]))
@@ -43,14 +43,14 @@ def compact_sprite_sprite(ctx: Context, change: dict):
                                                                                                     article=sanitize_to_markdown(change[
                                                                                                         "title"]),
                                                                                                     article_url=link)
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content)
 
 # sprite/sheet - Creating a sprite sheet
 
 
 @formatter.embed(event="sprite/sheet")
 def embed_sprite_sheet(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     embed["url"] = create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Created the sprite sheet for {article}").format(article=sanitize_to_markdown(change["title"]))
@@ -62,14 +62,14 @@ def compact_sprite_sheet(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
     link = clean_link(create_article_path(sanitize_to_url(change["title"])))
     content = ctx._("[{author}]({author_url}) created the sprite sheet for [{article}]({article_url})").format(author=author, author_url=author_url, article=sanitize_to_markdown(change["title"]), article_url=link)
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content)
 
 # sprite/slice - Editing a slice
 
 
 @formatter.embed(event="sprite/slice")
 def embed_sprite_slice(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     embed["url"] = create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Edited the slice for {article}").format(article=sanitize_to_markdown(change["title"]))
@@ -84,4 +84,4 @@ def compact_sprite_slice(ctx: Context, change: dict):
                                                                                                    article=sanitize_to_markdown(change[
                                                                                                        "title"]),
                                                                                                    article_url=link)
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content)

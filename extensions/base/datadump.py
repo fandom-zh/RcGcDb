@@ -27,7 +27,7 @@ from src.api.util import embed_helper, compact_author, create_article_path, sani
 
 @formatter.embed(event="datadump/generate")
 def embed_datadump_generate(ctx: Context, change: dict) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     embed["title"] = ctx._("Generated {file} dump").format(file=change["logparams"]["filename"])
     embed["url"] = create_article_path(sanitize_to_url(change["title"]))
@@ -42,14 +42,14 @@ def compact_datadump_generate(ctx: Context, change: dict):
         author=author, author_url=author_url, file=sanitize_to_markdown(change["logparams"]["filename"]),
         comment=parsed_comment
     )
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content)
 
 # datadump/delete - Deleting a dump of a wiki
 
 
 @formatter.embed(event="datadump/delete")
 def embed_datadump_delete(ctx: Context, change: dict) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed = DiscordMessage(ctx.message_type, ctx.event)
     embed_helper(ctx, embed, change)
     embed["title"] = ctx._("Deleted {file} dump").format(file=sanitize_to_markdown(change["logparams"]["filename"]))
     embed["url"] = create_article_path(sanitize_to_url(change["title"]))
@@ -64,4 +64,4 @@ def compact_datadump_delete(ctx: Context, change: dict) -> DiscordMessage:
         author=author, author_url=author_url, file=sanitize_to_markdown(change["logparams"]["filename"]),
         comment=parsed_comment
     )
-    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, content=content)
