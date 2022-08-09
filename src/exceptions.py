@@ -2,7 +2,9 @@ class WikiError(Exception):
 	pass
 
 class WikiServerError(Exception):
-	pass
+	def __init__(self, exception: BaseException):
+		self.exception = exception
+
 
 class WikiNotFoundError(Exception):
 	pass

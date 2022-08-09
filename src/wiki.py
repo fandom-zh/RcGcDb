@@ -194,18 +194,25 @@ class Wiki:
 					  "rclimit": amount, "rctype": "edit|new|log|categorize", "siprop": "namespaces|general"})
 		try:
 			response = await self.api_request(params=params)
-		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
+		except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError) as e:
 			logger.error("A connection error occurred while requesting {}".format(params))
-			raise WikiServerError
+			raise WikiServerError(e)
 		return response
 
 	async def scan(self, amount=10):
+		"""Fetches recent changes of a wiki
+
+		:raises WikiServerError
+		"""
 		while True:  # Trap event in case there are more changes needed to be fetched
 			try:
 				request = await self.fetch_wiki(amount=amount)
 				self.client.last_request = request
 			except WikiServerError as e:
-				self.statistics.update(Log(type=LogType.CONNECTION_ERROR, title=e.))  # We need more details in WIkiServerError exception
+				self.statistics.update(Log(type=LogType.CONNECTION_ERROR, title=str(e.exception)))
+				if self.statistics.recent_connection_errors() > 1:
+					raise
+				await asyncio.sleep(2.0)
 			if not self.mw_messages:
 				# TODO Split into other function
 				mw_messages = request.get("query", {}).get("allmessages", [])

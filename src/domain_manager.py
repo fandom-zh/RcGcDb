@@ -50,6 +50,10 @@ class DomainManager:
             new_domain = await self.new_domain(wiki_domain)
             new_domain.add_wiki(wiki)
 
+    def remove_domain(self, domain):
+        domain.destoy()
+        del self.domains[domain]
+
     def remove_wiki(self, script_url: str):
         wiki_domain = self.get_domain(script_url)
         try:
@@ -58,6 +62,8 @@ class DomainManager:
             raise NoDomain
         else:
             domain.remove_wiki(script_url)
+            if len(domain) == 0:
+                self.remove_domain(domain)
 
     @staticmethod
     def get_domain(url: str) -> str:

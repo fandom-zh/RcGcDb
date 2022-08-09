@@ -6,6 +6,8 @@ from src.config import settings
 from typing import TYPE_CHECKING, Optional
 from functools import cache
 from src.discussions import Discussions
+from statistics import Log, LogType
+
 logger = logging.getLogger("rcgcdb.domain")
 
 if TYPE_CHECKING:
@@ -21,7 +23,7 @@ class Domain:
         self.wikis: OrderedDict[str, src.wiki.Wiki] = OrderedDict()
         self.rate_limiter: src.wiki_ratelimiter = src.wiki_ratelimiter.RateLimiter()
         self.irc: Optional[src.irc_feed.AioIRCCat] = None
-        self.discussions_handler: Optional[Discussions] = None
+        self.discussions_handler: Optional[Discussions] = Discussions(self.wikis) if name == "fandom.com" else None
 
     def __iter__(self):
         return iter(self.wikis)
@@ -31,6 +33,14 @@ class Domain:
 
     def __len__(self):
         return len(self.wikis)
+
+    def destroy(self):
+        if self.irc:
+            self.irc.connection.disconnect("Leaving")
+        if self.discussions_handler:
+            self.discussions_handler.close()
+        if self.task:
+            self.task.cancel()
 
     def get_wiki(self, item, default=None) -> Optional[src.wiki.Wiki]:
         return self.wikis.get(item, default)
@@ -64,9 +74,10 @@ class Domain:
         if first:
             self.wikis.move_to_end(wiki.script_url, last=False)
 
-    async def run_wiki_scan(self, wiki: src.wiki.Wiki):
+    async def run_wiki_scan(self, wiki: src.wiki.Wiki, reason: Optional[int] = None):
         await self.rate_limiter.timeout_wait()
         await wiki.scan()
+        wiki.statistics.update(Log(type=LogType.SCAN_REASON, title=str(reason)))
         self.wikis.move_to_end(wiki.script_url)
         self.rate_limiter.timeout_add(1.0)
 
