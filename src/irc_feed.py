@@ -55,7 +55,7 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		# print(message)
 		url = urlparse(message)
 		full_url = "https://"+url.netloc + recognize_langs(url.path)
-		wiki = self.domain.get_wiki(full_url)
+		wiki = self.domain.get_wiki(full_url)  # TODO Perhaps something less performance hurting?
 		if wiki and wiki.rc_id != -1:
 			self.updated_wikis.add(full_url)
 			logger.debug("New website appended to the list! {}".format(full_url))

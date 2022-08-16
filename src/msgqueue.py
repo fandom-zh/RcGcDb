@@ -1,9 +1,20 @@
 import asyncio, logging, aiohttp
-from src.discord import send_to_discord_webhook, DiscordMessage, StackedDiscordMessage
+import typing
+
+from src.discord.message import DiscordMessage, StackedDiscordMessage, MessageTooBig
 from src.config import settings
 from src.exceptions import EmbedListFull
 from collections import defaultdict
 logger = logging.getLogger("rcgcdw.msgqueue")
+
+class QueueEntry:
+	def __init__(self, discord_message, webhooks):
+		self.discord_message: DiscordMessage = discord_message
+		self.webhooks: list[str] = webhooks
+
+	def __iter__(self):
+		return iter(self.webhooks)
+
 
 class MessageQueue:
 	"""Message queue class for undelivered messages"""
@@ -23,9 +34,9 @@ class MessageQueue:
 	def clear(self):
 		self._queue.clear()
 
-	def add_message(self, message):
-		self._queue.append(message)
-		logger.debug("Adding new message")
+	def add_messages(self, messages: list[QueueEntry]):
+		self._queue.extend(messages)
+		logger.debug("Adding new messages")
 	#
 	# def replace_message(self, to_replace: DiscordMessage, with_replace: StackedDiscordMessage):
 	# 	try:
@@ -35,7 +46,6 @@ class MessageQueue:
 
 	def cut_messages(self, item_num):
 		self._queue = self._queue[item_num:]
-
 
 	async def group_by_webhook(self):  # TODO Change into iterable
 		"""Group Discord messages in the queue by the dictionary, allowing to send multiple messages to different
@@ -48,9 +58,21 @@ class MessageQueue:
 				message_dict[webhook].append(msg)  # defaultdict{"dadibadyvbdmadgqueh23/dihjd8agdandashd": [DiscordMessage, DiscordMessage]}
 		return message_dict.items()  # dict_items([('daosdkosakda/adkahfwegr34', [DiscordMessage]), ('daosdkosakda/adkahfwegr33', [DiscordMessage, DiscordMessage])])
 
+	async def pack_massages(self, messages: list[DiscordMessage]) -> typing.AsyncGenerator:
+		"""Pack messages into StackedDiscordMessage. It's an async generator"""
+		current_pack = StackedDiscordMessage(0 if messages[0].message_type == "compact" else 1)  # first message
+		for message in messages:
+			try:
+				current_pack.add_message(message)
+			except MessageTooBig:
+				yield current_pack
+				current_pack = StackedDiscordMessage(0 if message.message_type == "compact" else 1)  # next messages
+				current_pack.add_message(message)
+		yield current_pack
+
 	async def send_msg_set(self, msg_set: tuple):
 		webhook_url, messages = msg_set  #  str("daosdkosakda/adkahfwegr34", list(DiscordMessage, DiscordMessage, DiscordMessage)
-		for msg in messages:
+		async for msg in self.pack_massages(messages):
 			if self.global_rate_limit:
 				return  # if we are globally rate limited just wait for first gblocked request to finish
 			status = await send_to_discord_webhook(msg, webhook_url)

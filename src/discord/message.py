@@ -18,20 +18,22 @@ import math
 import random
 from collections import defaultdict
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from wiki import Wiki
 
 with open("src/api/template_settings.json", "r") as template_json:
 	settings: dict = json.load(template_json)
 
 
 class DiscordMessageMetadata:
-	def __init__(self, method, log_id = None, page_id = None, rev_id = None, webhook_url = None, new_data = None):
+	def __init__(self, method, log_id = None, page_id = None, rev_id = None, webhook_url = None):
 		self.method = method
 		self.page_id = page_id
 		self.log_id = log_id
 		self.rev_id = rev_id
 		self.webhook_url = webhook_url
-		self.new_data = new_data
 
 	def matches(self, other: dict):
 		for key, value in other.items():
@@ -49,6 +51,7 @@ class DiscordMessage:
 		self.webhook_object = dict(allowed_mentions={"parse": []})
 		self.length = 0
 		self.metadata: Optional[DiscordMessageMetadata] = None
+		self.wiki: Optional[Wiki] = None
 
 		if message_type == "embed":
 			self.__setup_embed()
@@ -160,11 +163,16 @@ class DiscordMessageRaw(DiscordMessage):
 		self.webhook_url = webhook_url
 
 
+class MessageTooBig(BaseException):
+	pass
+
+
 class StackedDiscordMessage():
 	def __init__(self, m_type: int):
 		self.message_list: list[DiscordMessage] = []
 		self.length = 0
 		self.message_type: int = m_type  # 0 for compact, 1 for embed
+		self.discord_callback_message_ids: list[int] = []
 
 	def __len__(self):
 		return self.length
@@ -182,7 +190,7 @@ class StackedDiscordMessage():
 		return [(num, message) for num, message in enumerate(self.message_list)]
 
 	def add_message(self, message: DiscordMessage):
-		if len(self) + len(message) > 6000:
+		if len(self) + len(message) > 6000 or len(self.message_list) > 9:
 			raise MessageTooBig
 		self.length += len(message)
 		self.message_list.append(message)

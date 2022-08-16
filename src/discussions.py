@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from src.config import settings
 
 import src.wiki
 

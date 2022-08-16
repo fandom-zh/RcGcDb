@@ -35,6 +35,7 @@ class Domain:
         return len(self.wikis)
 
     def destroy(self):
+        """Destroy the domain – do all of the tasks that should make sure there is no leftovers before being collected by GC"""
         if self.irc:
             self.irc.connection.disconnect("Leaving")
         if self.discussions_handler:
@@ -43,9 +44,11 @@ class Domain:
             self.task.cancel()
 
     def get_wiki(self, item, default=None) -> Optional[src.wiki.Wiki]:
+        """Return a wiki with given domain name"""
         return self.wikis.get(item, default)
 
     def set_irc(self, irc_client: src.irc_feed.AioIRCCat):
+        """Sets IRC"""
         self.irc = irc_client
 
     def stop_task(self):
@@ -53,6 +56,7 @@ class Domain:
         self.task.cancel()  # Be aware that cancelling the task may take time
 
     def run_domain(self):
+        """Starts asyncio task for domain"""
         if not self.task or self.task.cancelled():
             self.task = asyncio.create_task(self.run_wiki_check(), name=self.name)
         else:
@@ -109,6 +113,7 @@ class Domain:
         return max((-25 * queue_length) + 150, 1)
 
     async def run_wiki_check(self):
+        """Runs appropriate scheduler depending on existence of IRC"""
         if self.irc:
             while True:
                 await self.irc_scheduler()
