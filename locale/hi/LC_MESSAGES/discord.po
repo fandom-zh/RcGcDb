@@ -8,34 +8,35 @@ msgstr ""
 "Project-Id-Version: RcGcDb\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-04-14 16:00+0200\n"
-"PO-Revision-Date: 2020-11-27 19:14+0000\n"
-"Last-Translator: Creeper <thisisacreeper0101@gmail.com>\n"
-"Language-Team: Hindi <https://weblate.frisk.space/projects/wiki-bot/rcgcdb/"
-"hi/>\n"
+"PO-Revision-Date: 2022-09-09 06:48+0000\n"
+"Last-Translator: Saurmandal <saurmandal@protonmail.com>\n"
+"Language-Team: Hindi <https://translate.wikibot.de/projects/rcgcdw/rcgcdb/hi/"
+">\n"
 "Language: hi\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.2.1\n"
+"X-Generator: Weblate 4.12.1\n"
 
 #: src/discord.py:29
 msgid "wiki deleted"
-msgstr "विकी डिलीट हो चुका है"
+msgstr "विकि हटाया गया है"
 
 #: src/discord.py:29 src/discord.py:30
 msgid "wiki inaccessible"
-msgstr "विकी तक पहुँचा नहीं जा सकता"
+msgstr "विकि दुर्लभ हो चुका है"
 
 #: src/discord.py:30
 msgid "discussions disabled"
-msgstr "डिसकशंस अक्षम है"
+msgstr "चर्चा सक्षम है"
 
 #: src/discord.py:31
 msgid "unknown error"
-msgstr "अनजान त्रुटि"
+msgstr "अज्ञात त्रुटि"
 
 #: src/discord.py:32
 #, python-brace-format
 msgid "This recent changes webhook has been removed for `{reason}`!"
-msgstr "इस रीसेंट चेंजेस वेबहुक को `{reason}` के लिए हटाया गया है!"
+msgstr ""
+"इस हाल में हुए बदलावों के वेबहुक को `{reason}` कारण के साथ हटाया गया है!"
