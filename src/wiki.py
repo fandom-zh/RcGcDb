@@ -10,7 +10,7 @@ import logging, aiohttp
 from functools import cache
 
 from api.util import default_message
-from msgqueue import QueueEntry, messagequeue
+from src.discord.queue import messagequeue, QueueEntry
 from mw_messages import MWMessages
 from src.exceptions import *
 from src.database import db
