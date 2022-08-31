@@ -168,11 +168,12 @@ class MessageTooBig(BaseException):
 
 
 class StackedDiscordMessage():
-	def __init__(self, m_type: int):
+	def __init__(self, m_type: int, wiki: Wiki):
 		self.message_list: list[DiscordMessage] = []
 		self.length = 0
 		self.message_type: int = m_type  # 0 for compact, 1 for embed
 		self.discord_callback_message_ids: list[int] = []
+		self.wiki: Wiki = wiki
 
 	def __len__(self):
 		return self.length

@@ -1,31 +1,25 @@
 from __future__ import annotations
 
-import concurrent.futures
 import functools
 import json
 import time
-from dataclasses import dataclass
 import re
 import logging, aiohttp
+import asyncio
 from functools import cache
 
 from api.util import default_message
 from src.discord.queue import messagequeue, QueueEntry
 from mw_messages import MWMessages
 from src.exceptions import *
-from src.database import db
 from src.queue_handler import DBHandler
-from src.formatters.rc import embed_formatter, compact_formatter
 from src.formatters.discussions import feeds_embed_formatter, feeds_compact_formatter
 from src.api.hooks import formatter_hooks
 from src.api.client import Client
 from src.api.context import Context
-from src.discord.message import DiscordMessage, DiscordMessageMetadata
-from src.misc import parse_link
+from src.discord.message import DiscordMessage, DiscordMessageMetadata, StackedDiscordMessage
 from src.i18n import langs
-from src.wiki_ratelimiter import RateLimiter
-from statistics import Statistics, Log, LogType
-import asyncio
+from src.statistics import Statistics, Log, LogType
 from src.config import settings
 # noinspection PyPackageRequirements
 from bs4 import BeautifulSoup
@@ -41,6 +35,8 @@ wiki_reamoval_reasons = {410: _("wiki deleted"), 404: _("wiki deleted"), 401: _(
 if TYPE_CHECKING:
 	from src.domain import Domain
 
+MESSAGE_LIMIT = settings.get("message_limit", 30)
+
 class Wiki:
 	def __init__(self, script_url: str, rc_id: Optional[int], discussion_id: Optional[int]):
 		self.script_url: str = script_url
@@ -52,7 +48,7 @@ class Wiki:
 		self.domain: Optional[Domain] = None
 		self.targets: Optional[defaultdict[Settings, list[str]]] = None
 		self.client: Client = Client(formatter_hooks, self)
-		self.message_history = 
+		self.message_history: list[StackedDiscordMessage] = list()
 
 		self.update_targets()
 
@@ -75,6 +71,11 @@ class Wiki:
 	# 	async with db.pool().acquire() as connection:
 	# 		result = await connection.execute('DELETE FROM rcgcdw WHERE wiki = $1', self.script_url)
 	# 	logger.warning('{} rows affected by DELETE FROM rcgcdw WHERE wiki = "{}"'.format(result, self.script_url))
+
+	def add_message(self, message: StackedDiscordMessage):
+		self.message_history.append(message)
+		if len(self.message_history) > MESSAGE_LIMIT*len(self.targets):
+			self.message_history = self.message_history[len(self.message_history)-MESSAGE_LIMIT*len(self.targets):]
 
 	def set_domain(self, domain: Domain):
 		self.domain = domain
@@ -297,8 +298,6 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 		try:
 			discord_message: Optional[DiscordMessage] = await asyncio.get_event_loop().run_in_executor(
 				None, functools.partial(default_message("suppressed", display_options.display, formatter_hooks), context, change))
-		except NoFormatter:
-			return
 		except:
 			if settings.get("error_tolerance", 1) > 0:
 				discord_message: Optional[DiscordMessage] = None  # It's handled by send_to_discord, we still want other code to run
@@ -419,44 +418,7 @@ async def process_cats(event: dict, local_wiki: Wiki, categorize_events: dict):
 # 	mw_msgs[key] = msgs  # it may be a little bit messy for sure, however I don't expect any reason to remove mw_msgs entries by one
 # 	local_wiki.mw_messages = key
 
-
-# db_wiki: webhook, wiki, lang, display, rcid, postid
-async def essential_info(change: dict, changed_categories, local_wiki: Wiki, target: tuple, paths: tuple, request: dict,
-                         rate_limiter: RateLimiter) -> discord.discord.DiscordMessage:
-	"""Prepares essential information for both embed and compact message format."""
-	_ = langs[target[0][0]]["wiki"].gettext
-	changed_categories = changed_categories.get(change["revid"], None)
-	#logger.debug("List of categories in essential_info: {}".format(changed_categories))
-	appearance_mode = embed_formatter if target[0][1] > 0 else compact_formatter
-	if "actionhidden" in change or "suppressed" in change:  # if event is hidden using suppression
-		await appearance_mode("suppressed", change, "", changed_categories, local_wiki, target, paths, rate_limiter)
-		return
-	if "commenthidden" not in change:
-		parsed_comment = parse_link(paths[3], change["parsedcomment"])
-	else:
-		parsed_comment = _("~~hidden~~")
-	if not parsed_comment:
-		parsed_comment = None
-	if change["type"] in ["edit", "new"]:
-		if "userhidden" in change:
-			change["user"] = _("hidden")
-		identification_string = change["type"]
-	elif change["type"] == "log":
-		identification_string = "{logtype}/{logaction}".format(logtype=change["logtype"], logaction=change["logaction"])
-	elif change["type"] == "categorize":
-		return
-	else:
-		identification_string = change["type"]
-	additional_data = {"namespaces": request["query"]["namespaces"], "tags": {}}
-	for tag in request["query"]["tags"]:
-		try:
-			additional_data["tags"][tag["name"]] = (BeautifulSoup(tag["displayname"], "lxml")).get_text()
-		except KeyError:
-			additional_data["tags"][tag["name"]] = None  # Tags with no displ
-	return await appearance_mode(identification_string, change, parsed_comment, changed_categories, local_wiki, target, paths, rate_limiter, additional_data=additional_data)
-
-
-async def essential_feeds(change: dict, comment_pages: dict, db_wiki, target: tuple) -> discord.discord.DiscordMessage:
+async def essential_feeds(change: dict, comment_pages: dict, db_wiki, target: tuple) -> discord.DiscordMessage:
 	"""Prepares essential information for both embed and compact message format."""
 	appearance_mode = feeds_embed_formatter if target[0][1] > 0 else feeds_compact_formatter
 	identification_string = change["_embedded"]["thread"][0]["containerType"]

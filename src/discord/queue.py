@@ -14,30 +14,35 @@
 # along with RcGcDw.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-import sys
 import time
 import logging
 import asyncio
+
+import aiohttp
+from aiohttp import ContentTypeError, ClientResponse
+
+from src.exceptions import ExhaustedDiscordBucket
 from src.config import settings
 from src.discord.message import StackedDiscordMessage, MessageTooBig
-from typing import Optional, Union, Tuple, AsyncGenerator
+from typing import Optional, AsyncGenerator, TYPE_CHECKING
 from collections import defaultdict
 
-from src.discord.message import DiscordMessage, DiscordMessageMetadata, DiscordMessageRaw
+from src.discord.message import DiscordMessage, DiscordMessageMetadata
 
-AUTO_SUPPRESSION_ENABLED = settings.get("auto_suppression", {"enabled": False}).get("enabled")
-if AUTO_SUPPRESSION_ENABLED:
-	from src.fileio.database import add_entry as add_message_redaction_entry
+if TYPE_CHECKING:
+	from src.wiki import Wiki
 
 rate_limit = 0
 
 logger = logging.getLogger("rcgcdw.discord.queue")
 
+
 class QueueEntry:
-	def __init__(self, discord_message, webhooks):
-		self.discord_message: DiscordMessage = discord_message
+	def __init__(self, discord_message, webhooks, wiki):
+		self.discord_message: [DiscordMessage, StackedDiscordMessage] = discord_message
 		self.webhooks: list[str] = webhooks
 		self._sent_webhooks: set[str] = set()
+		self.wiki: Wiki = wiki
 
 	def check_sent_status(self, webhook: str) -> bool:
 		"""Checks sent status for given message, if True it means that the message has been sent before to given webhook, otherwise False."""
@@ -70,6 +75,10 @@ class MessageQueue:
 
 	def clear(self):
 		self._queue.clear()
+
+	def add_messages(self, messages: list[QueueEntry]):
+		for message in messages:
+			self.add_message(message)
 
 	def add_message(self, message: QueueEntry):
 		self._queue.append(message)
@@ -104,43 +113,42 @@ class MessageQueue:
 
 	async def pack_massages(self, messages: list[QueueEntry]) -> AsyncGenerator[tuple[StackedDiscordMessage, int]]:
 		"""Pack messages into StackedDiscordMessage. It's an async generator"""
-		current_pack = StackedDiscordMessage(0 if messages[0].discord_message.message_type == "compact" else 1)  # first message
+		current_pack = StackedDiscordMessage(0 if messages[0].discord_message.message_type == "compact" else 1, messages[0].wiki)  # first message
 		index = -1
 		for index, message in enumerate(messages):
 			message = message.discord_message
 			try:
 				current_pack.add_message(message)
 			except MessageTooBig:
-				yield current_pack
-				current_pack = StackedDiscordMessage(0 if message.message_type == "compact" else 1)  # next messages
+				yield current_pack, index-1
+				current_pack = StackedDiscordMessage(0 if message.message_type == "compact" else 1, message.wiki)  # next messages
 				current_pack.add_message(message)
 		yield current_pack, index
 
 	async def send_msg_set(self, msg_set: tuple[str, list[QueueEntry]]):
 		webhook_url, messages = msg_set  # str("daosdkosakda/adkahfwegr34", list(DiscordMessage, DiscordMessage, DiscordMessage)
 		async for msg, index in self.pack_massages(messages):
+			client_error = False
 			if self.global_rate_limit:
 				return  # if we are globally rate limited just wait for first gblocked request to finish
 			# Verify that message hasn't been sent before
-			status = await send_to_discord_webhook(msg, webhook_url)
-			if status[0] < 2:
-				logger.debug("Sending message succeeded")
-				for queue_message in messages[max(index-10, 0):index]:  # mark messages as delivered
-					queue_message.confirm_sent_status(webhook_url)
-				logger.debug("Current rate limit time: {}".format(status[1]))
-				if status[1] is not None:
-					await asyncio.sleep(float(status[1]))  # note, the timer on the last request won't matter that much since it's separate task and for the time of sleep it will give control to other tasks
-					break
-			elif status[0] == 5:
-				if status[1]["global"] is True:
-					logger.debug(
-						"Global rate limit has been detected. Setting global_rate_limit to true and awaiting punishment.")
+			# noinspection PyTypeChecker
+			try:
+				status = await send_to_discord_webhook(msg, webhook_url)
+			except aiohttp.ClientError:
+				client_error = True
+			except (aiohttp.ServerConnectionError, aiohttp.ServerTimeoutError):
+				# Retry on next Discord message sent attempt
+				return
+			except ExhaustedDiscordBucket as e:
+				if e.is_global:
 					self.global_rate_limit = True
-				await asyncio.sleep(status[1]["retry_after"] / 1000)
-				break
-			else:
-				logger.debug("Sending message failed")
-				break
+				await asyncio.sleep(e.remaining / 1000)
+				return
+			for queue_message in messages[max(index-len(msg.message_list), 0):index]:  # mark messages as delivered
+				queue_message.confirm_sent_status(webhook_url)
+			if client_error is False:
+				msg.wiki.add_message(msg)
 
 	async def resend_msgs(self):
 		self.global_rate_limit = False
@@ -160,93 +168,58 @@ class MessageQueue:
 messagequeue = MessageQueue()
 
 
-def handle_discord_http(code, formatted_embed, result):
+def handle_discord_http(code: int, formatted_embed: str, result: ClientResponse):
 	if 300 > code > 199:  # message went through
 		return 0
 	elif code == 400:  # HTTP BAD REQUEST result.status_code, data, result, header
 		logger.error(
 			"Following message has been rejected by Discord, please submit a bug on our bugtracker adding it:")
 		logger.error(formatted_embed)
-		logger.error(result.text)
-		return 1
+		logger.error(result.text())
+		raise aiohttp.ClientError("Message rejected.")
 	elif code == 401 or code == 404:  # HTTP UNAUTHORIZED AND NOT FOUND
-		if result.request.method == "POST":  # Ignore not found for DELETE and PATCH requests since the message could already be removed by admin
+		if result.method == "POST":  # Ignore not found for DELETE and PATCH requests since the message could already be removed by admin
 			logger.error("Webhook URL is invalid or no longer in use, please replace it with proper one.")
-			remove_webhook_maybe()
+			# TODO remove_webhook_maybe()
+			raise aiohttp.ClientError("Message sent to bad webhook.")
 		else:
 			return 0
 	elif code == 429:
 		logger.error("We are sending too many requests to the Discord, slowing down...")
-		return 2
+		if "x-ratelimit-global" in result.headers.keys():
+			raise ExhaustedDiscordBucket(remaining=int(result.headers.get("x-ratelimit-reset-after")), is_global=True)
+		raise ExhaustedDiscordBucket(remaining=int(result.headers.get("x-ratelimit-reset-after")), is_global=False)
 	elif 499 < code < 600:
 		logger.error(
 			"Discord have trouble processing the event, and because the HTTP code returned is {} it means we blame them.".format(
 				code))
-		return 3
+		raise aiohttp.ServerConnectionError()
 	else:
 		logger.error("There was an unexpected HTTP code returned from Discord: {}".format(code))
-		return 1
+		raise aiohttp.ServerConnectionError()
 
 
-def send_to_discord_webhook(message: [StackedDiscordMessage, DiscordMessage]):
+async def send_to_discord_webhook(message: [StackedDiscordMessage, DiscordMessageMetadata], webhook_path: str):
 	header = settings["header"]
 	header['Content-Type'] = 'application/json'
-	standard_args = dict(headers=header)
-	if isinstance(message, StackedDiscordMessage):
-		req =
-	else:
-		message.metadata.method
-	if metadata.method == "POST":
-		req = requests.Request("POST", data.webhook_url+"?wait=" + ("true" if AUTO_SUPPRESSION_ENABLED else "false"), data=repr(data), **standard_args)
-	elif metadata.method == "DELETE":
-		req = requests.Request("DELETE", metadata.webhook_url, **standard_args)
-	elif metadata.method == "PATCH":
-		req = requests.Request("PATCH", data.webhook_url, data=repr(data), **standard_args)
-	try:
-		time.sleep(rate_limit)
-		rate_limit = 0
-		req = req.prepare()
-		result = requests.Session().send(req, timeout=10)
-		update_ratelimit(result)
-		if AUTO_SUPPRESSION_ENABLED and metadata.method == "POST":
-			if 199 < result.status_code < 300:  # check if positive error log
+	header['X-RateLimit-Precision'] = "millisecond"
+	async with aiohttp.ClientSession(headers=header, timeout=3.0) as session:
+		if isinstance(message, StackedDiscordMessage):
+			async with session.post(f"https://discord.com/api/webhooks/{webhook_path}?wait=true", data=repr(message)) as resp:
 				try:
-					add_message_redaction_entry(*metadata.dump_ids(), repr(data), result.json().get("id"))
+					resp_json = await resp.json()
+					# Add Discord Message ID which we can later use to delete/redact messages if we want
+					message.discord_callback_message_ids.append(resp_json["id"])
+				except KeyError:
+					raise aiohttp.ServerConnectionError(f"Could not get the ID from POST request with message data. Data: {await resp.text()}")
+				except ContentTypeError:
+					logger.exception("Could not receive message ID from Discord due to invalid MIME type of response.")
 				except ValueError:
-					logger.error("Couldn't get json of result of sending Discord message.")
-			else:
+					logger.exception(f"Could not decode JSON response from Discord. Response: {await resp.text()}]")
+				return handle_discord_http(resp.status, repr(message), resp)
+		elif message.method == "DELETE":
+			async with session.request(method=message.method, url=f"https://discord.com/api/webhooks/{webhook_path}") as resp:
 				pass
-	except requests.exceptions.Timeout:
-		logger.warning("Timeouted while sending data to the webhook.")
-		return 3
-	except requests.exceptions.ConnectionError:
-		logger.warning("Connection error while sending the data to a webhook")
-		return 3
-	else:
-		return handle_discord_http(result.status_code, data, result)
-
-
-def send_to_discord(data: Optional[DiscordMessage], meta: DiscordMessageMetadata):
-	if data is not None:
-		for regex in settings["disallow_regexes"]:
-			if data.webhook_object.get("content", None):
-				if re.search(re.compile(regex), data.webhook_object["content"]):
-					logger.info("Message {} has been rejected due to matching filter ({}).".format(data.webhook_object["content"], regex))
-					return  # discard the message without anything
-			else:
-				for to_check in [data.webhook_object.get("description", ""), data.webhook_object.get("title", ""), *[x["value"] for x in data["fields"]], data.webhook_object.get("author", {"name": ""}).get("name", "")]:
-					if re.search(re.compile(regex), to_check):
-						logger.info("Message \"{}\" has been rejected due to matching filter ({}).".format(
-							to_check, regex))
-						return  # discard the message without anything
-	if messagequeue:
-		messagequeue.add_message((data, meta))
-	else:
-		code = send_to_discord_webhook(data, metadata=meta)
-		if code == 3:
-			messagequeue.add_message((data, meta))
-		elif code == 2:
-			time.sleep(5.0)
-			messagequeue.add_message((data, meta))
-		elif code is None or code < 2:
-			pass
+		elif message.method == "PATCH":
+			async with session.request(method=message.method, url=f"https://discord.com/api/webhooks/{webhook_path}", data=repr(message)) as resp:
+				pass

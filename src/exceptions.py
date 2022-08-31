@@ -63,3 +63,9 @@ class NoDomain(Exception):
 class WikiExists(Exception):
 	"""When given wiki already exists"""
 	pass
+
+
+class ExhaustedDiscordBucket(BaseException):
+	def __init__(self, remaining: int, is_global: bool):
+		self.remaining = remaining
+		self.is_global = is_global
