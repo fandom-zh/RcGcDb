@@ -1,4 +1,3 @@
-import logging
 import json
 from src.discord.message import DiscordMessage
 from src.api import formatter

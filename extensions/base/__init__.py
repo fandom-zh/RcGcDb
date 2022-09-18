@@ -24,3 +24,4 @@ import extensions.base.discussions
 import extensions.base.curseprofile
 import extensions.base.interwiki
 import extensions.base.renameuser
+import extensions.base.rcgcdb

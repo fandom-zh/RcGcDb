@@ -29,7 +29,7 @@ with open("src/api/template_settings.json", "r") as template_json:
 
 class DiscordMessageMetadata:
 	def __init__(self, method, log_id = None, page_id = None, rev_id = None, webhook_url = None):
-		self.method = method
+		self.method = method  # unused, remains for compatibility reasons
 		self.page_id = page_id
 		self.log_id = log_id
 		self.rev_id = rev_id
@@ -172,8 +172,9 @@ class StackedDiscordMessage():
 		self.message_list: list[DiscordMessage] = []
 		self.length = 0
 		self.message_type: int = m_type  # 0 for compact, 1 for embed
-		self.discord_callback_message_ids: list[int] = []
+		self.discord_callback_message_id: int = -1
 		self.wiki: Wiki = wiki
+		self.webhook: Optional[str] = None
 
 	def __len__(self):
 		return self.length
@@ -188,7 +189,12 @@ class StackedDiscordMessage():
 
 	def filter(self, params: dict) -> list[tuple[int, DiscordMessage]]:
 		"""Filters messages by their metadata"""
-		return [(num, message) for num, message in enumerate(self.message_list)]
+		return [(num, message) for num, message in enumerate(self.message_list) if message.matches(params)]
+
+	def delete_message_by_id(self, message_ids: list[int]):
+		"""Deletes messages with given IDS from the message_ids list"""
+		for message_id in sorted(message_ids, reverse=True):
+			self.message_list.pop(message_id)
 
 	def add_message(self, message: DiscordMessage):
 		if len(self) + len(message) > 6000 or len(self.message_list) > 9:

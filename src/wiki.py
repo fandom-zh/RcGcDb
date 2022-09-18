@@ -12,8 +12,7 @@ from api.util import default_message
 from src.discord.queue import messagequeue, QueueEntry
 from mw_messages import MWMessages
 from src.exceptions import *
-from src.queue_handler import DBHandler
-from src.formatters.discussions import feeds_embed_formatter, feeds_compact_formatter
+from src.queue_handler import UpdateDB
 from src.api.hooks import formatter_hooks
 from src.api.client import Client
 from src.api.context import Context
@@ -79,6 +78,63 @@ class Wiki:
 
 	def set_domain(self, domain: Domain):
 		self.domain = domain
+
+	# def find_middle_next(ids: List[str], pageid: int) -> set:  # TODO Properly re-implement for RcGcDb
+	# 	"""To address #235 RcGcDw should now remove diffs in next revs relative to redacted revs to protect information in revs that revert revdeleted information.
+	#
+	# 	:arg ids - list
+	# 	:arg pageid - int
+	#
+	# 	:return list"""
+	# 	ids = [int(x) for x in ids]
+	# 	result = set()
+	# 	ids.sort()  # Just to be sure, sort the list to make sure it's always sorted
+	# 	messages = db_cursor.execute("SELECT revid FROM event WHERE pageid = ? AND revid >= ? ORDER BY revid",
+	# 								 (pageid, ids[0],))
+	# 	all_in_page = [x[0] for x in messages.fetchall()]
+	# 	for id in ids:
+	# 		try:
+	# 			result.add(all_in_page[all_in_page.index(id) + 1])
+	# 		except (KeyError, ValueError):
+	# 			logger.debug(f"Value {id} not in {all_in_page} or no value after that.")
+	# 	return result - set(ids)
+
+	def search_message_history(self, params: dict) -> list[tuple[StackedDiscordMessage, list[int]]]:
+		"""Search self.message_history for messages which match all properties in params and return them in a list"""
+		output = []
+		for message in self.message_history:
+			returned_matches_for_stacked = message.filter(params)
+			if returned_matches_for_stacked:
+				output.append((message, [x[0] for x in returned_matches_for_stacked]))
+		return output
+
+	def delete_messages(self, params: dict):
+		"""Delete certain messages from message_history which DiscordMessageMetadata matches all properties in params"""
+		# Delete all messages with given IDs
+		for stacked_message, ids in self.search_message_history(params):
+			stacked_message.delete_message_by_id(ids)
+			# If all messages were removed, send a DELETE to Discord
+			if len(stacked_message.message_list) == 0:
+				messagequeue.add_message(QueueEntry(stacked_message, [stacked_message.webhook], self, method="DELETE"))
+			else:
+				messagequeue.add_message(QueueEntry(stacked_message, [stacked_message.webhook], self, method="PATCH"))
+
+	def redact_messages(self, ids: list[int], mode: str, censored_properties: dict):
+		# ids can refer to multiple events, and search does not support additive mode, so we have to loop it for all ids
+		for revlogid in ids:
+			for stacked_message, ids in self.search_message_history({mode: revlogid}):  # This might not work depending on how Python handles it, but hey, learning experience
+				for message in [message for num, message in enumerate(stacked_message.message_list) if num in ids]:
+					if "user" in censored_properties and "url" in message["author"]:
+						message["author"]["name"] = _("hidden")
+						message["author"].pop("url")
+					if "action" in censored_properties and "url" in message:
+						message["title"] = _("~~hidden~~")
+						message["embed"].pop("url")
+					if "content" in censored_properties and "fields" in message:
+						message["embed"].pop("fields")
+					if "comment" in censored_properties:
+						message["description"] = _("~~hidden~~")
+				messagequeue.add_message(QueueEntry(stacked_message, [stacked_message.webhook], self, method="PATCH"))
 
 	# async def downtime_controller(self, down, reason=None):
 	# 	if down:
@@ -341,21 +397,21 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 			else:
 				raise
 		if identification_string in ("delete/delete", "delete/delete_redir"):  # TODO Move it into a hook?
-			delete_messages(dict(pageid=change.get("pageid")))
+			wiki.delete_messages(dict(pageid=change.get("pageid")))
 		elif identification_string == "delete/event":
 			logparams = change.get('logparams', {"ids": []})
 			if settings["appearance"]["mode"] == "embed":
-				redact_messages(logparams.get("ids", []), 1, logparams.get("new", {}))
+				wiki.redact_messages(logparams.get("ids", []), "rev_id", logparams.get("new", {}))
 			else:
 				for logid in logparams.get("ids", []):
-					delete_messages(dict(logid=logid))
+					wiki.delete_messages(dict(logid=logid))
 		elif identification_string == "delete/revision":
 			logparams = change.get('logparams', {"ids": []})
 			if settings["appearance"]["mode"] == "embed":
-				redact_messages(logparams.get("ids", []), 0, logparams.get("new", {}))
+				wiki.redact_messages(logparams.get("ids", []), "log_id", logparams.get("new", {}))
 			else:
 				for revid in logparams.get("ids", []):
-					delete_messages(dict(revid=revid))
+					wiki.delete_messages(dict(revid=revid))
 	discord_message.finish_embed()
 	if discord_message:
 		discord_message.metadata = metadata
@@ -418,7 +474,7 @@ async def process_cats(event: dict, local_wiki: Wiki, categorize_events: dict):
 # 	mw_msgs[key] = msgs  # it may be a little bit messy for sure, however I don't expect any reason to remove mw_msgs entries by one
 # 	local_wiki.mw_messages = key
 
-async def essential_feeds(change: dict, comment_pages: dict, db_wiki, target: tuple) -> discord.DiscordMessage:
+async def essential_feeds(change: dict, comment_pages: dict, db_wiki, target: tuple) -> DiscordMessage:
 	"""Prepares essential information for both embed and compact message format."""
 	appearance_mode = feeds_embed_formatter if target[0][1] > 0 else feeds_compact_formatter
 	identification_string = change["_embedded"]["thread"][0]["containerType"]

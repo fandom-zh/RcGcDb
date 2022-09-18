@@ -38,11 +38,12 @@ logger = logging.getLogger("rcgcdw.discord.queue")
 
 
 class QueueEntry:
-	def __init__(self, discord_message, webhooks, wiki):
+	def __init__(self, discord_message, webhooks, wiki, method="POST"):
 		self.discord_message: [DiscordMessage, StackedDiscordMessage] = discord_message
 		self.webhooks: list[str] = webhooks
 		self._sent_webhooks: set[str] = set()
 		self.wiki: Wiki = wiki
+		self.method = method
 
 	def check_sent_status(self, webhook: str) -> bool:
 		"""Checks sent status for given message, if True it means that the message has been sent before to given webhook, otherwise False."""
@@ -111,11 +112,17 @@ class MessageQueue:
 			if self.compare_message_to_dict(item[1], properties):
 				self._queue.pop(index)
 
-	async def pack_massages(self, messages: list[QueueEntry]) -> AsyncGenerator[tuple[StackedDiscordMessage, int]]:
+	async def pack_massages(self, messages: list[QueueEntry], current_pack=None) -> AsyncGenerator[tuple[StackedDiscordMessage, int, str]]:
 		"""Pack messages into StackedDiscordMessage. It's an async generator"""
-		current_pack = StackedDiscordMessage(0 if messages[0].discord_message.message_type == "compact" else 1, messages[0].wiki)  # first message
-		index = -1
+		# TODO Rebuild to support DELETE and PATCH messages
 		for index, message in enumerate(messages):
+			if message.method == "POST":
+				if current_pack is None:
+					current_pack = StackedDiscordMessage(0 if message.discord_message.message_type == "compact" else 1,
+													 message.wiki)
+			else:
+				# message.discord_message.  # TODO Where do we store method?
+				yield message.discord_message, index, message.method
 			message = message.discord_message
 			try:
 				current_pack.add_message(message)
@@ -123,18 +130,18 @@ class MessageQueue:
 				yield current_pack, index-1
 				current_pack = StackedDiscordMessage(0 if message.message_type == "compact" else 1, message.wiki)  # next messages
 				current_pack.add_message(message)
-		yield current_pack, index
+		yield current_pack, index, "POST"
 
 	async def send_msg_set(self, msg_set: tuple[str, list[QueueEntry]]):
 		webhook_url, messages = msg_set  # str("daosdkosakda/adkahfwegr34", list(DiscordMessage, DiscordMessage, DiscordMessage)
-		async for msg, index in self.pack_massages(messages):
+		async for msg, index, method in self.pack_massages(messages):
 			client_error = False
 			if self.global_rate_limit:
 				return  # if we are globally rate limited just wait for first gblocked request to finish
 			# Verify that message hasn't been sent before
 			# noinspection PyTypeChecker
 			try:
-				status = await send_to_discord_webhook(msg, webhook_url)
+				status = await send_to_discord_webhook(msg, webhook_url, method)
 			except aiohttp.ClientError:
 				client_error = True
 			except (aiohttp.ServerConnectionError, aiohttp.ServerTimeoutError):
@@ -148,6 +155,7 @@ class MessageQueue:
 			for queue_message in messages[max(index-len(msg.message_list), 0):index]:  # mark messages as delivered
 				queue_message.confirm_sent_status(webhook_url)
 			if client_error is False:
+				msg.webhook = webhook_url
 				msg.wiki.add_message(msg)
 
 	async def resend_msgs(self):
@@ -199,7 +207,7 @@ def handle_discord_http(code: int, formatted_embed: str, result: ClientResponse)
 		raise aiohttp.ServerConnectionError()
 
 
-async def send_to_discord_webhook(message: [StackedDiscordMessage, DiscordMessageMetadata], webhook_path: str):
+async def send_to_discord_webhook(message: [StackedDiscordMessage, DiscordMessageMetadata], webhook_path: str, method: str):
 	header = settings["header"]
 	header['Content-Type'] = 'application/json'
 	header['X-RateLimit-Precision'] = "millisecond"
@@ -209,7 +217,7 @@ async def send_to_discord_webhook(message: [StackedDiscordMessage, DiscordMessag
 				try:
 					resp_json = await resp.json()
 					# Add Discord Message ID which we can later use to delete/redact messages if we want
-					message.discord_callback_message_ids.append(resp_json["id"])
+					message.discord_callback_message_id = resp_json["id"]
 				except KeyError:
 					raise aiohttp.ServerConnectionError(f"Could not get the ID from POST request with message data. Data: {await resp.text()}")
 				except ContentTypeError:
@@ -217,9 +225,9 @@ async def send_to_discord_webhook(message: [StackedDiscordMessage, DiscordMessag
 				except ValueError:
 					logger.exception(f"Could not decode JSON response from Discord. Response: {await resp.text()}]")
 				return handle_discord_http(resp.status, repr(message), resp)
-		elif message.method == "DELETE":
-			async with session.request(method=message.method, url=f"https://discord.com/api/webhooks/{webhook_path}") as resp:
-				pass
-		elif message.method == "PATCH":
-			async with session.request(method=message.method, url=f"https://discord.com/api/webhooks/{webhook_path}", data=repr(message)) as resp:
-				pass
+		elif method == "DELETE":
+			async with session.request(method=message.method, url=f"https://discord.com/api/webhooks/{webhook_path}/messages/{message.discord_callback_message_id}") as resp:
+				return handle_discord_http(resp.status, repr(message), resp)
+		elif method == "PATCH":
+			async with session.request(method=message.method, url=f"https://discord.com/api/webhooks/{webhook_path}/messages/{message.discord_callback_message_id}", data=repr(message)) as resp:
+				return handle_discord_http(resp.status, repr(message), resp)
