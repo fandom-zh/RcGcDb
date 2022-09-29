@@ -65,6 +65,8 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 			logger.warning("Seems like we have invalid JSON in Discussions part, message: {}".format(message))
 			return
 		if post.get('action', 'unknown') != "deleted":  # ignore deletion events
+			if isinstance(post.get('url'), bytes):
+				return
 			url = urlparse(post.get('url'))
 			full_url ="https://"+ url.netloc + recognize_langs(url.path)
 			if full_url in self.wikis:  # POSSIBLE MEMORY LEAK AS WE DON'T HAVE A WAY TO CHECK IF WIKI IS LOOKING FOR DISCUSSIONS OR NOT

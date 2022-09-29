@@ -89,7 +89,7 @@ class Wiki:
 	async def fail_add(self, wiki_url, status):
 		logger.debug("Increasing fail_times to {}".format(self.fail_times+3))
 		self.fail_times += 3
-		if self.fail_times > 9:
+		if self.fail_times > 120:
 			await self.remove(wiki_url, status)
 
 	async def check_status(self, wiki_url, status):
