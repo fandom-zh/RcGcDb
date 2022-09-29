@@ -12,7 +12,7 @@ from api.util import default_message
 from src.discord.queue import messagequeue, QueueEntry
 from mw_messages import MWMessages
 from src.exceptions import *
-from src.queue_handler import UpdateDB
+from src.queue_handler import dbmanager
 from src.api.hooks import formatter_hooks
 from src.api.client import Client
 from src.api.context import Context
@@ -150,7 +150,7 @@ class Wiki:
 		:returns defaultdict[namedtuple, list[str]] - where namedtuple is a named tuple with settings for given webhooks in list"""
 		Settings = namedtuple("Settings", ["lang", "display"])
 		target_settings: defaultdict[Settings, list[str]] = defaultdict(list)
-		async for webhook in DBHandler.fetch_rows("SELECT webhook, lang, display FROM rcgcdw WHERE wiki = $1 AND (rcid != -1 OR rcid IS NULL)", self.script_url):
+		async for webhook in dbmanager.fetch_rows("SELECT webhook, lang, display FROM rcgcdw WHERE wiki = $1 AND (rcid != -1 OR rcid IS NULL)", self.script_url):
 			target_settings[Settings(webhook["lang"], webhook["display"])].append(webhook["webhook"])
 		self.targets = target_settings
 
@@ -281,11 +281,11 @@ class Wiki:
 			if self.rc_id in (0, None, -1):
 				if len(recent_changes) > 0:
 					self.statistics.last_action = recent_changes[-1]["rcid"]
-					DBHandler.add(("UPDATE rcgcdw SET rcid = $1 WHERE wiki = $2 AND ( rcid != -1 OR rcid IS NULL )",
+					dbmanager.add(("UPDATE rcgcdw SET rcid = $1 WHERE wiki = $2 AND ( rcid != -1 OR rcid IS NULL )",
 								   (recent_changes[-1]["rcid"], self.script_url)))
 				else:
 					self.statistics.last_action = 0
-					DBHandler.add(("UPDATE rcgcdw SET rcid = 0 WHERE wiki = $1 AND ( rcid != -1 OR rcid IS NULL )", (self.script_url)))
+					dbmanager.add(("UPDATE rcgcdw SET rcid = 0 WHERE wiki = $1 AND ( rcid != -1 OR rcid IS NULL )", (self.script_url)))
 				return   # TODO Add a log entry?
 			categorize_events = {}
 			new_events = 0
@@ -473,6 +473,7 @@ async def process_cats(event: dict, local_wiki: Wiki, categorize_events: dict):
 # 	key = len(mw_msgs)
 # 	mw_msgs[key] = msgs  # it may be a little bit messy for sure, however I don't expect any reason to remove mw_msgs entries by one
 # 	local_wiki.mw_messages = key
+
 
 async def essential_feeds(change: dict, comment_pages: dict, db_wiki, target: tuple) -> DiscordMessage:
 	"""Prepares essential information for both embed and compact message format."""

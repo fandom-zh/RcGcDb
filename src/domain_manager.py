@@ -4,7 +4,7 @@ from urllib.parse import urlparse, urlunparse
 import logging
 import asyncpg
 
-from exceptions import NoDomain
+from src.exceptions import NoDomain
 from src.config import settings
 from src.domain import Domain
 from src.irc_feed import AioIRCCat

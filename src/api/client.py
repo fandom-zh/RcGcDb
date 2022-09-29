@@ -30,6 +30,7 @@ class Client:
 		A client for interacting with RcGcDw when creating formatters or hooks.
 	"""
 	def __init__(self, hooks, wiki):
+		URLS = src.misc.get_paths(wiki.script_url,)
 		self._formatters = hooks
 		self.__recent_changes: Wiki = wiki
 		self.WIKI_API_PATH: str = src.misc.WIKI_API_PATH

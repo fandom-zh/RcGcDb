@@ -12,9 +12,9 @@ from contextlib import asynccontextmanager
 from src.discord.queue import messagequeue
 from src.argparser import command_line_args
 from src.config import settings
-from src.database import db_connection
+from src.database import db
 from src.exceptions import *
-from src.queue_handler import UpdateDB
+from src.queue_handler import dbmanager
 from src.wiki import Wiki, process_cats, essential_feeds
 from src.wiki_ratelimiter import RateLimiter
 from src.domain_manager import domains
@@ -32,8 +32,6 @@ if command_line_args.debug:
 all_wikis: dict = {}
 
 main_tasks: dict = {}
-
-db = db_connection()
 
 # First populate the all_wikis list with every wiki
 # Reasons for this: 1. we require amount of wikis to calculate the cooldown between requests
@@ -242,7 +240,7 @@ async def main_loop():
     # loop.set_exception_handler(global_exception_handler)
     try:
         main_tasks = {"message_sender": asyncio.create_task(message_sender()),
-                      "database_updates": asyncio.create_task(DBHandler.update_db())}  # "discussion_handler": asyncio.create_task(discussion_handler()),
+                      "database_updates": asyncio.create_task(dbmanager.update_db())}  # "discussion_handler": asyncio.create_task(discussion_handler()),
         main_tasks["msg_queue_shield"] = asyncio.shield(main_tasks["message_sender"])
         main_tasks["database_updates_shield"] = asyncio.shield(main_tasks["database_updates"])
         await asyncio.gather(main_tasks["message_sender"], main_tasks["database_updates"])

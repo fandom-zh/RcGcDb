@@ -2,6 +2,7 @@ import asyncio
 import collections
 import logging
 from typing import Union, Optional
+from src.database import db
 
 import asyncpg
 
@@ -11,7 +12,6 @@ logger = logging.getLogger("rcgcdb.queue_handler")
 class UpdateDB:
 	def __init__(self):
 		self.updated: list[tuple[str, tuple[Union[str, int]]]] = []
-		self.db: Optional[] = None
 
 	def add(self, sql_expression):
 		self.updated.append(sql_expression)
@@ -20,7 +20,7 @@ class UpdateDB:
 		self.updated.clear()
 
 	async def fetch_rows(self, SQLstatement: str, args: Union[str, int]) -> collections.AsyncIterable:
-		async with self.db.pool().acquire() as connection:
+		async with db.pool().acquire() as connection:
 			async with connection.transaction():
 				async for row in connection.cursor(SQLstatement, *args):
 					yield row
@@ -29,7 +29,7 @@ class UpdateDB:
 		try:
 			while True:
 				if self.updated:
-					async with self.db.pool().acquire() as connection:
+					async with db.pool().acquire() as connection:
 						async with connection.transaction():
 							for update in self.updated:
 								await connection.execute(update[0], *update[1])
@@ -37,12 +37,12 @@ class UpdateDB:
 				await asyncio.sleep(10.0)
 		except asyncio.CancelledError:
 			logger.info("Shutting down after updating DB with {} more entries...".format(len(self.updated)))
-			async with self.db.pool().acquire() as connection:
+			async with db.pool().acquire() as connection:
 				async with connection.transaction():
 					for update in self.updated:
 						await connection.execute(update[0], *update[1])
 					self.clear_list()
-			await self.db.shutdown_connection()
+			await db.shutdown_connection()
 
 
 dbmanager = UpdateDB()

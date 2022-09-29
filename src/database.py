@@ -46,3 +46,5 @@ class db_connection:
     #     async with self.connection.acquire() as connection:
     #         async with connection.transaction():
     #             return connection.cursor(string, *arg)
+
+db = db_connection()
