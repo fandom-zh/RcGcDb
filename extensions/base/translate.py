@@ -17,8 +17,7 @@ import logging
 from src.discord.message import DiscordMessage
 from src.api import formatter
 from src.api.context import Context
-from src.api.util import embed_helper, compact_author, create_article_path, sanitize_to_markdown, sanitize_to_url, \
-    clean_link, compact_summary
+from src.api.util import embed_helper, compact_author, sanitize_to_markdown, sanitize_to_url, clean_link, compact_summary
 
 # I cried when I realized I have to migrate Translate extension logs, but this way I atone for my countless sins
 # Translate - https://www.mediawiki.org/wiki/Extension:Translate
@@ -27,9 +26,9 @@ from src.api.util import embed_helper, compact_author, create_article_path, sani
 
 @formatter.embed(event="pagetranslation/mark")
 def embed_pagetranslation_mark(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    link = create_article_path(sanitize_to_url(change["title"]))
+    link = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     if "?" in link:
         embed["url"] = link + "&oldid={}".format(change["logparams"]["revision"])
     else:
@@ -41,7 +40,7 @@ def embed_pagetranslation_mark(ctx: Context, change: dict):
 @formatter.compact(event="pagetranslation/mark")
 def compact_pagetranslation_mark(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
-    link = create_article_path(sanitize_to_url(change["title"]))
+    link = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     if "?" in link:
         link = link + "&oldid={}".format(change["logparams"]["revision"])
     else:
@@ -53,16 +52,16 @@ def compact_pagetranslation_mark(ctx: Context, change: dict):
         article=sanitize_to_markdown(change["title"]), article_url=link,
         comment=parsed_comment
     )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 # pagetranslation/unmark - Removing a page from translation system
 
 
 @formatter.embed(event="pagetranslation/unmark")
 def embed_pagetranslation_unmark(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Removed \"{article}\" from the translation system").format(article=sanitize_to_markdown(change["title"]))
     return embed
 
@@ -71,23 +70,23 @@ def embed_pagetranslation_unmark(ctx: Context, change: dict):
 def compact_pagetranslation_unmark(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     content = ctx._(
         "[{author}]({author_url}) removed [{article}]({article_url}) from the translation system{comment}").format(
         author=author, author_url=author_url,
         article=sanitize_to_markdown(change["title"]), article_url=link,
         comment=parsed_comment
     )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 # pagetranslation/moveok - Completed moving translation page
 
 
 @formatter.embed(event="pagetranslation/moveok")
 def embed_pagetranslation_moveok(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["logparams"]["target"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["logparams"]["target"]))
     embed["title"] = ctx._("Completed moving translation pages from \"{article}\" to \"{target}\"").format(
         article=sanitize_to_markdown(change["title"]), target=sanitize_to_markdown(change["logparams"]["target"]))
     return embed
@@ -97,23 +96,23 @@ def embed_pagetranslation_moveok(ctx: Context, change: dict):
 def compact_pagetranslation_moveok(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["logparams"]["target"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["logparams"]["target"])))
     content = ctx._(
         "[{author}]({author_url}) completed moving translation pages from *{article}* to [{target}]({target_url}){comment}").format(
         author=author, author_url=author_url,
         article=sanitize_to_markdown(change["title"]), target=sanitize_to_markdown(change["logparams"]["target"]),
         target_url=link, comment=parsed_comment
     )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 # pagetranslation/movenok - Failed while moving translation page
 
 
 @formatter.embed(event="pagetranslation/movenok")
 def embed_pagetranslation_movenok(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Encountered a problem while moving \"{article}\" to \"{target}\"").format(
         article=sanitize_to_markdown(change["title"]), target=sanitize_to_markdown(change["logparams"]["target"]))
     return embed
@@ -123,8 +122,8 @@ def embed_pagetranslation_movenok(ctx: Context, change: dict):
 def compact_pagetranslation_movenok(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
-    target_url = clean_link(create_article_path(sanitize_to_url(change["logparams"]["target"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
+    target_url = clean_link(ctx.client.create_article_path(sanitize_to_url(change["logparams"]["target"])))
     content = ctx._(
         "[{author}]({author_url}) encountered a problem while moving [{article}]({article_url}) to [{target}]({target_url}){comment}").format(
         author=author, author_url=author_url,
@@ -132,16 +131,16 @@ def compact_pagetranslation_movenok(ctx: Context, change: dict):
         target=sanitize_to_markdown(change["logparams"]["target"]), target_url=target_url,
         comment=parsed_comment
     )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 # pagetranslation/deletefnok - Failure in deletion of translatable page
 
 
 @formatter.embed(event="pagetranslation/deletefnok")
 def embed_pagetranslation_deletefnok(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Failed to delete \"{article}\" which belongs to translatable page \"{target}\"").format(
         article=sanitize_to_markdown(change["title"]), target=sanitize_to_markdown(change["logparams"]["target"]))
     return embed
@@ -151,8 +150,8 @@ def embed_pagetranslation_deletefnok(ctx: Context, change: dict):
 def compact_pagetranslation_deletefnok(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
-    target_url = clean_link(create_article_path(sanitize_to_url(change["logparams"]["target"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
+    target_url = clean_link(ctx.client.create_article_path(sanitize_to_url(change["logparams"]["target"])))
     content = ctx._(
         "[{author}]({author_url}) failed to delete [{article}]({article_url}) which belongs to translatable page [{target}]({target_url}){comment}").format(
         author=author, author_url=author_url,
@@ -160,16 +159,16 @@ def compact_pagetranslation_deletefnok(ctx: Context, change: dict):
         target=sanitize_to_markdown(change["logparams"]["target"]), target_url=target_url,
         comment=parsed_comment
     )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 # pagetranslation/deletelok - Completion in deleting a page?
 
 
 @formatter.embed(event="pagetranslation/deletelok")
 def embed_pagetranslation_deletelok(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Completed deletion of translation page \"{article}\"").format(
         article=sanitize_to_markdown(change["title"]))
     return embed
@@ -179,23 +178,23 @@ def embed_pagetranslation_deletelok(ctx: Context, change: dict):
 def compact_pagetranslation_deletelok(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     content = ctx._(
         "[{author}]({author_url}) completed deletion of translation page [{article}]({article_url}){comment}").format(
         author=author, author_url=author_url,
         article=sanitize_to_markdown(change["title"]), article_url=link,
         comment=parsed_comment
     )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 # pagetranslation/deletelnok - Failure in deletion of article belonging to a translation page
 
 
 @formatter.embed(event="pagetranslation/deletelnok")
 def embed_pagetranslation_deletelnok(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Failed to delete \"{article}\" which belongs to translation page \"{target}\"").format(
         article=sanitize_to_markdown(change["title"]), target=sanitize_to_markdown(change["logparams"]["target"]))
     return embed
@@ -205,8 +204,8 @@ def embed_pagetranslation_deletelnok(ctx: Context, change: dict):
 def compact_pagetranslation_deletelnok(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
-    target_url = clean_link(create_article_path(sanitize_to_url(change["logparams"]["target"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
+    target_url = clean_link(ctx.client.create_article_path(sanitize_to_url(change["logparams"]["target"])))
     content = ctx._(
         "[{author}]({author_url}) failed to delete [{article}]({article_url}) which belongs to translation page [{target}]({target_url}){comment}").format(
         author=author, author_url=author_url,
@@ -214,16 +213,16 @@ def compact_pagetranslation_deletelnok(ctx: Context, change: dict):
         target=sanitize_to_markdown(change["logparams"]["target"]), target_url=target_url,
         comment=parsed_comment
     )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 # pagetranslation/encourage - Encouraging to translate an article
 
 
 @formatter.embed(event="pagetranslation/encourage")
 def embed_pagetranslation_encourage(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Encouraged translation of \"{article}\"").format(article=sanitize_to_markdown(change["title"]))
     return embed
 
@@ -232,22 +231,22 @@ def embed_pagetranslation_encourage(ctx: Context, change: dict):
 def compact_pagetranslation_encourage(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     content = ctx._("[{author}]({author_url}) encouraged translation of [{article}]({article_url}){comment}").format(
         author=author, author_url=author_url,
         article=sanitize_to_markdown(change["title"]), article_url=link,
         comment=parsed_comment
     )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 # pagetranslation/discourage - Discouraging to translate an article
 
 
 @formatter.embed(event="pagetranslation/discourage")
 def embed_pagetranslation_discourage(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Discouraged translation of \"{article}\"").format(article=sanitize_to_markdown(change["title"]))
     return embed
 
@@ -256,22 +255,22 @@ def embed_pagetranslation_discourage(ctx: Context, change: dict):
 def compact_pagetranslation_discourage(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     content = ctx._("[{author}]({author_url}) discouraged translation of [{article}]({article_url}){comment}").format(
         author=author, author_url=author_url,
         article=sanitize_to_markdown(change["title"]), article_url=link,
         comment=parsed_comment
     )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 # pagetranslation/prioritylanguages - Changing the priority of translations?
 
 
 @formatter.embed(event="pagetranslation/prioritylanguages")
 def embed_pagetranslation_prioritylanguages(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     if "languages" in change["logparams"]:
         languages = "`, `".join(change["logparams"]["languages"].split(","))
         if change["logparams"]["force"] == "on":
@@ -289,7 +288,7 @@ def embed_pagetranslation_prioritylanguages(ctx: Context, change: dict):
 def compact_pagetranslation_prioritylanguages(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     if "languages" in change["logparams"]:
         languages = "`, `".join(change["logparams"]["languages"].split(","))
         if change["logparams"]["force"] == "on":
@@ -313,7 +312,7 @@ def compact_pagetranslation_prioritylanguages(ctx: Context, change: dict):
             article=sanitize_to_markdown(change["title"]), article_url=link,
             comment=parsed_comment
         )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # pagetranslation/associate - Adding an article to translation group
@@ -321,9 +320,9 @@ def compact_pagetranslation_prioritylanguages(ctx: Context, change: dict):
 
 @formatter.embed(event="pagetranslation/associate")
 def embed_pagetranslation_associate(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Added translatable page \"{article}\" to aggregate group \"{group}\"").format(
         article=sanitize_to_markdown(change["title"]), group=change["logparams"]["aggregategroup"])
     return embed
@@ -333,23 +332,23 @@ def embed_pagetranslation_associate(ctx: Context, change: dict):
 def compact_pagetranslation_associate(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     content = ctx._(
         "[{author}]({author_url}) added translatable page [{article}]({article_url}) to aggregate group \"{group}\"{comment}").format(
         author=author, author_url=author_url,
         article=sanitize_to_markdown(change["title"]), article_url=link,
         group=change["logparams"]["aggregategroup"], comment=parsed_comment
     )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 # pagetranslation/dissociate - Removing an article from translation group
 
 
 @formatter.embed(event="pagetranslation/dissociate")
 def embed_pagetranslation_dissociate(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Removed translatable page \"{article}\" from aggregate group \"{group}\"").format(
         article=sanitize_to_markdown(change["title"]), group=change["logparams"]["aggregategroup"])
     return embed
@@ -359,23 +358,23 @@ def embed_pagetranslation_dissociate(ctx: Context, change: dict):
 def compact_pagetranslation_dissociate(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     content = ctx._(
         "[{author}]({author_url}) removed translatable page [{article}]({article_url}) from aggregate group \"{group}\"{comment}").format(
         author=author, author_url=author_url,
         article=sanitize_to_markdown(change["title"]), article_url=link,
         group=change["logparams"]["aggregategroup"], comment=parsed_comment
     )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 # translationreview/message - Reviewing translation
 
 
 @formatter.embed(event="translationreview/message")
 def embed_translationreview_message(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    link = create_article_path(sanitize_to_url(change["title"]))
+    link = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     if "?" in link:
         embed["url"] = link + "&oldid={}".format(change["logparams"]["revision"])
     else:
@@ -388,7 +387,7 @@ def embed_translationreview_message(ctx: Context, change: dict):
 def compact_translationreview_message(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = create_article_path(sanitize_to_url(change["title"]))
+    link = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     if "?" in link:
         link = link + "&oldid={}".format(change["logparams"]["revision"])
     else:
@@ -399,16 +398,16 @@ def compact_translationreview_message(ctx: Context, change: dict):
         article=sanitize_to_markdown(change["title"]), article_url=link,
         comment=parsed_comment
     )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 # translationreview/group - Changing of state for group translation?
 
 
 @formatter.embed(event="translationreview/group")
 def embed_translationreview_group(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Changed the state of `{language}` translations of \"{article}\"").format(
         language=change["logparams"]["language"], article=sanitize_to_markdown(change["title"]))
     if "old-state" in change["logparams"]:
@@ -421,7 +420,7 @@ def embed_translationreview_group(ctx: Context, change: dict):
 def compact_translationreview_group(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     if "old-state" in change["logparams"]:
         content = ctx._(
             "[{author}]({author_url}) changed the state of `{language}` translations of [{article}]({article_url}) from `{old_state}` to `{new_state}`{comment}").format(
@@ -437,7 +436,7 @@ def compact_translationreview_group(ctx: Context, change: dict):
             article=sanitize_to_markdown(change["logparams"]["group-label"]), article_url=link,
             new_state=change["logparams"]["new-state"], comment=parsed_comment
         )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 # pagelang/pagelang - Changing the language of a page
 
@@ -453,9 +452,9 @@ def get_languages(change: dict, ctx: Context):
 
 @formatter.embed(event="pagelang/pagelang")
 def embed_pagelang_pagelang(ctx: Context, change: dict):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     old_lang, new_lang = get_languages(change, ctx)
     embed["title"] = ctx._("Changed the language of \"{article}\"").format(article=sanitize_to_markdown(change["title"]))
     embed.add_field(ctx._("Old language"), old_lang, inline=True)
@@ -467,7 +466,7 @@ def embed_pagelang_pagelang(ctx: Context, change: dict):
 def compact_pagelang_pagelang(ctx: Context, change: dict):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     old_lang, new_lang = get_languages(change, ctx)
     content = ctx._(
         "[{author}]({author_url}) changed the language of [{article}]({article_url}) from {old_lang} to {new_lang}{comment}").format(
@@ -475,4 +474,4 @@ def compact_pagelang_pagelang(ctx: Context, change: dict):
         article=sanitize_to_markdown(change["title"]), article_url=link,
         old_lang=old_lang, new_lang=new_lang, comment=parsed_comment
     )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)

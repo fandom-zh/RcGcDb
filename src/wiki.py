@@ -28,8 +28,8 @@ from typing import Union, Optional, TYPE_CHECKING
 Settings = namedtuple("Settings", ["lang", "display"])
 logger = logging.getLogger("rcgcdb.wiki")
 
-wiki_reamoval_reasons = {410: _("wiki deleted"), 404: _("wiki deleted"), 401: _("wiki inaccessible"),
-				           402: _("wiki inaccessible"), 403: _("wiki inaccessible"), 1000: _("discussions disabled")}
+# wiki_reamoval_reasons = {410: _("wiki deleted"), 404: _("wiki deleted"), 401: _("wiki inaccessible"),
+# 				           402: _("wiki inaccessible"), 403: _("wiki inaccessible"), 1000: _("discussions disabled")}
 
 if TYPE_CHECKING:
 	from src.domain import Domain
@@ -215,8 +215,7 @@ class Wiki:
 					request.url))
 		elif 399 < request.status < 500:
 			logger.error("Request returned ClientError status code on {url}".format(url=request.url))
-			if request.status in wiki_reamoval_reasons:
-				self.statistics.update(Log(type=LogType.HTTP_ERROR, title="{} error".format(request.status), details=str(request.headers) + "\n" + str(request.url)))
+			self.statistics.update(Log(type=LogType.HTTP_ERROR, title="{} error".format(request.status), details=str(request.headers) + "\n" + str(request.url)))
 			raise ClientError(request)
 		else:
 			# JSON Extraction

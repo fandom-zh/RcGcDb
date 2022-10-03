@@ -18,7 +18,7 @@ from __future__ import annotations
 from datetime import datetime
 import src.misc
 import sched
-from typing import Union, Callable
+from typing import Union, Callable, Any
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Optional
 
@@ -43,7 +43,7 @@ class Client:
 		self.scheduler: sched.scheduler = sched.scheduler()
 		#self.make_api_request: src.rc.wiki.__recent_changes.api_request = self.__recent_changes.api_request
 
-	def schedule(self, function: Callable, *args: list, every: Optional[float] = None, at: Optional[str] = None,
+	def schedule(self, function: Callable, *args: Any, every: Optional[float] = None, at: Optional[str] = None,
 				 priority: int = 5, **kwargs: dict):
 		"""Schedules a function indefinitely, does not execute function immediately
 
@@ -78,6 +78,10 @@ class Client:
 	def refresh_internal_data(self):
 		"""Refreshes internal storage data for wiki tags and MediaWiki messages."""
 		self.__recent_changes.init_info()
+
+	def create_article_path(self, article: str) -> str:
+		"""Takes the string and creates an URL with it as the article name"""
+		return self.WIKI_ARTICLE_PATH.replace("$1", article)
 
 	@property
 	def namespaces(self) -> dict:

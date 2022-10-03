@@ -23,7 +23,7 @@ from src.discord.message import DiscordMessage
 from src.api import formatter
 from src.api.context import Context
 from src.api.util import embed_helper, sanitize_to_url, parse_mediawiki_changes, clean_link, compact_author, \
-    create_article_path, sanitize_to_markdown, compact_summary
+    sanitize_to_markdown, compact_summary
 from src.exceptions import *
 
 logger = logging.getLogger("extensions.base")
@@ -39,7 +39,7 @@ if 1 == 2:  # additional translation strings in unreachable code
 
 @formatter.embed(event="edit", mode="embed", aliases=["new"])
 def embed_edit(ctx: Context, change: dict) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     action = ctx.event
     editsize = change["newlen"] - change["oldlen"]
     if editsize > 0:
@@ -113,14 +113,14 @@ def compact_edit(ctx: Context, change: dict) -> DiscordMessage:
             "[{author}]({author_url}) created [{article}]({edit_link}){comment} {bold}({sign}{edit_size}){bold}").format(
             author=author, author_url=author_url, article=sanitize_to_markdown(change["title"]), edit_link=edit_link, comment=parsed_comment,
             edit_size=edit_size, sign=sign, bold=bold)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # Upload - upload/reupload, upload/upload
 @formatter.embed(event="upload/upload", mode="embed", aliases=["upload/overwrite", "upload/revert"])
 def embed_upload_upload(ctx, change) -> DiscordMessage:
     license = None
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     action = ctx.event
     # Requesting more information on the image
     request_for_image_data = None
@@ -154,7 +154,7 @@ def embed_upload_upload(ctx, change) -> DiscordMessage:
         else:
             logger.warning("Request for additional image information have failed. The preview will not be shown.")
             request_for_image_data = None
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     image_direct_url = None
     # Make a request for file revisions so we can get direct URL to the image for embed
     if request_for_image_data is not None:
@@ -228,29 +228,29 @@ def embed_upload_upload(ctx, change) -> DiscordMessage:
 @formatter.compact(event="upload/revert", mode="compact")
 def compact_upload_revert(ctx, change) -> DiscordMessage:
     author, author_url = compact_author(ctx, change)
-    file_link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    file_link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     parsed_comment = compact_summary(ctx)
     content = ctx._("[{author}]({author_url}) reverted a version of [{file}]({file_link}){comment}").format(
         author=author, author_url=author_url, file=sanitize_to_markdown(change["title"]), file_link=file_link,
         comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 @formatter.compact(event="upload/overwrite", mode="compact")
 def compact_upload_overwrite(ctx, change) -> DiscordMessage:
     author, author_url = compact_author(ctx, change)
-    file_link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    file_link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     parsed_comment = compact_summary(ctx)
     content = ctx._("[{author}]({author_url}) uploaded a new version of [{file}]({file_link}){comment}").format(
         author=author, author_url=author_url, file=sanitize_to_markdown(change["title"]), file_link=file_link,
         comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 @formatter.compact(event="upload/upload", mode="compact")
 def compact_upload_upload(ctx, change) -> DiscordMessage:
     author, author_url = compact_author(ctx, change)
-    file_link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    file_link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     parsed_comment = compact_summary(ctx)
     content = ctx._("[{author}]({author_url}) uploaded [{file}]({file_link}){comment}").format(author=author,
                                                                                            author_url=author_url,
@@ -258,15 +258,15 @@ def compact_upload_upload(ctx, change) -> DiscordMessage:
                                                                                                change["title"]),
                                                                                            file_link=file_link,
                                                                                            comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # delete/delete - Page deletion
 @formatter.embed(event="delete/delete", mode="embed")
 def embed_delete_delete(ctx, change) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed['url'] = create_article_path(sanitize_to_url(change["title"]))
+    embed['url'] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Deleted page {article}").format(article=sanitize_to_markdown(change["title"]))
     return embed
 
@@ -275,22 +275,22 @@ def embed_delete_delete(ctx, change) -> DiscordMessage:
 def compact_delete_delete(ctx, change) -> DiscordMessage:
     parsed_comment = compact_summary(ctx)
     author, author_url = compact_author(ctx, change)
-    page_link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    page_link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     content = ctx._("[{author}]({author_url}) deleted [{page}]({page_link}){comment}").format(author=author,
                                                                                           author_url=author_url,
                                                                                           page=sanitize_to_markdown(
                                                                                               change["title"]),
                                                                                           page_link=page_link,
                                                                                           comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # delete/delete_redir - Redirect deletion
 @formatter.embed(event="delete/delete_redir", mode="embed")
 def embed_delete_delete_redir(ctx, change) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed['url'] = create_article_path(sanitize_to_url(change["title"]))
+    embed['url'] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Deleted redirect {article} by overwriting").format(
         article=sanitize_to_markdown(change["title"]))
     return embed
@@ -298,13 +298,13 @@ def embed_delete_delete_redir(ctx, change) -> DiscordMessage:
 
 @formatter.compact(event="delete/delete_redir", mode="compact")
 def compact_delete_delete_redir(ctx, change) -> DiscordMessage:
-    page_link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    page_link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
     content = ctx._("[{author}]({author_url}) deleted redirect by overwriting [{page}]({page_link}){comment}").format(
         author=author, author_url=author_url, page=sanitize_to_markdown(change["title"]), page_link=page_link,
         comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # delete/restore - Restoring a page
@@ -312,16 +312,16 @@ def compact_delete_delete_redir(ctx, change) -> DiscordMessage:
 
 @formatter.embed(event="delete/restore", mode="embed")
 def embed_delete_restore(ctx, change) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed['url'] = create_article_path(sanitize_to_url(change["title"]))
+    embed['url'] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Restored {article}").format(article=sanitize_to_markdown(change["title"]))
     return embed
 
 
 @formatter.compact(event="delete/restore", mode="compact")
 def compact_delete_restore(ctx, change) -> DiscordMessage:
-    page_link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    page_link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
     content = ctx._("[{author}]({author_url}) restored [{article}]({article_url}){comment}").format(author=author,
@@ -330,7 +330,7 @@ def compact_delete_restore(ctx, change) -> DiscordMessage:
                                                                                                     change["title"]),
                                                                                                 article_url=page_link,
                                                                                                 comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # delete/event - Deleting an event with revdelete feature
@@ -338,9 +338,9 @@ def compact_delete_restore(ctx, change) -> DiscordMessage:
 
 @formatter.embed(event="delete/event", mode="embed")
 def embed_delete_event(ctx, change) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed['url'] = create_article_path("Special:RecentChanges")
+    embed['url'] = ctx.client.create_article_path("Special:RecentChanges")
     embed["title"] = ctx._("Changed visibility of log events")
     return embed
 
@@ -352,17 +352,17 @@ def compact_delete_event(ctx, change) -> DiscordMessage:
     content = ctx._("[{author}]({author_url}) changed visibility of log events{comment}").format(author=author,
                                                                                              author_url=author_url,
                                                                                              comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # delete/revision - Deleting revision information
 
 @formatter.embed(event="delete/revision", mode="embed")
 def embed_delete_revision(ctx, change) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
     amount = len(change["logparams"]["ids"])
-    embed['url'] = create_article_path(sanitize_to_url(change["title"]))
+    embed['url'] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx.ngettext("Changed visibility of revision on page {article} ",
                               "Changed visibility of {amount} revisions on page {article} ", amount).format(
         article=sanitize_to_markdown(change["title"]), amount=amount)
@@ -373,14 +373,14 @@ def embed_delete_revision(ctx, change) -> DiscordMessage:
 def compact_delete_revision(ctx, change) -> DiscordMessage:
     author, author_url = compact_author(ctx, change)
     amount = len(change["logparams"]["ids"])
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     parsed_comment = compact_summary(ctx)
     content = ctx.ngettext(
         "[{author}]({author_url}) changed visibility of revision on page [{article}]({article_url}){comment}",
         "[{author}]({author_url}) changed visibility of {amount} revisions on page [{article}]({article_url}){comment}",
         amount).format(author=author, author_url=author_url,
                        article=sanitize_to_markdown(change["title"]), article_url=link, amount=amount, comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # move/move - Moving pages
@@ -388,9 +388,9 @@ def compact_delete_revision(ctx, change) -> DiscordMessage:
 
 @formatter.embed(event="move/move", mode="embed")
 def embed_move_move(ctx, change) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change, set_desc=False)
-    embed["url"] = create_article_path(sanitize_to_url(change["logparams"]['target_title']))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["logparams"]['target_title']))
     embed["description"] = "{supress}. {desc}".format(desc=ctx.parsedcomment,
                                                       supress=ctx._("No redirect has been made") if "suppressredirect" in
                                                               change["logparams"] else ctx._("A redirect has been made"))
@@ -404,7 +404,7 @@ def embed_move_move(ctx, change) -> DiscordMessage:
 @formatter.compact(event="move/move", mode="compact")
 def compact_move_move(ctx, change) -> DiscordMessage:
     author, author_url = compact_author(ctx, change)
-    link = clean_link(create_article_path(sanitize_to_url(change["logparams"]['target_title'])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["logparams"]['target_title'])))
     redirect_status = ctx._("without making a redirect") if "suppressredirect" in change["logparams"] else ctx._(
         "with a redirect")
     parsed_comment = compact_summary(ctx)
@@ -413,7 +413,7 @@ def compact_move_move(ctx, change) -> DiscordMessage:
         author=author, author_url=author_url, redirect="⤷ " if "redirect" in change else "", article=sanitize_to_markdown(change["title"]),
         target=sanitize_to_markdown(change["logparams"]['target_title']), target_url=link, comment=parsed_comment,
         made_a_redirect=redirect_status)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # move/move_redir - Move over redirect
@@ -421,9 +421,9 @@ def compact_move_move(ctx, change) -> DiscordMessage:
 
 @formatter.embed(event="move/move_redir", mode="embed")
 def embed_move_move_redir(ctx, change) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change, set_desc=False)
-    embed["url"] = create_article_path(sanitize_to_url(change["logparams"]['target_title']))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["logparams"]['target_title']))
     embed["description"] = "{supress}. {desc}".format(desc=ctx.parsedcomment,
                                                       supress=ctx._("No redirect has been made") if "suppressredirect" in
                                                               change["logparams"] else ctx._("A redirect has been made"))
@@ -436,7 +436,7 @@ def embed_move_move_redir(ctx, change) -> DiscordMessage:
 @formatter.compact(event="move/move_redir", mode="compact")
 def compact_move_move_redir(ctx, change) -> DiscordMessage:
     author, author_url = compact_author(ctx, change)
-    link = clean_link(create_article_path(sanitize_to_url(change["logparams"]['target_title'])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["logparams"]['target_title'])))
     redirect_status = ctx._("without making a redirect") if "suppressredirect" in change["logparams"] else ctx._(
         "with a redirect")
     parsed_comment = compact_summary(ctx)
@@ -446,7 +446,7 @@ def compact_move_move_redir(ctx, change) -> DiscordMessage:
         article=sanitize_to_markdown(change["title"]),
         target=sanitize_to_markdown(change["logparams"]['target_title']), target_url=link, comment=parsed_comment,
         made_a_redirect=redirect_status)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # protect/move_prot - Moving protection
@@ -454,9 +454,9 @@ def compact_move_move_redir(ctx, change) -> DiscordMessage:
 
 @formatter.embed(event="protect/move_prot", mode="embed")
 def embed_protect_move_prot(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["logparams"]["oldtitle_title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["logparams"]["oldtitle_title"]))
     embed["title"] = ctx._("Moved protection settings from {redirect}{article} to {title}").format(
         redirect="⤷ " if "redirect" in change else "",
         article=sanitize_to_markdown(change["logparams"]["oldtitle_title"]),
@@ -467,14 +467,14 @@ def embed_protect_move_prot(ctx, change):
 @formatter.compact(event="protect/move_prot", mode="compact")
 def compact_protect_move_prot(ctx, change):
     author, author_url = compact_author(ctx, change)
-    link = clean_link(create_article_path(sanitize_to_url(change["logparams"]["oldtitle_title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["logparams"]["oldtitle_title"])))
     parsed_comment = compact_summary(ctx)
     content = ctx._(
         "[{author}]({author_url}) moved protection settings from {redirect}*{article}* to [{target}]({target_url}){comment}").format(
         author=author, author_url=author_url, redirect="⤷ " if "redirect" in change else "",
         article=sanitize_to_markdown(change["logparams"]["oldtitle_title"]),
         target=sanitize_to_markdown(change["title"]), target_url=link, comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # protect/protect - Creating protection
@@ -482,9 +482,9 @@ def compact_protect_move_prot(ctx, change):
 
 @formatter.embed(event="protect/protect", mode="embed")
 def embed_protect_protect(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change, set_desc=False)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Protected {target}").format(target=sanitize_to_markdown(change["title"]))
     embed["description"] = "{settings}{cascade} | {reason}".format(
         settings=sanitize_to_markdown(change["logparams"].get("description", "")),
@@ -496,7 +496,7 @@ def embed_protect_protect(ctx, change):
 @formatter.compact(event="protect/protect", mode="compact")
 def compact_protect_protect(ctx, change):
     author, author_url = compact_author(ctx, change)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     parsed_comment = compact_summary(ctx)
     content = ctx._(
         "[{author}]({author_url}) protected [{article}]({article_url}) with the following settings: {settings}{comment}").format(
@@ -505,7 +505,7 @@ def compact_protect_protect(ctx, change):
         settings=change["logparams"].get("description", "") + (
             ctx._(" [cascading]") if "cascade" in change["logparams"] else ""),
         comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # protect/modify - Changing protection settings
@@ -513,9 +513,9 @@ def compact_protect_protect(ctx, change):
 
 @formatter.embed(event="protect/modify", mode="embed")
 def embed_protect_modify(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change, set_desc=False)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Changed protection level for {article}").format(article=sanitize_to_markdown(change["title"]))
     embed["description"] = "{settings}{cascade} | {reason}".format(
         settings=sanitize_to_markdown(change["logparams"].get("description", "")),
@@ -527,7 +527,7 @@ def embed_protect_modify(ctx, change):
 @formatter.compact(event="protect/modify", mode="compact")
 def compact_protect_modify(ctx, change):
     author, author_url = compact_author(ctx, change)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     parsed_comment = compact_summary(ctx)
     content = ctx._(
         "[{author}]({author_url}) modified protection settings of [{article}]({article_url}) to: {settings}{comment}").format(
@@ -536,7 +536,7 @@ def compact_protect_modify(ctx, change):
         settings=sanitize_to_markdown(change["logparams"].get("description", "")) + (
             ctx._(" [cascading]") if "cascade" in change["logparams"] else ""),
         comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # protect/unprotect - Unprotecting a page
@@ -544,9 +544,9 @@ def compact_protect_modify(ctx, change):
 
 @formatter.embed(event="protect/unprotect", mode="embed")
 def embed_protect_unprotect(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Removed protection from {article}").format(article=sanitize_to_markdown(change["title"]))
     return embed
 
@@ -554,12 +554,12 @@ def embed_protect_unprotect(ctx, change):
 @formatter.compact(event="protect/unprotect", mode="compact")
 def compact_protect_unprotect(ctx, change):
     author, author_url = compact_author(ctx, change)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     parsed_comment = compact_summary(ctx)
     content = ctx._("[{author}]({author_url}) removed protection from [{article}]({article_url}){comment}").format(
         author=author, author_url=author_url, article=sanitize_to_markdown(change["title"]), article_url=link,
         comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # block/block - Blocking an user
@@ -590,13 +590,13 @@ def block_expiry(change: dict, ctx: Context) -> str:
 
 @formatter.embed(event="block/block", mode="embed")
 def embed_block_block(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     user = change["title"].split(':', 1)[1]
     try:
         ipaddress.ip_address(user)
-        embed["url"] = create_article_path("Special:Contributions/{user}".format(user=user))
+        embed["url"] = ctx.client.create_article_path("Special:Contributions/{user}".format(user=user))
     except ValueError:
-        embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+        embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     if "sitewide" not in change["logparams"]:
         restriction_description = ""
         if "restrictions" in change["logparams"]:
@@ -639,9 +639,9 @@ def compact_block_block(ctx, change):
     parsed_comment = compact_summary(ctx)
     try:
         ipaddress.ip_address(user)
-        link = clean_link(create_article_path("Special:Contributions/{user}".format(user=user)))
+        link = clean_link(ctx.client.create_article_path("Special:Contributions/{user}".format(user=user)))
     except ValueError:
-        link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+        link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     else:
         if "sitewide" not in change["logparams"]:
             if "restrictions" in change["logparams"]:
@@ -676,15 +676,15 @@ def compact_block_block(ctx, change):
                                                                                                           user_url=link,
                                                                                                           restriction_desc=restriction_description,
                                                                                                           comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # block/reblock - Changing settings of a block
 @formatter.embed(event="block/reblock", mode="embed")
 def embed_block_reblock(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     user = change["title"].split(':', 1)[1]
     embed["title"] = ctx._("Changed block settings for {blocked_user}").format(blocked_user=sanitize_to_markdown(user))
     return embed
@@ -693,21 +693,21 @@ def embed_block_reblock(ctx, change):
 @formatter.compact(event="block/reblock")
 def compact_block_reblock(ctx, change):
     author, author_url = compact_author(ctx, change)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     user = change["title"].split(':', 1)[1]
     parsed_comment = compact_summary(ctx)
     content = ctx._("[{author}]({author_url}) changed block settings for [{blocked_user}]({user_url}){comment}").format(
         author=author, author_url=author_url, blocked_user=sanitize_to_markdown(user), user_url=link, comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # block/unblock - Unblocking an user
 
 @formatter.embed(event="block/unblock", mode="embed")
 def embed_block_unblock(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     user = change["title"].split(':', 1)[1]
     embed["title"] = ctx._("Unblocked {blocked_user}").format(blocked_user=sanitize_to_markdown(user))
     return embed
@@ -716,7 +716,7 @@ def embed_block_unblock(ctx, change):
 @formatter.compact(event="block/unblock")
 def compact_block_unblock(ctx, change):
     author, author_url = compact_author(ctx, change)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     user = change["title"].split(':', 1)[1]
     parsed_comment = compact_summary(ctx)
     content = ctx._("[{author}]({author_url}) unblocked [{blocked_user}]({user_url}){comment}").format(author=author,
@@ -725,7 +725,7 @@ def compact_block_unblock(ctx, change):
                                                                                                    user_url=link,
                                                                                                    comment=parsed_comment)
 
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # suppressed - Custom event for whenever there is limited information available about the event due to revdel
@@ -733,8 +733,8 @@ def compact_block_unblock(ctx, change):
 
 @formatter.embed(event="suppressed", mode="embed")
 def embed_suppressed(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
-    embed["url"] = create_article_path("")
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed["url"] = ctx.client.create_article_path("")
     embed["title"] = ctx._("Action has been hidden by administration")
     embed["author"]["name"] = ctx._("Unknown")
     return embed
@@ -743,16 +743,16 @@ def embed_suppressed(ctx, change):
 @formatter.compact(event="suppressed", mode="compact")
 def compact_suppressed(ctx, change):
     content = ctx._("An action has been hidden by administration.")
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # import/upload - Importing pages by uploading exported XML files
 
 @formatter.embed(event="import/upload", mode="embed")
 def embed_import_upload(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx.ngettext("Imported {article} with {count} revision",
                               "Imported {article} with {count} revisions", change["logparams"]["count"]).format(
         article=sanitize_to_markdown(change["title"]), count=change["logparams"]["count"])
@@ -761,7 +761,7 @@ def embed_import_upload(ctx, change):
 
 @formatter.compact(event="import/upload", mode="compact")
 def compact_import_upload(ctx, change):
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
     content = ctx.ngettext("[{author}]({author_url}) imported [{article}]({article_url}) with {count} revision{comment}",
@@ -769,7 +769,7 @@ def compact_import_upload(ctx, change):
                        change["logparams"]["count"]).format(
         author=author, author_url=author_url, article=sanitize_to_markdown(change["title"]), article_url=link,
         count=change["logparams"]["count"], comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # import/interwiki - Importing interwiki entries
@@ -777,9 +777,9 @@ def compact_import_upload(ctx, change):
 
 @formatter.embed(event="import/interwiki", mode="embed")
 def embed_import_interwiki(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx.ngettext("Imported {article} with {count} revision from \"{source}\"",
                               "Imported {article} with {count} revisions from \"{source}\"",
                               change["logparams"]["count"]).format(
@@ -790,9 +790,9 @@ def embed_import_interwiki(ctx, change):
 
 @formatter.compact(event="import/interwiki", mode="compact")
 def compact_import_interwiki(ctx, change):
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     author, author_url = compact_author(ctx, change)
-    source_link = clean_link(create_article_path(change["logparams"]["interwiki_title"]))
+    source_link = clean_link(ctx.client.create_article_path(change["logparams"]["interwiki_title"]))
     parsed_comment = compact_summary(ctx)
     content = ctx.ngettext(
         "[{author}]({author_url}) imported [{article}]({article_url}) with {count} revision from [{source}]({source_url}){comment}",
@@ -802,7 +802,7 @@ def compact_import_interwiki(ctx, change):
         count=change["logparams"]["count"], source=sanitize_to_markdown(change["logparams"]["interwiki_title"]),
         source_url=source_link,
         comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # rights/rights - Assigning rights groups
@@ -824,8 +824,8 @@ def get_changed_groups(change: dict, ctx: Context) -> [[str], [str]]:
 
 @formatter.embed(event="rights/rights", aliases=["rights/autopromote"])
 def embed_rights_rights(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
-    embed["url"] = create_article_path(sanitize_to_url("User:{}".format(change["title"].split(":")[1])))
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url("User:{}".format(change["title"].split(":")[1])))
     if ctx.event == "rights/rights":
         embed["title"] = ctx._("Changed group membership for {target}").format(target=sanitize_to_markdown(change["title"].split(":")[1]))
     else:
@@ -845,7 +845,7 @@ def embed_rights_rights(ctx, change):
 
 @formatter.compact(event="rights/rights", aliases=["rights/autopromote"])
 def compact_rights_rights(ctx, change):
-    link = clean_link(create_article_path(sanitize_to_url("User:{user}".format(user=change["title"].split(":")[1]))))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url("User:{user}".format(user=change["title"].split(":")[1]))))
     added, removed = get_changed_groups(change, ctx)
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
@@ -865,16 +865,16 @@ def compact_rights_rights(ctx, change):
         content = ctx._("The system autopromoted [{target}]({target_url}) to {added}.{comment}").format(
             target=sanitize_to_markdown(change["title"].split(":")[1]), target_url=link,
             added=ctx._(", ").join(added), comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # merge/merge - Merging histories of two pages
 
 @formatter.embed(event="merge/merge", mode="embed")
 def embed_merge_merge(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Merged revision histories of {article} into {dest}").format(
         article=sanitize_to_markdown(change["title"]),
         dest=sanitize_to_markdown(change["logparams"][
@@ -886,13 +886,13 @@ def embed_merge_merge(ctx, change):
 def compact_merge_merge(ctx, change):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
-    link_dest = clean_link(create_article_path(sanitize_to_url(change["logparams"]["dest_title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
+    link_dest = clean_link(ctx.client.create_article_path(sanitize_to_url(change["logparams"]["dest_title"])))
     content = ctx._(
         "[{author}]({author_url}) merged revision histories of [{article}]({article_url}) into [{dest}]({dest_url}){comment}").format(
         author=author, author_url=author_url, article=sanitize_to_markdown(change["title"]), article_url=link, dest_url=link_dest,
         dest=sanitize_to_markdown(change["logparams"]["dest_title"]), comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # newusers/autocreate - Auto creation of user account
@@ -900,9 +900,9 @@ def compact_merge_merge(ctx, change):
 
 @formatter.embed(event="newusers/autocreate", mode="embed")
 def embed_newusers_autocreate(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Created account automatically")
     return embed
 
@@ -912,7 +912,7 @@ def compact_newusers_autocreate(ctx, change):
     author, author_url = compact_author(ctx, change)
     content = ctx._("Account [{author}]({author_url}) was created automatically").format(author=author,
                                                                                      author_url=author_url)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # newusers/create - Auto creation of user account
@@ -920,9 +920,9 @@ def compact_newusers_autocreate(ctx, change):
 
 @formatter.embed(event="newusers/create", mode="embed")
 def embed_newusers_create(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Created account")
     return embed
 
@@ -931,7 +931,7 @@ def embed_newusers_create(ctx, change):
 def compact_newusers_create(ctx, change):
     author, author_url = compact_author(ctx, change)
     content = ctx._("Account [{author}]({author_url}) was created").format(author=author, author_url=author_url)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # newusers/autocreate - Auto creation of user account
@@ -939,9 +939,9 @@ def compact_newusers_create(ctx, change):
 
 @formatter.embed(event="newusers/create2", mode="embed")
 def embed_newusers_create2(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Created account {article}").format(article=sanitize_to_markdown(change["title"]))
     return embed
 
@@ -950,10 +950,10 @@ def embed_newusers_create2(ctx, change):
 def compact_newusers_create2(ctx, change):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     content = ctx._("Account [{article}]({article_url}) was created by [{author}]({author_url}){comment}").format(
         article=sanitize_to_markdown(change["title"]), article_url=link, author=author, author_url=author_url, comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # newusers/byemail - Creation of account by email
@@ -961,9 +961,9 @@ def compact_newusers_create2(ctx, change):
 
 @formatter.embed(event="newusers/byemail", mode="embed")
 def embed_newusers_byemail(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Created account {article} and password was sent by email").format(
         article=sanitize_to_markdown(change["title"]))
     return embed
@@ -973,11 +973,11 @@ def embed_newusers_byemail(ctx, change):
 def compact_newusers_byemail(ctx, change):
     author, author_url = compact_author(ctx, change)
     parsed_comment = compact_summary(ctx)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     content = ctx._(
         "Account [{article}]({article_url}) was created by [{author}]({author_url}) and password was sent by email{comment}").format(
         article=sanitize_to_markdown(change["title"]), article_url=link, author=author, author_url=author_url, comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # newusers/newusers - New users
@@ -985,9 +985,9 @@ def compact_newusers_byemail(ctx, change):
 
 @formatter.embed(event="newusers/newusers", mode="embed")
 def embed_newusers_newusers(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url("User:{}".format(change["user"])))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url("User:{}".format(change["user"])))
     embed["title"] = ctx._("Created account")
     return embed
 
@@ -996,7 +996,7 @@ def embed_newusers_newusers(ctx, change):
 def compact_newusers_newusers(ctx, change):
     author, author_url = compact_author(ctx, change)
     content = ctx._("Account [{author}]({author_url}) was created").format(author=author, author_url=author_url)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # newusers/reclaim - New user reclaimed
@@ -1004,9 +1004,9 @@ def compact_newusers_newusers(ctx, change):
 
 @formatter.embed(event="newusers/reclaim", mode="embed")
 def embed_newusers_reclaim(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url("User:{}".format(change["user"])))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url("User:{}".format(change["user"])))
     embed["title"] = ctx._("Reclaimed account")
     return embed
 
@@ -1015,7 +1015,7 @@ def embed_newusers_reclaim(ctx, change):
 def compact_newusers_reclaim(ctx, change):
     author, author_url = compact_author(ctx, change)
     content = ctx._("Account [{author}]({author_url}) was reclaimed").format(author=author, author_url=author_url)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # contentmodel/change - Changing the content model of a page
@@ -1023,9 +1023,9 @@ def compact_newusers_reclaim(ctx, change):
 
 @formatter.embed(event="contentmodel/change", mode="embed")
 def embed_contentmodel_change(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change, set_desc=False)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Changed the content model of the page {article}").format(
         article=sanitize_to_markdown(change["title"]))
     embed["description"] = ctx._("Model changed from {old} to {new}: {reason}").format(old=change["logparams"]["oldmodel"],
@@ -1037,14 +1037,14 @@ def embed_contentmodel_change(ctx, change):
 @formatter.compact(event="contentmodel/change")
 def compact_contentmodel_change(ctx, change):
     author, author_url = compact_author(ctx, change)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     parsed_comment = compact_summary(ctx)
     content = ctx._(
         "[{author}]({author_url}) changed the content model of the page [{article}]({article_url}) from {old} to {new}{comment}").format(
         author=author, author_url=author_url, article=sanitize_to_markdown(change["title"]), article_url=link,
         old=change["logparams"]["oldmodel"],
         new=change["logparams"]["newmodel"], comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # contentmodel/new - Creating a page with non-default content model
@@ -1052,9 +1052,9 @@ def compact_contentmodel_change(ctx, change):
 
 @formatter.embed(event="contentmodel/new", mode="embed")
 def embed_contentmodel_new(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change, set_desc=False)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Created the page {article} using a non-default content model").format(
         article=sanitize_to_markdown(change["title"]))
     embed["description"] = ctx._("Created with model {new}: {reason}").format(new=change["logparams"]["newmodel"],
@@ -1065,13 +1065,13 @@ def embed_contentmodel_new(ctx, change):
 @formatter.compact(event="contentmodel/new")
 def compact_contentmodel_new(ctx, change):
     author, author_url = compact_author(ctx, change)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     parsed_comment = compact_summary(ctx)
     content = ctx._(
         "[{author}]({author_url}) created the page [{article}]({article_url}) using a non-default content model {new}{comment}").format(
         author=author, author_url=author_url, article=sanitize_to_markdown(change["title"]), article_url=link,
         new=change["logparams"]["newmodel"], comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # managetags/create - Creating log tags
@@ -1079,10 +1079,10 @@ def compact_contentmodel_new(ctx, change):
 
 @formatter.embed(event="managetags/create", mode="embed")
 def embed_managetags_create(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
     ctx.client.refresh_internal_data()
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Created the tag \"{tag}\"").format(tag=sanitize_to_markdown(change["logparams"]["tag"]))
     return embed
 
@@ -1090,7 +1090,7 @@ def embed_managetags_create(ctx, change):
 @formatter.compact(event="managetags/create")
 def compact_managetags_create(ctx, change):
     author, author_url = compact_author(ctx, change)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     ctx.client.refresh_internal_data()
     parsed_comment = compact_summary(ctx)
     content = ctx._("[{author}]({author_url}) created the [tag]({tag_url}) \"{tag}\"{comment}").format(author=author,
@@ -1103,7 +1103,7 @@ def compact_managetags_create(ctx, change):
                                                                                                    tag_url=link,
                                                                                                    comment=parsed_comment)
 
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # managetags/delete - Deleting a tag
@@ -1111,9 +1111,9 @@ def compact_managetags_create(ctx, change):
 
 @formatter.embed(event="managetags/delete", mode="embed")
 def embed_managetags_delete(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     ctx.client.refresh_internal_data()
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Deleted the tag \"{tag}\"").format(tag=sanitize_to_markdown(change["logparams"]["tag"]))
     if change["logparams"]["count"] > 0:
         embed.add_field(ctx._('Removed from'), ctx.ngettext("{} revision or log entry", "{} revisions and/or log entries",
@@ -1125,7 +1125,7 @@ def embed_managetags_delete(ctx, change):
 @formatter.compact(event="managetags/delete")
 def compact_managetags_delete(ctx, change):
     author, author_url = compact_author(ctx, change)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     ctx.client.refresh_internal_data()
     parsed_comment = compact_summary(ctx)
     if change["logparams"]["count"] == 0:
@@ -1145,7 +1145,7 @@ def compact_managetags_delete(ctx, change):
                                                  tag=sanitize_to_markdown(change["logparams"]["tag"]),
                                                  tag_url=link, count=change["logparams"]["count"],
                                                  comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # managetags/activate - Activating a tag
@@ -1153,9 +1153,9 @@ def compact_managetags_delete(ctx, change):
 
 @formatter.embed(event="managetags/activate", mode="embed")
 def embed_managetags_activate(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Activated the tag \"{tag}\"").format(tag=sanitize_to_markdown(change["logparams"]["tag"]))
     return embed
 
@@ -1163,7 +1163,7 @@ def embed_managetags_activate(ctx, change):
 @formatter.compact(event="managetags/activate")
 def compact_managetags_activate(ctx, change):
     author, author_url = compact_author(ctx, change)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     parsed_comment = compact_summary(ctx)
     content = ctx._("[{author}]({author_url}) activated the [tag]({tag_url}) \"{tag}\"{comment}").format(author=author,
                                                                                                      author_url=author_url,
@@ -1173,7 +1173,7 @@ def compact_managetags_activate(ctx, change):
                                                                                                              "tag"]),
                                                                                                      tag_url=link,
                                                                                                      comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
 
 
 # managetags/deactivate - Deactivating a tag
@@ -1181,9 +1181,9 @@ def compact_managetags_activate(ctx, change):
 
 @formatter.embed(event="managetags/deactivate", mode="embed")
 def embed_managetags_deactivate(ctx, change):
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
-    embed["url"] = create_article_path(sanitize_to_url(change["title"]))
+    embed["url"] = ctx.client.create_article_path(sanitize_to_url(change["title"]))
     embed["title"] = ctx._("Deactivated the tag \"{tag}\"").format(tag=sanitize_to_markdown(change["logparams"]["tag"]))
     return embed
 
@@ -1191,7 +1191,7 @@ def embed_managetags_deactivate(ctx, change):
 @formatter.compact(event="managetags/deactivate")
 def compact_managetags_deactivate(ctx, change):
     author, author_url = compact_author(ctx, change)
-    link = clean_link(create_article_path(sanitize_to_url(change["title"])))
+    link = clean_link(ctx.client.create_article_path(sanitize_to_url(change["title"])))
     parsed_comment = compact_summary(ctx)
     content = ctx._("[{author}]({author_url}) deactivated the [tag]({tag_url}) \"{tag}\"{comment}").format(author=author,
                                                                                                        author_url=author_url,
@@ -1201,4 +1201,4 @@ def compact_managetags_deactivate(ctx, change):
                                                                                                                "tag"]),
                                                                                                        tag_url=link,
                                                                                                        comment=parsed_comment)
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)

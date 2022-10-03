@@ -12,7 +12,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with RcGcDw.  If not, see <http://www.gnu.org/licenses/>.
-
+from __future__ import annotations
 import json
 import math
 import random
@@ -47,7 +47,7 @@ class DiscordMessageMetadata:
 
 class DiscordMessage:
 	"""A class defining a typical Discord JSON representation of webhook payload."""
-	def __init__(self, message_type: str, event_type: str, content=None):
+	def __init__(self, message_type: str, event_type: str, webhook_url: list[str], content=None):
 		self.webhook_object = dict(allowed_mentions={"parse": []})
 		self.length = 0
 		self.metadata: Optional[DiscordMessageMetadata] = None

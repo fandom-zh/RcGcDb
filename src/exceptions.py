@@ -34,6 +34,11 @@ class ServerError(Exception):
 	"""Exception for when a request fails because of Server error"""
 	pass
 
+class FormatterBreaksAPISpec(Exception):
+	def __init__(self, field):
+		self.message = f"Formatter doesn't specify {field}!"
+		super().__init__(self.message)
+
 
 class ClientError(Exception):
 	"""Exception for when a request failes because of Client error"""

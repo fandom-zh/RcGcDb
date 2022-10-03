@@ -14,7 +14,6 @@
 # along with RcGcDw.  If not, see <http://www.gnu.org/licenses/>.
 import src.api.hooks
 import logging
-from src.configloader import settings
 from src.exceptions import FormatterBreaksAPISpec
 from src.discord.message import DiscordMessage
 from typing import Optional, Callable

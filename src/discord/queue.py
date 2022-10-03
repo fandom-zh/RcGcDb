@@ -112,7 +112,7 @@ class MessageQueue:
 			if self.compare_message_to_dict(item[1], properties):
 				self._queue.pop(index)
 
-	async def pack_massages(self, messages: list[QueueEntry], current_pack=None) -> AsyncGenerator[tuple[StackedDiscordMessage, int, str]]:
+	async def pack_massages(self, messages: list[QueueEntry], current_pack=None) -> AsyncGenerator[tuple[StackedDiscordMessage, int, str], None]:
 		"""Pack messages into StackedDiscordMessage. It's an async generator"""
 		# TODO Rebuild to support DELETE and PATCH messages
 		for index, message in enumerate(messages):

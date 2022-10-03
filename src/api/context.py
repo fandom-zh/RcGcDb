@@ -26,7 +26,7 @@ class Context:
 	they are mainly used as a bridge between part that fetches the changes and API's formatters"""
 	def __init__(self, message_type: str, feed_type: str, webhook_urls: list[str], client: Client, language: gettext.GNUTranslations, settings: dict):
 		self.client = client
-		self.webhook_urls = webhook_urls
+		self.webhook_url = webhook_urls
 		self.message_type = message_type
 		self.feed_type = feed_type
 		self.categories = None
@@ -50,4 +50,4 @@ class Context:
 		self.comment_page = page
 
 	def __str__(self):
-		return f"<Context message_type={self.message_type} feed_type={self.feed_type} event={self.event} webhook_urls={self.webhook_urls}"
+		return f"<Context message_type={self.message_type} feed_type={self.feed_type} event={self.event} webhook_urls={self.webhook_url}"

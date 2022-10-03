@@ -5,7 +5,7 @@ from collections import OrderedDict
 from src.config import settings
 from typing import TYPE_CHECKING, Optional
 from functools import cache
-from src.discussions import Discussions
+# from src.discussions import Discussions
 from statistics import Log, LogType
 
 logger = logging.getLogger("rcgcdb.domain")

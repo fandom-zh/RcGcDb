@@ -18,7 +18,7 @@
 import json
 import datetime, logging
 from urllib.parse import quote_plus
-from src.api.util import create_article_path, clean_link, sanitize_to_markdown
+from src.api.util import clean_link, sanitize_to_markdown
 from src.api.context import Context
 from src.discord.queue import send_to_discord
 from src.discord.message import DiscordMessage, DiscordMessageMetadata
@@ -137,7 +137,7 @@ def common_discussions(post: dict, embed: DiscordMessage, ctx: Context):
 
 @formatter.embed(event="discussion/forum")
 def embed_discussion_forum(ctx: Context, post: dict):
-    embed = DiscordMessage("embed", "discussion")
+    embed = DiscordMessage("embed", "discussion", ctx.settings["fandom_discussions"]["webhookURL"])
     common_discussions(post, embed, ctx)
     author = ctx._("unknown")  # Fail safe
     if post["createdBy"]["name"]:
@@ -181,7 +181,7 @@ def embed_discussion_forum(ctx: Context, post: dict):
         if post["_embedded"]["thread"][0]["tags"]:
             tag_displayname = []
             for tag in post["_embedded"]["thread"][0]["tags"]:
-                tag_displayname.append("[{title}]({url})".format(title=tag["articleTitle"], url=create_article_path(
+                tag_displayname.append("[{title}]({url})".format(title=tag["articleTitle"], url=ctx.client.create_article_path(
                     quote_plus(tag["articleTitle"].replace(" ", "_"), "/:?=&"))))
             if len(", ".join(tag_displayname)) > 1000:
                 embed.add_field(ctx.pgettext("Fandom discussions Tags/Forums", "Tags"), ctx.pgettext("Fandom discussions amount of Tags/Forums", "{} tags").format(len(post["_embedded"]["thread"][0]["tags"])))
@@ -229,7 +229,7 @@ def compact_discussion_forum(ctx: Context, post: dict):
             author=author, author_url=author_url, url=ctx.settings["fandom_discussions"]["wiki_url"],
             threadId=post["threadId"], postId=post["id"], title=post["_embedded"]["thread"][0]["title"],
             forumName=post["forumName"])
-    return DiscordMessage("compact", event_type, content=message)
+    return DiscordMessage("compact", event_type, ctx.webhook_url, content=message)
 
 # discussion/wall - Wall posts/replies
 
@@ -244,7 +244,7 @@ def compact_author_discussions(post: dict, ctx: Context):
     else:
         if post["createdBy"]["name"]:
             author = post["createdBy"]["name"]
-            author_url = clean_link(create_article_path("User:{user}".format(user=author)))
+            author_url = clean_link(ctx.client.create_article_path("User:{user}".format(user=author)))
         else:
             author_url = "<{url}f/u/{creatorId}>".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
                                                      creatorId=post["creatorId"])
@@ -272,7 +272,7 @@ def embed_author_discussions(post: dict, embed: DiscordMessage, ctx: Context):
 
 @formatter.embed(event="discussion/wall")
 def embed_discussion_wall(ctx: Context, post: dict):
-    embed = DiscordMessage("embed", "discussion")
+    embed = DiscordMessage("embed", "discussion", ctx.settings["fandom_discussions"]["webhookURL"])
     common_discussions(post, embed, ctx)
     embed_author_discussions(post, embed, ctx)
     user_wall = ctx._("unknown")  # Fail safe
@@ -313,14 +313,14 @@ def compact_discussion_wall(ctx: Context, post: dict):
             author=author, author_url=author_url, url=ctx.settings["fandom_discussions"]["wiki_url"],
             title=post["_embedded"]["thread"][0]["title"], user=user_wall,
             user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"], replyId=post["id"])
-    return DiscordMessage("compact", event_type, content=message)
+    return DiscordMessage("compact", event_type, ctx.webhook_url, content=message)
 
 # discussion/article_comment - Article comments
 
 
 @formatter.embed(event="discussion/article_comment")
 def embed_discussion_article_comment(ctx: Context, post: dict):
-    embed = DiscordMessage("embed", "discussion")
+    embed = DiscordMessage("embed", "discussion", ctx.settings["fandom_discussions"]["webhookURL"])
     common_discussions(post, embed, ctx)
     embed_author_discussions(post, embed, ctx)
     article_paths = ctx.comment_page
@@ -359,4 +359,4 @@ def compact_discussion_article_comment(ctx: Context, post: dict):
             "[{author}]({author_url}) created a [reply](<{url}?commentId={commentId}&replyId={replyId}>) to a [comment](<{url}?commentId={commentId}>) on [{article}](<{url}>)").format(
             author=author, author_url=author_url, url=article_paths["fullUrl"], article=article_paths["title"],
             commentId=post["threadId"], replyId=post["id"])
-    return DiscordMessage("compact", event_type, content=message)
+    return DiscordMessage("compact", event_type, ctx.webhook_url, content=message)

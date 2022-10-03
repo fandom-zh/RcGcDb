@@ -18,7 +18,7 @@ import logging
 from src.discord.message import DiscordMessage
 from src.api import formatter
 from src.api.context import Context
-from src.api.util import embed_helper, compact_summary, clean_link, compact_author, create_article_path, sanitize_to_markdown, sanitize_to_url
+from src.api.util import embed_helper, compact_summary, clean_link, compact_author, sanitize_to_markdown, sanitize_to_url
 
 # Renameuser - https://www.mediawiki.org/wiki/Extension:Renameuser
 # renameuser/renameuser - Renaming a user
@@ -26,7 +26,7 @@ from src.api.util import embed_helper, compact_summary, clean_link, compact_auth
 
 @formatter.embed(event="renameuser/renameuser")
 def embed_renameuser_renameuser(ctx: Context, change: dict) -> DiscordMessage:
-    embed = DiscordMessage(ctx.message_type, ctx.event)
+    embed = DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url)
     embed_helper(ctx, embed, change)
     edits = change["logparams"]["edits"]
     if edits > 0:
@@ -38,14 +38,14 @@ def embed_renameuser_renameuser(ctx: Context, change: dict) -> DiscordMessage:
         embed["title"] = ctx._("Renamed user \"{old_name}\" to \"{new_name}\"").format(
             old_name=sanitize_to_markdown(change["logparams"]["olduser"]),
             new_name=sanitize_to_markdown(change["logparams"]["newuser"]))
-    embed["url"] = create_article_path("User:" + sanitize_to_url(change["logparams"]["newuser"]))
+    embed["url"] = ctx.client.create_article_path("User:" + sanitize_to_url(change["logparams"]["newuser"]))
     return embed
 
 
 @formatter.compact(event="renameuser/renameuser")
 def compact_renameuser_renameuser(ctx: Context, change: dict) -> DiscordMessage:
     author, author_url = compact_author(ctx, change)
-    link = clean_link(create_article_path("User:" + sanitize_to_url(change["logparams"]["newuser"])))
+    link = clean_link(ctx.client.create_article_path("User:" + sanitize_to_url(change["logparams"]["newuser"])))
     edits = change["logparams"]["edits"]
     parsed_comment = compact_summary(ctx)
     if edits > 0:
@@ -62,4 +62,4 @@ def compact_renameuser_renameuser(ctx: Context, change: dict) -> DiscordMessage:
             author=author, author_url=author_url, old_name=sanitize_to_markdown(change["logparams"]["olduser"]),
             new_name=sanitize_to_markdown(change["logparams"]["newuser"]), link=link, comment=parsed_comment
         )
-    return DiscordMessage(ctx.message_type, ctx.event, content=content)
+    return DiscordMessage(ctx.message_type, ctx.event, ctx.webhook_url, content=content)
