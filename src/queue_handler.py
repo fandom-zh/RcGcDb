@@ -19,7 +19,7 @@ class UpdateDB:
 	def clear_list(self):
 		self.updated.clear()
 
-	async def fetch_rows(self, SQLstatement: str, args: Union[str, int]) -> collections.abc.AsyncIterable:
+	async def fetch_rows(self, SQLstatement: str, *args: Union[str, int]) -> collections.abc.AsyncIterable:
 		async with db.pool().acquire() as connection:
 			async with connection.transaction():
 				async for row in connection.cursor(SQLstatement, *args):

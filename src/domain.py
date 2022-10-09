@@ -4,15 +4,16 @@ import logging
 from collections import OrderedDict
 from src.config import settings
 from typing import TYPE_CHECKING, Optional
+from src.argparser import command_line_args
 from functools import cache
 # from src.discussions import Discussions
 from statistics import Log, LogType
+import src.wiki_ratelimiter
 
 logger = logging.getLogger("rcgcdb.domain")
 
 if TYPE_CHECKING:
     import src.wiki
-    import src.wiki_ratelimiter
     import src.irc_feed
 
 
@@ -23,7 +24,7 @@ class Domain:
         self.wikis: OrderedDict[str, src.wiki.Wiki] = OrderedDict()
         self.rate_limiter: src.wiki_ratelimiter = src.wiki_ratelimiter.RateLimiter()
         self.irc: Optional[src.irc_feed.AioIRCCat] = None
-        self.discussions_handler: Optional[Discussions] = Discussions(self.wikis) if name == "fandom.com" else None
+        # self.discussions_handler: Optional[Discussions] = Discussions(self.wikis) if name == "fandom.com" else None
 
     def __iter__(self):
         return iter(self.wikis)
@@ -65,16 +66,17 @@ class Domain:
     def remove_wiki(self, script_url: str):
         self.wikis.pop(script_url)
 
-    def add_wiki(self, wiki: src.wiki.Wiki, first=False):
+    async def add_wiki(self, wiki: src.wiki.Wiki, first=False):
         """Adds a wiki to domain list.
 
         :parameter wiki - Wiki object
         :parameter first (optional) - bool indicating if wikis should be added as first or last in the ordered dict"""
         wiki.set_domain(self)
         if wiki.script_url in self.wikis:
-            self.wikis[wiki.script_url].update_targets()
+            await self.wikis[wiki.script_url].update_targets()
         else:
             self.wikis[wiki.script_url] = wiki
+            await wiki.update_targets()
         if first:
             self.wikis.move_to_end(wiki.script_url, last=False)
 
@@ -86,27 +88,42 @@ class Domain:
         self.rate_limiter.timeout_add(1.0)
 
     async def irc_scheduler(self):
-        while True:
-            try:
-                wiki_url = self.irc.updated_wikis.pop()
-            except KeyError:
-                break
-            try:
-                wiki = self.wikis[wiki_url]
-            except KeyError:
-                logger.error(f"Could not find a wiki with URL {wiki_url} in the domain group!")
-                continue
-            await self.run_wiki_scan(wiki)
-        for wiki in self.wikis.values():
-            if wiki.statistics.last_checked_rc < settings.get("irc_overtime", 3600):
+        try:
+            while True:
+                try:
+                    wiki_url = self.irc.updated_wikis.pop()
+                except KeyError:
+                    break
+                try:
+                    wiki = self.wikis[wiki_url]
+                except KeyError:
+                    logger.error(f"Could not find a wiki with URL {wiki_url} in the domain group!")
+                    continue
                 await self.run_wiki_scan(wiki)
+            for wiki in self.wikis.values():
+                if (wiki.statistics.last_checked_rc or 0) < settings.get("irc_overtime", 3600):
+                    await self.run_wiki_scan(wiki)
+                else:
+                    return  # Recently scanned wikis will get at the end of the self.wikis, so we assume what is first hasn't been checked for a while
+        except:
+            if command_line_args.debug:
+                logger.exception("IRC task for domain {} failed!".format(self.name))
             else:
-                return  # Recently scanned wikis will get at the end of the self.wikis, so we assume what is first hasn't been checked for a while
+                # TODO Write
+                pass
+
 
     async def regular_scheduler(self):
-        while True:
-            await asyncio.sleep(self.calculate_sleep_time(len(self)))  # To make sure that we don't spam domains with one wiki every second we calculate a sane timeout for domains with few wikis
-            await self.run_wiki_scan(next(iter(self.wikis.values())))
+        try:
+            while True:
+                await asyncio.sleep(self.calculate_sleep_time(len(self)))  # To make sure that we don't spam domains with one wiki every second we calculate a sane timeout for domains with few wikis
+                await self.run_wiki_scan(next(iter(self.wikis.values())))
+        except:
+            if command_line_args.debug:
+                logger.exception("IRC task for domain {} failed!".format(self.name))
+            else:
+                # TODO Write
+                pass
 
     @cache
     def calculate_sleep_time(self, queue_length: int):
@@ -115,8 +132,17 @@ class Domain:
     async def run_wiki_check(self):
         """Runs appropriate scheduler depending on existence of IRC"""
         if self.irc:
-            while True:
-                await self.irc_scheduler()
-                await asyncio.sleep(10.0)
+            try:
+                while True:
+                    await self.irc_scheduler()
+                    await asyncio.sleep(10.0)
+            except asyncio.exceptions.CancelledError:
+                for wiki in self.wikis.values():
+                    await wiki.session.close()
+                    await self.irc.connection.disconnect()
         else:
-            await self.regular_scheduler()
+            try:
+                await self.regular_scheduler()
+            except asyncio.exceptions.CancelledError:
+                for wiki in self.wikis.values():
+                    await wiki.session.close()

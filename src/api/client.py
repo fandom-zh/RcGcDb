@@ -30,17 +30,17 @@ class Client:
 		A client for interacting with RcGcDw when creating formatters or hooks.
 	"""
 	def __init__(self, hooks, wiki):
-		URLS = src.misc.get_paths(wiki.script_url,)
 		self._formatters = hooks
 		self.__recent_changes: Wiki = wiki
-		self.WIKI_API_PATH: str = src.misc.WIKI_API_PATH
-		self.WIKI_ARTICLE_PATH: str = src.misc.WIKI_ARTICLE_PATH
-		self.WIKI_SCRIPT_PATH: str = src.misc.WIKI_SCRIPT_PATH
-		self.WIKI_JUST_DOMAIN: str = src.misc.WIKI_JUST_DOMAIN
+		self.WIKI_API_PATH: Optional[str] = None
+		self.WIKI_ARTICLE_PATH: Optional[str] = None
+		self.WIKI_SCRIPT_PATH: str = wiki.script_url
+		self.WIKI_JUST_DOMAIN: Optional[str] = None
 		self.content_parser = src.misc.ContentParser
 		self.tags = self.__recent_changes.tags
 		self.LinkParser: type(src.misc.LinkParser) = src.misc.LinkParser
 		self.scheduler: sched.scheduler = sched.scheduler()
+		self._last_request: Optional[dict] = None
 		#self.make_api_request: src.rc.wiki.__recent_changes.api_request = self.__recent_changes.api_request
 
 	def schedule(self, function: Callable, *args: Any, every: Optional[float] = None, at: Optional[str] = None,
@@ -77,11 +77,24 @@ class Client:
 
 	def refresh_internal_data(self):
 		"""Refreshes internal storage data for wiki tags and MediaWiki messages."""
-		self.__recent_changes.init_info()
+		self.__recent_changes.recache_requested = True
 
 	def create_article_path(self, article: str) -> str:
 		"""Takes the string and creates an URL with it as the article name"""
 		return self.WIKI_ARTICLE_PATH.replace("$1", article)
+
+	@property
+	def last_request(self):
+		return self._last_request
+
+	@last_request.setter
+	def last_request(self, request: dict):
+		if not self.WIKI_ARTICLE_PATH:
+			urls = src.misc.get_paths(self.WIKI_SCRIPT_PATH, request)
+			self.WIKI_API_PATH = urls[0]
+			self.WIKI_ARTICLE_PATH = urls[2]
+			self.WIKI_JUST_DOMAIN = urls[3]
+		self._last_request = request
 
 	@property
 	def namespaces(self) -> dict:

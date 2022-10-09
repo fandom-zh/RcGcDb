@@ -13,7 +13,7 @@ class MWMessages:
             message_sets[self.mw_id] = mc_messages
 
     def __getitem__(self, item):
-        message_sets[self.mw_id].get(item, "============")
+        return message_sets[self.mw_id].get(item, "============")
 
     def __iter__(self):
         for key, item in message_sets[self.mw_id].items():

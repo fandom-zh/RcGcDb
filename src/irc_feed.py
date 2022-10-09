@@ -14,6 +14,7 @@ logger = logging.getLogger("rcgcdw.irc_feed")
 if TYPE_CHECKING:
 	from src.domain import Domain
 
+
 class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 	def connect(self, *args, **kwargs):
 		super().connect(*args, **kwargs)

@@ -45,10 +45,10 @@ class DomainManager:
         :parameter wiki - Wiki object to be added"""
         wiki_domain = self.get_domain(wiki.script_url)
         try:
-            self.domains[wiki_domain].add_wiki(wiki)
+            await self.domains[wiki_domain].add_wiki(wiki)
         except KeyError:
             new_domain = await self.new_domain(wiki_domain)
-            new_domain.add_wiki(wiki)
+            await new_domain.add_wiki(wiki)
 
     def remove_domain(self, domain):
         domain.destoy()
@@ -78,7 +78,7 @@ class DomainManager:
         domain_object = Domain(name)
         for irc_server in settings["irc_servers"].keys():
             if name in settings["irc_servers"][irc_server]["domains"]:
-                domain_object.set_irc(AioIRCCat(settings["irc_servers"][irc_server]["irc_channel_mapping"], domain_object))
+                domain_object.set_irc(AioIRCCat(settings["irc_servers"][irc_server]["irc_channel_mapping"], domain_object, None, None))
                 break  # Allow only one IRC for a domain
         self.domains[name] = domain_object
         return self.domains[name]

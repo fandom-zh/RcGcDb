@@ -36,10 +36,11 @@ if TYPE_CHECKING:
 
 MESSAGE_LIMIT = settings.get("message_limit", 30)
 
+
 class Wiki:
 	def __init__(self, script_url: str, rc_id: Optional[int], discussion_id: Optional[int]):
 		self.script_url: str = script_url
-		self.session = aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(6.0))
+		self.session: aiohttp.ClientSession = aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(6.0))
 		self.statistics: Statistics = Statistics(rc_id, discussion_id)
 		self.mw_messages: Optional[MWMessages] = None
 		self.tags: dict[str, Optional[str]] = {}  # Tag can be None if hidden
@@ -48,8 +49,8 @@ class Wiki:
 		self.targets: Optional[defaultdict[Settings, list[str]]] = None
 		self.client: Client = Client(formatter_hooks, self)
 		self.message_history: list[StackedDiscordMessage] = list()
-
-		self.update_targets()
+		self.namespaces: Optional[dict] = None
+		self.recache_requested: bool = False
 
 	@property
 	def rc_id(self):
@@ -265,12 +266,13 @@ class Wiki:
 				request = await self.fetch_wiki(amount=amount)
 				self.client.last_request = request
 			except WikiServerError as e:
-				# If WikiServerError comes up 2 times in recent 2 minutes, this will reraise the exception, otherwise waits 2 seconds
+				# If WikiServerError comes up 2 times in recent 2 minutes, this will reraise the exception, otherwise waits 2 seconds and retries
 				self.statistics.update(Log(type=LogType.CONNECTION_ERROR, title=str(e.exception)))
 				if self.statistics.recent_connection_errors() > 1:
 					raise
 				await asyncio.sleep(2.0)
-			if not self.mw_messages:
+				continue
+			if not self.mw_messages or self.recache_requested:
 				process_cachable(request, self)
 			try:
 				recent_changes = request["query"]["recentchanges"]
@@ -312,6 +314,7 @@ class Wiki:
 				messagequeue.add_messages(message_list)
 			return
 
+
 @cache
 def prepare_settings(display_mode: int) -> dict:
 	"""Prepares dict of RcGcDw compatible settings based on a template and display mode of given call"""
@@ -338,6 +341,8 @@ def process_cachable(response: dict, wiki_object: Wiki) -> None:
 			wiki_object.tags[tag["name"]] = (BeautifulSoup(tag["displayname"], "lxml")).get_text()
 		except KeyError:
 			wiki_object.tags[tag["name"]] = None
+	wiki_object.namespaces = response["query"]["namespaces"]
+	wiki_object.recache_requested = False
 
 
 async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, display_options: namedtuple("Settings", ["lang", "display"]), webhooks: list) -> DiscordMessage:
