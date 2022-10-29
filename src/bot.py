@@ -2,12 +2,12 @@ import aiohttp
 import asyncio
 import logging.config
 import signal
-import traceback
+import sys
 import nest_asyncio
 import time
 from collections import defaultdict, namedtuple
 from typing import Generator
-
+import importlib
 from contextlib import asynccontextmanager
 from src.discord.queue import messagequeue
 from src.argparser import command_line_args
@@ -36,6 +36,17 @@ main_tasks: dict = {}
 # First populate the all_wikis list with every wiki
 # Reasons for this: 1. we require amount of wikis to calculate the cooldown between requests
 # 2. Easier to code
+
+
+def load_extensions():
+    """Loads all of the extensions, can be a local import because all we need is them to register"""
+    try:
+        importlib.import_module(settings.get('extensions_dir', 'extensions'), 'extensions')
+    except ImportError:
+        logger.critical("No extensions module found. What's going on?")
+        logger.exception("Error:")
+        sys.exit(1)
+
 
 async def populate_wikis():
     logger.info("Populating domain manager with wikis...")
@@ -225,6 +236,7 @@ async def main_loop():
     await db.setup_connection()
     await db.create_pubsub_interface(domains.webhook_update)
     logger.debug("Connection type: {}".format(db.connection_pool))
+    load_extensions()
     await populate_wikis()
     # START LISTENER CONNECTION
     domains.run_all_domains()

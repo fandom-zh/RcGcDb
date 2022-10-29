@@ -100,7 +100,8 @@ class Domain:
                     logger.error(f"Could not find a wiki with URL {wiki_url} in the domain group!")
                     continue
                 await self.run_wiki_scan(wiki)
-            for wiki in self.wikis.values():
+            while True:  # Iterate until hitting return, we don't have to iterate using for since we are sending wiki to the end anyways
+                wiki: src.wiki.Wiki = next(iter(self.wikis.values()))
                 if (wiki.statistics.last_checked_rc or 0) < settings.get("irc_overtime", 3600):
                     await self.run_wiki_scan(wiki)
                 else:

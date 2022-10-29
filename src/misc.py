@@ -91,8 +91,7 @@ def create_article_path(article: str, WIKI_ARTICLE_PATH: str) -> str:
 	return WIKI_ARTICLE_PATH.replace("$1", article)
 
 
-def profile_field_name(name, embed, lang):
-	_ = langs[lang]["misc"].gettext
+def profile_field_name(name, embed, _):
 	profile_fields = {"profile-location": _("Location"), "profile-aboutme": _("About me"),
 	                  "profile-link-google": _("Google link"), "profile-link-facebook": _("Facebook link"),
 	                  "profile-link-twitter": _("Twitter link"), "profile-link-reddit": _("Reddit link"),

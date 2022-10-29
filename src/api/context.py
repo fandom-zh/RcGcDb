@@ -35,7 +35,7 @@ class Context:
 		self.comment_page = None
 		self._ = language.gettext  # Singular translations (ex. ctx._("Large goat"))
 		self.gettext = language.gettext  # In case you dislike _ or using "protected field" of ctx
-		self.ngettext = language.npgettext  # Plural translations depending on amount (ex. ctx.ngettext("{} action", "{} actions", action_amount))
+		self.ngettext = language.ngettext  # Plural translations depending on amount (ex. ctx.ngettext("{} action", "{} actions", action_amount))
 		self.pgettext = language.pgettext  # Translation with context (ex. ctx.pgettext("From mediawiki module", "Blocked {} user"))
 		self.npgettext = language.npgettext  # Plural translation with context (ex. ctx.npgettext("From mediawiki module", "Edited {} time", "Edited {} times", edit_amoint)
 		self.settings = settings

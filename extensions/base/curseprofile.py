@@ -36,9 +36,9 @@ def embed_curseprofile_profile_edited(ctx: Context, change: dict) -> DiscordMess
     else:
         embed["title"] = ctx._("Edited their own profile")
     if ctx.parsedcomment is None:  # If the field is empty
-        embed["description"] = ctx._("Cleared the {field} field").format(field=profile_field_name(change["logparams"]['4:section'], True))
+        embed["description"] = ctx._("Cleared the {field} field").format(field=profile_field_name(change["logparams"]['4:section'], True, ctx._))
     else:
-        embed["description"] = ctx._("{field} field changed to: {desc}").format(field=profile_field_name(change["logparams"]['4:section'], True), desc=ctx.parsedcomment)
+        embed["description"] = ctx._("{field} field changed to: {desc}").format(field=profile_field_name(change["logparams"]['4:section'], True, ctx._), desc=ctx.parsedcomment)
     embed["url"] = ctx.client.create_article_path("UserProfile:" + sanitize_to_url(target_user))
     return embed
 

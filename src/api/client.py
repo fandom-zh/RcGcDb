@@ -139,11 +139,13 @@ class Client:
 					BadRequest: When params argument is of wrong type
 					MediaWikiError: When MediaWiki returns an error
 				"""
-		return self.__recent_changes.api_request(params, *json_path, timeout=timeout, allow_redirects=allow_redirects)
+		return self.__recent_changes.sync_api_request(params, *json_path, timeout=timeout, allow_redirects=allow_redirects)
 
 	def get_formatters(self):
 		return self._formatters
 
 	def get_ipmapper(self) -> dict:
-		"""Returns a dict mapping IPs with amount of their edits"""
-		return self.__recent_changes.map_ips
+		"""Returns a dict mapping IPs with amount of their edits
+
+		(for RcGcDw its empty dict since we don't support this)"""
+		return {}

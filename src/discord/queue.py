@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 rate_limit = 0
 
-logger = logging.getLogger("rcgcdw.discord.queue")
+logger = logging.getLogger("rcgcdb.discord.queue")
 
 
 class QueueEntry:
@@ -127,7 +127,7 @@ class MessageQueue:
 			try:
 				current_pack.add_message(message)
 			except MessageTooBig:
-				yield current_pack, index-1
+				yield current_pack, index-1, "POST"
 				current_pack = StackedDiscordMessage(0 if message.message_type == "compact" else 1, message.wiki)  # next messages
 				current_pack.add_message(message)
 		yield current_pack, index, "POST"
@@ -152,7 +152,7 @@ class MessageQueue:
 					self.global_rate_limit = True
 				await asyncio.sleep(e.remaining / 1000)
 				return
-			for queue_message in messages[max(index-len(msg.message_list), 0):index]:  # mark messages as delivered
+			for queue_message in messages[max(index-len(msg.message_list), 0):max(index, 1)]:  # mark messages as delivered
 				queue_message.confirm_sent_status(webhook_url)
 			if client_error is False:
 				msg.webhook = webhook_url
@@ -211,7 +211,7 @@ async def send_to_discord_webhook(message: [StackedDiscordMessage, DiscordMessag
 	header = settings["header"]
 	header['Content-Type'] = 'application/json'
 	header['X-RateLimit-Precision'] = "millisecond"
-	async with aiohttp.ClientSession(headers=header, timeout=3.0) as session:
+	async with aiohttp.ClientSession(headers=header, timeout=aiohttp.ClientTimeout(total=6)) as session:
 		if isinstance(message, StackedDiscordMessage):
 			async with session.post(f"https://discord.com/api/webhooks/{webhook_path}?wait=true", data=repr(message)) as resp:
 				try:

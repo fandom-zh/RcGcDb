@@ -31,7 +31,7 @@ logger = logging.getLogger("src.api.util")
 
 def default_message(event: str, display: str, formatter_hooks: dict) -> Callable:
 	"""Returns a method of a formatter responsible for the event or None if such does not exist."""
-	return formatter_hooks.get(display, {}).get(event, formatter_hooks.get("generic", formatter_hooks["no_formatter"]))
+	return formatter_hooks.get(display, {}).get(event, formatter_hooks.get("generic", formatter_hooks.get("no_formatter")))
 
 
 def clean_link(link: str) -> str:
@@ -76,6 +76,7 @@ def compact_summary(ctx: Context) -> str:
 		return " *({})*".format(ctx.parsedcomment)
 	return ""
 
+
 def compact_author(ctx: Context, change: dict) -> (Optional[str], Optional[str]):
 	"""Returns link to the author and the author itself respecting the settings"""
 	author, author_url = None, None
@@ -104,40 +105,17 @@ def embed_helper(ctx: Context, message: DiscordMessage, change: dict, set_user=T
 		author = None
 		if "anon" in change:
 			author_url = ctx.client.create_article_path("Special:Contributions/{user}".format(user=sanitize_to_url(change["user"])))
-			ip_mapper = ctx.client.get_ipmapper()
-			logger.debug("current user: {} with cache of IPs: {}".format(change["user"], ip_mapper.keys()))
-			if change["user"] not in list(ip_mapper.keys()):
-				try:
-					contibs = ctx.client.make_api_request(
-						"?action=query&format=json&list=usercontribs&uclimit=max&ucuser={user}&ucstart={timestamp}&ucprop=".format(
-							user=sanitize_to_url(change["user"]), timestamp=change["timestamp"]), "query",
-						"usercontribs")
-				except (ServerError, MediaWikiError):
-					logger.warning("WARNING: Something went wrong when checking amount of contributions for given IP address")
-					if settings.get("hide_ips", False):
-						author = ctx._("Unregistered user")
-					else:
-						author = change["user"] + "(?)"
-				else:
-					ip_mapper[change["user"]] = len(contibs)
-					logger.debug("Current params user {} and state of map_ips {}".format(change["user"], ip_mapper))
-					if settings.get("hide_ips", False):
-						author = ctx._("Unregistered user")
-					else:
-						author = "{author} ({contribs})".format(author=change["user"], contribs=len(contibs))
+			# logger.debug("current user: {} with cache of IPs: {}".format(change["user"], ip_mapper.keys()))
+			if ctx.settings.get("hide_ips", False):
+				author = ctx._("Unregistered user")
 			else:
-				logger.debug("Current params user {} and state of map_ips {}".format(change["user"], ip_mapper))
-				if ctx.event in ("edit", "new"):
-					ip_mapper[change["user"]] += 1
-				author = "{author} ({amount})".format(
-					author=change["user"] if settings.get("hide_ips", False) is False else ctx._("Unregistered user"),
-					amount=ip_mapper[change["user"]])
+				author = change["user"]
 		else:
 			author_url = ctx.client.create_article_path("User:{}".format(sanitize_to_url(change["user"])))
 			author = change["user"]
 		message.set_author(author, author_url)
 	if set_edit_meta:
-		if settings["appearance"]["embed"]["show_footer"]:
+		if ctx.settings["appearance"]["embed"]["show_footer"]:
 			message["timestamp"] = change["timestamp"]
 		if "tags" in change and change["tags"]:
 			tag_displayname = []

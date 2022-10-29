@@ -8,11 +8,11 @@ from enum import Enum
 
 
 class LogType(Enum):
-    CONNECTION_ERROR: 1
-    HTTP_ERROR: 2
-    MEDIAWIKI_ERROR: 3
-    VALUE_UPDATE: 4
-    SCAN_REASON: 5
+    CONNECTION_ERROR = 1
+    HTTP_ERROR = 2
+    MEDIAWIKI_ERROR = 3
+    VALUE_UPDATE = 4
+    SCAN_REASON = 5
 
 queue_limit = settings.get("queue_limit", 30)
 

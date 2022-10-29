@@ -20,7 +20,6 @@ import datetime, logging
 from urllib.parse import quote_plus
 from src.api.util import clean_link, sanitize_to_markdown
 from src.api.context import Context
-from src.discord.queue import send_to_discord
 from src.discord.message import DiscordMessage, DiscordMessageMetadata
 from src.api import formatter
 

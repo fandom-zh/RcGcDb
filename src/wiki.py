@@ -6,6 +6,7 @@ import time
 import re
 import logging, aiohttp
 import asyncio
+import requests
 from functools import cache
 
 from api.util import default_message
@@ -40,7 +41,7 @@ MESSAGE_LIMIT = settings.get("message_limit", 30)
 class Wiki:
 	def __init__(self, script_url: str, rc_id: Optional[int], discussion_id: Optional[int]):
 		self.script_url: str = script_url
-		self.session: aiohttp.ClientSession = aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(6.0))
+		self.session: aiohttp.ClientSession = aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(total=6))
 		self.statistics: Statistics = Statistics(rc_id, discussion_id)
 		self.mw_messages: Optional[MWMessages] = None
 		self.tags: dict[str, Optional[str]] = {}  # Tag can be None if hidden
@@ -51,6 +52,8 @@ class Wiki:
 		self.message_history: list[StackedDiscordMessage] = list()
 		self.namespaces: Optional[dict] = None
 		self.recache_requested: bool = False
+		self.session_requests = requests.Session()
+		self.session_requests.headers.update(settings["header"])
 
 	@property
 	def rc_id(self):
@@ -193,8 +196,7 @@ class Wiki:
 		"""
 		# Making request
 		try:
-			if isinstance(params,
-						  str):  # Todo Make it so there are some default arguments like warning/error format appended
+			if isinstance(params, str):
 				request = await self.session.get(self.script_url + "api.php?" + params + "&errorformat=raw", timeout=timeout,
 										   allow_redirects=allow_redirects)
 			elif isinstance(params, OrderedDict):
@@ -234,6 +236,47 @@ class Wiki:
 				logger.exception("KeyError while iterating over json_path, full response: {}".format(request.json()))
 				raise
 		return request_json
+
+	def sync_api_request(self, params: Union[str, OrderedDict], *json_path: str, timeout: int = 10,
+						 allow_redirects: bool = False) -> dict:
+		"""Synchronous function based on api_request created for compatibility reasons with RcGcDw API"""
+		try:
+			if isinstance(params, str):
+				request = self.session_requests.get(self.script_url + "api.php?" + params + "&errorformat=raw", timeout=10, allow_redirects=allow_redirects)
+			elif isinstance(params, OrderedDict):
+				request = self.session_requests.get(self.script_url + "api.php", params=params, timeout=10, allow_redirects=allow_redirects)
+			else:
+				raise BadRequest(params)
+		except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as exc:
+			logger.warning("Reached {error} error for request on link {url}".format(error=repr(exc),
+																					url=self.client.WIKI_API_PATH + str(params)))
+			raise ServerError
+		if 499 < request.status_code < 600:
+			raise ServerError
+		elif request.status_code == 302:
+			logger.critical(
+				"Redirect detected! Either the wiki given in the script settings (wiki field) is incorrect/the wiki got removed or is giving us the false value. Please provide the real URL to the wiki, current URL redirects to {}".format(
+					request.url))
+		elif 399 < request.status_code < 500:
+			logger.error("Request returned ClientError status code on {url}".format(url=request.url))
+			self.statistics.update(Log(type=LogType.HTTP_ERROR, title="{} error".format(request.status_code), details=str(request.headers) + "\n" + str(request.url)))
+			raise ClientError(request)
+		else:
+			try:
+				request_json = self.parse_mw_request_info(request.json(), request.url)
+				for item in json_path:
+					request_json = request_json[item]
+			except ValueError:
+				logger.warning("ValueError when extracting JSON data on {url}".format(url=request.url))
+				raise ServerError
+			except MediaWikiError:
+				logger.exception("MediaWiki error on request: {}".format(request.url))
+				raise
+			except KeyError:
+				logger.exception("KeyError while iterating over json_path, full response: {}".format(request.json()))
+				raise
+		return request_json
+
 
 	async def fetch_wiki(self, amount=10) -> dict:
 		if self.mw_messages is None:
@@ -308,11 +351,13 @@ class Wiki:
 						if highest_id is None or change["rcid"] > highest_id:  # make sure that the highest_rc is really highest rcid but do allow other entries with potentially lesser rcids come after without breaking the cycle
 							highest_id = change["rcid"]
 						for combination, webhooks in self.targets.items():
-							message = await rc_processor(self, change, categorize_events, combination, webhooks)
+							message = await rc_processor(self, change, categorize_events.get(change.get("revid"), None), combination, webhooks)
+							if message is None:
+								break
 							message.wiki = self
-							message_list.append(QueueEntry(message, webhooks))
+							message_list.append(QueueEntry(message, webhooks, self))
 				messagequeue.add_messages(message_list)
-			return
+				return
 
 
 @cache
@@ -345,7 +390,7 @@ def process_cachable(response: dict, wiki_object: Wiki) -> None:
 	wiki_object.recache_requested = False
 
 
-async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, display_options: namedtuple("Settings", ["lang", "display"]), webhooks: list) -> DiscordMessage:
+async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, display_options: namedtuple("Settings", ["lang", "display"]), webhooks: list) -> Optional[DiscordMessage]:
 	"""This function takes more vital information, communicates with a formatter and constructs DiscordMessage with it.
 	It creates DiscordMessageMetadata object, LinkParser and Context. Prepares a comment """
 	from src.misc import LinkParser
@@ -357,7 +402,7 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 		context.event = "suppressed"
 		try:
 			discord_message: Optional[DiscordMessage] = await asyncio.get_event_loop().run_in_executor(
-				None, functools.partial(default_message("suppressed", display_options.display, formatter_hooks), context, change))
+				None, functools.partial(default_message("suppressed", context.message_type, formatter_hooks), context, change))
 		except:
 			if settings.get("error_tolerance", 1) > 0:
 				discord_message: Optional[DiscordMessage] = None  # It's handled by send_to_discord, we still want other code to run
@@ -368,13 +413,13 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 			LinkParser.feed(change.get("parsedcomment", ""))
 			parsed_comment = LinkParser.new_string
 		else:
-			parsed_comment = _("~~hidden~~")
+			parsed_comment = context._("~~hidden~~")
 		if not parsed_comment and context.message_type == "embed" and settings["appearance"].get("embed", {}).get(
 				"show_no_description_provided", True):
-			parsed_comment = _("No description provided")
+			parsed_comment = context._("No description provided")
 		context.set_parsedcomment(parsed_comment)
 		if "userhidden" in change:
-			change["user"] = _("hidden")
+			change["user"] = context._("hidden")
 		if change.get("ns", -1) in settings.get("ignored_namespaces", ()):
 			return
 		if change["type"] in ["edit", "new"]:
@@ -393,7 +438,7 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 		context.event = identification_string
 		try:
 			discord_message: Optional[DiscordMessage] = await asyncio.get_event_loop().run_in_executor(None,
-				functools.partial(default_message(identification_string, display_options.display, formatter_hooks), context,
+				functools.partial(default_message(identification_string, context.message_type, formatter_hooks), context,
 								  change))
 		except:
 			if settings.get("error_tolerance", 1) > 0:
@@ -416,8 +461,8 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 			else:
 				for revid in logparams.get("ids", []):
 					wiki.delete_messages(dict(revid=revid))
-	discord_message.finish_embed()
-	if discord_message:
+	if discord_message:  # TODO How to react when none? (crash in formatter), probably bad handling atm
+		discord_message.finish_embed()
 		discord_message.metadata = metadata
 	return discord_message
 

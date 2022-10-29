@@ -184,7 +184,7 @@ class StackedDiscordMessage():
 		if self.message_type == 0:
 			message_structure["content"] = "\n".join([message.return_content() for message in self.message_list])
 		elif self.message_type == 1:
-			message_structure["embeds"] = [message["embeds"][0] for message in self.message_list]
+			message_structure["embeds"] = [message.embed for message in self.message_list]
 		return json.dumps(message_structure)
 
 	def filter(self, params: dict) -> list[tuple[int, DiscordMessage]]:
