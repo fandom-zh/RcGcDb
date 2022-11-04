@@ -16,7 +16,6 @@ from src.database import db
 from src.exceptions import *
 from src.queue_handler import dbmanager
 from src.wiki import Wiki, process_cats, essential_feeds
-from src.wiki_ratelimiter import RateLimiter
 from src.domain_manager import domains
 
 

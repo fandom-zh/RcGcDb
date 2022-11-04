@@ -105,7 +105,7 @@ class Client:
 			return dict()
 
 	def parse_links(self, summary: str):
-		link_parser = self.LinkParser()
+		link_parser = self.LinkParser(self.WIKI_JUST_DOMAIN)
 		link_parser.feed(summary)
 		return link_parser.new_string
 

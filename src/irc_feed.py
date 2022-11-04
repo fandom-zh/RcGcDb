@@ -44,7 +44,8 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		c.nick(c.get_nickname() + "_")
 
 	def on_disconnect(self, connection, event):
-		self.connect(*self.connection_details[0], **self.connection_details[1])  # attempt to reconnect
+		# self.connect(*self.connection_details[0], **self.connection_details[1])  # attempt to reconnect
+		pass
 
 	def parse_fandom_message(self, message: str):
 		message = message.split("\x035*\x03")
@@ -71,8 +72,8 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		if post.get('action', 'unknown') != "deleted":  # ignore deletion events
 			url = urlparse(post.get('url'))
 			full_url ="https://"+ url.netloc + recognize_langs(url.path)
-			if full_url in self.domain:
-				self.discussion_callback(full_url)
+			# if full_url in self.domain:
+			# 	self.discussion_callback(full_url)
 
 
 def recognize_langs(path):

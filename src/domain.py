@@ -8,7 +8,6 @@ from src.argparser import command_line_args
 from functools import cache
 # from src.discussions import Discussions
 from statistics import Log, LogType
-import src.wiki_ratelimiter
 
 logger = logging.getLogger("rcgcdb.domain")
 
@@ -22,7 +21,6 @@ class Domain:
         self.name = name  # This should be always in format of topname.extension for example fandom.com
         self.task: Optional[asyncio.Task] = None
         self.wikis: OrderedDict[str, src.wiki.Wiki] = OrderedDict()
-        self.rate_limiter: src.wiki_ratelimiter = src.wiki_ratelimiter.RateLimiter()
         self.irc: Optional[src.irc_feed.AioIRCCat] = None
         # self.discussions_handler: Optional[Discussions] = Discussions(self.wikis) if name == "fandom.com" else None
 
@@ -38,7 +36,7 @@ class Domain:
     def destroy(self):
         """Destroy the domain – do all of the tasks that should make sure there is no leftovers before being collected by GC"""
         if self.irc:
-            self.irc.connection.disconnect("Leaving")
+            self.irc.connection.die("Leaving")
         if self.discussions_handler:
             self.discussions_handler.close()
         if self.task:
@@ -81,11 +79,9 @@ class Domain:
             self.wikis.move_to_end(wiki.script_url, last=False)
 
     async def run_wiki_scan(self, wiki: src.wiki.Wiki, reason: Optional[int] = None):
-        await self.rate_limiter.timeout_wait()
         await wiki.scan()
         wiki.statistics.update(Log(type=LogType.SCAN_REASON, title=str(reason)))
         self.wikis.move_to_end(wiki.script_url)
-        self.rate_limiter.timeout_add(1.0)
 
     async def irc_scheduler(self):
         try:
@@ -108,7 +104,7 @@ class Domain:
                     return  # Recently scanned wikis will get at the end of the self.wikis, so we assume what is first hasn't been checked for a while
         except:
             if command_line_args.debug:
-                logger.exception("IRC task for domain {} failed!".format(self.name))
+                logger.exception("IRC scheduler task for domain {} failed!".format(self.name))
             else:
                 # TODO Write
                 pass
@@ -140,7 +136,7 @@ class Domain:
             except asyncio.exceptions.CancelledError:
                 for wiki in self.wikis.values():
                     await wiki.session.close()
-                    await self.irc.connection.disconnect()
+                    self.irc.connection.disconnect()
         else:
             try:
                 await self.regular_scheduler()

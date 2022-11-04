@@ -44,7 +44,7 @@ class Statistics:
         self.logs: LimitedList[Log] = LimitedList()
 
     def update(self, *args: Log, **kwargs: dict[str, Union[float, int]]):
-        for key, value in kwargs:
+        for key, value in kwargs.items():
             self.__setattr__(key, value)
         for log in args:
             self.logs.append(log)

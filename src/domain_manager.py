@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse, urlunparse
 import logging
 import asyncpg
@@ -9,9 +9,7 @@ from src.config import settings
 from src.domain import Domain
 from src.irc_feed import AioIRCCat
 
-
-if TYPE_CHECKING:
-    from src.wiki import Wiki
+from src.wiki import Wiki
 
 logger = logging.getLogger("rcgcdb.domain_manager")
 
@@ -23,6 +21,7 @@ class DomainManager:
         """Callback for database listener. Used to update our domain cache on changes such as new wikis or removed wikis"""
         # TODO Write a trigger for pub/sub in database/Wiki-Bot repo
         split_payload = payload.split(" ")
+        logger.debug("Received pub/sub message: {}".format(payload))
         if len(split_payload) < 2:
             raise ValueError("Improper pub/sub message! Pub/sub payload: {}".format(payload))
         if split_payload[0] == "ADD":
@@ -30,8 +29,8 @@ class DomainManager:
         elif split_payload[0] == "REMOVE":
             try:
                 results = await connection.fetch("SELECT * FROM rcgcdw WHERE wiki = $1;", split_payload[1])
-                if len(results) > 0:
-                    return
+                if len(results) > 0:  # If there are still webhooks for this wiki - just update its targets
+                    await self.return_domain(self.get_domain(split_payload[1])).get_wiki(split_payload[1]).update_targets()
             except asyncpg.IdleSessionTimeoutError:
                 logger.error("Couldn't check amount of webhooks with {} wiki!".format(split_payload[1]))
                 return
@@ -50,9 +49,9 @@ class DomainManager:
             new_domain = await self.new_domain(wiki_domain)
             await new_domain.add_wiki(wiki)
 
-    def remove_domain(self, domain):
-        domain.destoy()
-        del self.domains[domain]
+    def remove_domain(self, domain: Domain):
+        domain.destroy()
+        del self.domains[domain.name]
 
     def remove_wiki(self, script_url: str):
         wiki_domain = self.get_domain(script_url)
@@ -79,6 +78,8 @@ class DomainManager:
         for irc_server in settings["irc_servers"].keys():
             if name in settings["irc_servers"][irc_server]["domains"]:
                 domain_object.set_irc(AioIRCCat(settings["irc_servers"][irc_server]["irc_channel_mapping"], domain_object, None, None))
+                domain_object.irc.connect(settings["irc_servers"][irc_server]["irc_host"], settings["irc_servers"][irc_server]["irc_port"],
+                                          settings["irc_servers"][irc_server]["irc_name"], ircname=settings["irc_servers"][irc_server]["irc_nickname"])
                 break  # Allow only one IRC for a domain
         self.domains[name] = domain_object
         return self.domains[name]

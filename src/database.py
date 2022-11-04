@@ -34,17 +34,5 @@ class db_connection:
     def pool(self) -> asyncpg.Pool:
         return self.connection_pool
 
-    # Tried to make it a decorator but tbh won't probably work
-    # async def in_transaction(self, func):
-    #     async def single_transaction():
-    #         async with self.connection.acquire() as connection:
-    #             async with connection.transaction():
-    #                 await func()
-    #     return single_transaction
-
-    # async def query(self, string, *arg):
-    #     async with self.connection.acquire() as connection:
-    #         async with connection.transaction():
-    #             return connection.cursor(string, *arg)
 
 db = db_connection()

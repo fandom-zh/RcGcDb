@@ -242,7 +242,7 @@ class Wiki:
 		"""Synchronous function based on api_request created for compatibility reasons with RcGcDw API"""
 		try:
 			if isinstance(params, str):
-				request = self.session_requests.get(self.script_url + "api.php?" + params + "&errorformat=raw", timeout=10, allow_redirects=allow_redirects)
+				request = self.session_requests.get(self.script_url + "api.php" + params + "&errorformat=raw", timeout=10, allow_redirects=allow_redirects)
 			elif isinstance(params, OrderedDict):
 				request = self.session_requests.get(self.script_url + "api.php", params=params, timeout=10, allow_redirects=allow_redirects)
 			else:
@@ -357,6 +357,8 @@ class Wiki:
 							message.wiki = self
 							message_list.append(QueueEntry(message, webhooks, self))
 				messagequeue.add_messages(message_list)
+				self.statistics.update(last_action=highest_id)
+				dbmanager.add(("UPDATE rcgcdw SET rcid = $1 WHERE wiki = $2", (highest_id, self.script_url)))  # If this is not enough for the future, save rcid in message sending function to make sure we always send all of the changes
 				return
 
 
@@ -394,7 +396,7 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 	"""This function takes more vital information, communicates with a formatter and constructs DiscordMessage with it.
 	It creates DiscordMessageMetadata object, LinkParser and Context. Prepares a comment """
 	from src.misc import LinkParser
-	LinkParser = LinkParser()
+	LinkParser = LinkParser(wiki.client.WIKI_ARTICLE_PATH)
 	metadata = DiscordMessageMetadata("POST", rev_id=change.get("revid", None), log_id=change.get("logid", None),
 													  page_id=change.get("pageid", None))
 	context = Context("embed" if display_options.display > 0 else "compact", "recentchanges", webhooks, wiki.client, langs[display_options.lang]["rc_formatters"], prepare_settings(display_options.display))
@@ -446,7 +448,7 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 			else:
 				raise
 		if identification_string in ("delete/delete", "delete/delete_redir"):  # TODO Move it into a hook?
-			wiki.delete_messages(dict(pageid=change.get("pageid")))
+			wiki.delete_messages(dict(page_id=change.get("pageid")))
 		elif identification_string == "delete/event":
 			logparams = change.get('logparams', {"ids": []})
 			if settings["appearance"]["mode"] == "embed":

@@ -2,6 +2,7 @@ from html.parser import HTMLParser
 import base64, re
 
 import logging
+from typing import Callable
 from urllib.parse import urlparse, urlunparse
 from src.i18n import langs
 
@@ -28,7 +29,10 @@ class LinkParser(HTMLParser):
 
 	new_string = ""
 	recent_href = ""
-	WIKI_JUST_DOMAIN = ""
+
+	def __init__(self, DOMAIN_URL):
+		self.WIKI_JUST_DOMAIN = DOMAIN_URL
+		super().__init__()
 
 	def handle_starttag(self, tag, attrs):
 		for attr in attrs:
@@ -59,16 +63,17 @@ class LinkParser(HTMLParser):
 		pass
 
 
-LinkParse = LinkParser()
+# LinkParse = LinkParser()
 
-def parse_link(domain: str, to_parse: str) -> str:
-	"""Because I have strange issues using the LinkParser class myself, this is a helper function
-	to utilize the LinkParser properly"""
-	LinkParse.WIKI_JUST_DOMAIN = domain
-	LinkParse.new_string = ""
-	LinkParse.feed(to_parse)
-	LinkParse.recent_href = ""
-	return LinkParse.new_string
+
+# def parse_link(domain: str, to_parse: str) -> str:
+# 	"""Because I have strange issues using the LinkParser class myself, this is a helper function
+# 	to utilize the LinkParser properly"""
+# 	LinkParse.WIKI_JUST_DOMAIN = domain
+# 	LinkParse.new_string = ""
+# 	LinkParse.feed(to_parse)
+# 	LinkParse.recent_href = ""
+# 	return LinkParse.new_string
 
 
 def link_formatter(link: str) -> str:
@@ -117,9 +122,9 @@ class ContentParser(HTMLParser):
 	small_prev_ins = ""
 	small_prev_del = ""
 
-	def __init__(self, lang):
+	def __init__(self, lang: Callable):
 		super().__init__()
-		self.more = langs[lang]["misc"].gettext("\n__And more__")
+		self.more = lang("\n__And more__")
 		self.ins_length = len(self.more)
 		self.del_length = len(self.more)
 

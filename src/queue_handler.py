@@ -28,6 +28,7 @@ class UpdateDB:
 	async def update_db(self):
 		try:
 			while True:
+				logger.debug("Running DB check")
 				if self.updated:
 					async with db.pool().acquire() as connection:
 						async with connection.transaction():

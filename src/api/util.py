@@ -51,7 +51,7 @@ def sanitize_to_url(text: str) -> str:  # TODO ) replaces needed?
 
 def parse_mediawiki_changes(ctx: Context, content: str, embed: DiscordMessage) -> None:
 	"""Parses MediaWiki changes and adds them to embed as fields "Added" and "Removed" """
-	edit_diff = ctx.client.content_parser()
+	edit_diff = ctx.client.content_parser(ctx._)
 	edit_diff.feed(content)
 	if edit_diff.small_prev_del:
 		if edit_diff.small_prev_del.replace("~~", "").replace("__", "").isspace():

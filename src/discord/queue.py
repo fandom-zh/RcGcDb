@@ -114,14 +114,12 @@ class MessageQueue:
 
 	async def pack_massages(self, messages: list[QueueEntry], current_pack=None) -> AsyncGenerator[tuple[StackedDiscordMessage, int, str], None]:
 		"""Pack messages into StackedDiscordMessage. It's an async generator"""
-		# TODO Rebuild to support DELETE and PATCH messages
 		for index, message in enumerate(messages):
 			if message.method == "POST":
 				if current_pack is None:
 					current_pack = StackedDiscordMessage(0 if message.discord_message.message_type == "compact" else 1,
 													 message.wiki)
 			else:
-				# message.discord_message.  # TODO Where do we store method?
 				yield message.discord_message, index, message.method
 			message = message.discord_message
 			try:
@@ -152,7 +150,7 @@ class MessageQueue:
 					self.global_rate_limit = True
 				await asyncio.sleep(e.remaining / 1000)
 				return
-			for queue_message in messages[max(index-len(msg.message_list), 0):max(index, 1)]:  # mark messages as delivered
+			for queue_message in messages[max(index-len(msg.message_list), 0):index+1]:  # mark messages as delivered
 				queue_message.confirm_sent_status(webhook_url)
 			if client_error is False:
 				msg.webhook = webhook_url
