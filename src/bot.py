@@ -9,6 +9,8 @@ from collections import defaultdict, namedtuple
 from typing import Generator
 import importlib
 from contextlib import asynccontextmanager
+
+from discussions import Discussions
 from src.discord.queue import messagequeue
 from src.argparser import command_line_args
 from src.config import settings
@@ -213,6 +215,7 @@ def shutdown(loop, signal=None):
     except asyncio.CancelledError:
         loop.stop()
         logger.info("Script has shut down due to signal {}.".format(signal))
+    logging.shutdown()
     # sys.exit(0)
 
 
@@ -239,7 +242,7 @@ async def main_loop():
     await populate_wikis()
     # START LISTENER CONNECTION
     domains.run_all_domains()
-    # We are here
+    discussions = Discussions(domains.return_domain("fandom.com") if domains.check_for_domain("fandom.com") else None)
     try:
         signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
         for s in signals:
@@ -251,7 +254,8 @@ async def main_loop():
     # loop.set_exception_handler(global_exception_handler)
     try:
         main_tasks = {"message_sender": asyncio.create_task(message_sender()),
-                      "database_updates": asyncio.create_task(dbmanager.update_db())}  # "discussion_handler": asyncio.create_task(discussion_handler()),
+                      "database_updates": asyncio.create_task(dbmanager.update_db()),
+                      "fandom_discussions": asyncio.create_task(discussions.tick_discussions())}  # "discussion_handler": asyncio.create_task(discussion_handler()),
         main_tasks["msg_queue_shield"] = asyncio.shield(main_tasks["message_sender"])
         main_tasks["database_updates_shield"] = asyncio.shield(main_tasks["database_updates"])
         await asyncio.gather(main_tasks["message_sender"], main_tasks["database_updates"])

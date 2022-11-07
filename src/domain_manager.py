@@ -19,7 +19,6 @@ class DomainManager:
 
     async def webhook_update(self, connection: asyncpg.Connection, pid: int, channel: str, payload: str):
         """Callback for database listener. Used to update our domain cache on changes such as new wikis or removed wikis"""
-        # TODO Write a trigger for pub/sub in database/Wiki-Bot repo
         split_payload = payload.split(" ")
         logger.debug("Received pub/sub message: {}".format(payload))
         if len(split_payload) < 2:
@@ -69,6 +68,9 @@ class DomainManager:
         """Returns a domain for given URL (for example fandom.com, wikipedia.org)"""
         parsed_url = urlparse(url)
         return ".".join(urlunparse((*parsed_url[0:2], "", "", "", "")).split(".")[-2:])
+
+    def check_for_domain(self, domain: str):
+        return domain in self.domains
 
     def return_domain(self, domain: str):
         return self.domains[domain]

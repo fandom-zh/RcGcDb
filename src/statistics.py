@@ -25,6 +25,7 @@ class Log:
         self.title: str = kwargs["title"]
         self.details: Optional[str] = kwargs.get("details", None)
 
+
 class LimitedList(list):
     def __init__(self, *args):
         list.__init__(self, *args)

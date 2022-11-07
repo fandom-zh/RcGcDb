@@ -6,3 +6,4 @@ logs/
 *.code-workspace
 *.bat
 source-file-list.txt
+*.po~

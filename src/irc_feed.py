@@ -9,7 +9,7 @@ import logging
 from typing import TYPE_CHECKING, Callable, Optional
 from urllib.parse import urlparse, quote
 
-logger = logging.getLogger("rcgcdw.irc_feed")
+logger = logging.getLogger("rcgcdb.irc_feed")
 
 if TYPE_CHECKING:
 	from src.domain import Domain
@@ -24,6 +24,7 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		irc.client_aio.SimpleIRCClient.__init__(self)
 		self.targets = targets
 		self.updated_wikis: set[str] = set()
+		self.updated_discussions: set[str] = set()
 		self.rc_callback = rc_callback
 		self.discussion_callback = discussion_callback
 		self.domain = domain_object
@@ -72,6 +73,9 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		if post.get('action', 'unknown') != "deleted":  # ignore deletion events
 			url = urlparse(post.get('url'))
 			full_url ="https://"+ url.netloc + recognize_langs(url.path)
+			wiki = self.domain.get_wiki(full_url)
+			if wiki and wiki.discussion_id != -1:
+				self.updated_discussions.add(full_url)
 			# if full_url in self.domain:
 			# 	self.discussion_callback(full_url)
 

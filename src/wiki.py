@@ -60,6 +60,10 @@ class Wiki:
 		return self.statistics.last_action
 
 	@property
+	def discussion_id(self):
+		return self.statistics.last_post
+
+	@property
 	def last_request(self):
 		return self.statistics.last_request
 
@@ -277,7 +281,6 @@ class Wiki:
 				raise
 		return request_json
 
-
 	async def fetch_wiki(self, amount=10) -> dict:
 		if self.mw_messages is None:
 			params = OrderedDict({"action": "query", "format": "json", "uselang": "content", "list": "tags|recentchanges",
@@ -360,6 +363,22 @@ class Wiki:
 				self.statistics.update(last_action=highest_id)
 				dbmanager.add(("UPDATE rcgcdw SET rcid = $1 WHERE wiki = $2", (highest_id, self.script_url)))  # If this is not enough for the future, save rcid in message sending function to make sure we always send all of the changes
 				return
+
+	async def scan_discussions(self):
+		header = settings["header"]
+		header["Accept"] = "application/hal+json"
+		async with aiohttp.ClientSession(headers=header,
+										 timeout=aiohttp.ClientTimeout(6.0)) as session:
+			url_path = "{wiki}wikia.php".format(wiki=self.script_url)
+			params = {"controller": "DiscussionPost", "method": "getPosts", "includeCounters": "false",
+					  "sortDirection": "descending", "sortKey": "creation_date", "limit": 20}
+			try:
+				feeds_response = session.get(url_path, params=params)
+				response.raise_for_status()
+			except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError,
+						aiohttp.ClientResponseError, aiohttp.TooManyRedirects):
+				logger.error("A connection error occurred while requesting {}".format(url_path))
+				raise WikiServerError
 
 
 @cache

@@ -3,10 +3,11 @@ $BODY$
 begin
    IF (TG_OP = 'DELETE') THEN
        perform pg_notify('webhookupdates', concat('REMOVE ', old.wiki));
+       return old;
    ELSIF (TG_OP = 'INSERT') then
        perform pg_notify('webhookupdates', concat('ADD ', new.wiki));
+       return new;
    end if;
-   return new;
 end;
 $BODY$
    language plpgsql;

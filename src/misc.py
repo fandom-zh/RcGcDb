@@ -4,7 +4,6 @@ import base64, re
 import logging
 from typing import Callable
 from urllib.parse import urlparse, urlunparse
-from src.i18n import langs
 
 logger = logging.getLogger("rcgcdw.misc")
 
@@ -185,3 +184,5 @@ class ContentParser(HTMLParser):
 					self.small_prev_del = self.small_prev_del + self.more
 				self.last_del = None
 			self.empty = False
+
+

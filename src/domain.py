@@ -2,12 +2,16 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections import OrderedDict
-from src.config import settings
 from typing import TYPE_CHECKING, Optional
-from src.argparser import command_line_args
 from functools import cache
+
+import aiohttp
+
+from discord.message import DiscordMessage
+from src.config import settings
+from src.argparser import command_line_args
 # from src.discussions import Discussions
-from statistics import Log, LogType
+from src.statistics import Log, LogType
 
 logger = logging.getLogger("rcgcdb.domain")
 
@@ -22,6 +26,7 @@ class Domain:
         self.task: Optional[asyncio.Task] = None
         self.wikis: OrderedDict[str, src.wiki.Wiki] = OrderedDict()
         self.irc: Optional[src.irc_feed.AioIRCCat] = None
+        self.failures = 0
         # self.discussions_handler: Optional[Discussions] = Discussions(self.wikis) if name == "fandom.com" else None
 
     def __iter__(self):
@@ -98,29 +103,32 @@ class Domain:
                 await self.run_wiki_scan(wiki)
             while True:  # Iterate until hitting return, we don't have to iterate using for since we are sending wiki to the end anyways
                 wiki: src.wiki.Wiki = next(iter(self.wikis.values()))
-                if (wiki.statistics.last_checked_rc or 0) < settings.get("irc_overtime", 3600):
+                if (wiki.statistics.last_checked_rc or 0) < settings.get("irc_overtime", 3600):  # TODO This makes no sense, comparing last_checked_rc to nothing
                     await self.run_wiki_scan(wiki)
                 else:
                     return  # Recently scanned wikis will get at the end of the self.wikis, so we assume what is first hasn't been checked for a while
-        except:
+        except Exception as e:
             if command_line_args.debug:
                 logger.exception("IRC scheduler task for domain {} failed!".format(self.name))
             else:
-                # TODO Write
-                pass
-
+                await self.send_exception_to_monitoring(e)
+                self.failures += 1
+                if self.failures > 2:
+                    raise asyncio.exceptions.CancelledError
 
     async def regular_scheduler(self):
         try:
             while True:
                 await asyncio.sleep(self.calculate_sleep_time(len(self)))  # To make sure that we don't spam domains with one wiki every second we calculate a sane timeout for domains with few wikis
                 await self.run_wiki_scan(next(iter(self.wikis.values())))
-        except:
+        except Exception as e:
             if command_line_args.debug:
                 logger.exception("IRC task for domain {} failed!".format(self.name))
             else:
-                # TODO Write
-                pass
+                await self.send_exception_to_monitoring(e)
+                self.failures += 1
+                if self.failures > 2:
+                    raise asyncio.exceptions.CancelledError
 
     @cache
     def calculate_sleep_time(self, queue_length: int):
@@ -143,3 +151,20 @@ class Domain:
             except asyncio.exceptions.CancelledError:
                 for wiki in self.wikis.values():
                     await wiki.session.close()
+
+    async def send_exception_to_monitoring(self, ex: Exception):
+        discord_message = DiscordMessage("embed", "generic", [""])
+        discord_message["title"] = "Domain scheduler exception for {} (recovered)".format(self.name)
+        discord_message["content"] = str(ex)[0:1995]
+        discord_message.add_field("Failure count", self.failures)
+        discord_message.finish_embed_message()
+        header = settings["header"]
+        header['Content-Type'] = 'application/json'
+        header['X-RateLimit-Precision'] = "millisecond"
+        try:
+            async with aiohttp.ClientSession(headers=header, timeout=aiohttp.ClientTimeout(total=6)) as session:
+                async with session.post("https://discord.com/api/webhooks/{}".format(settings["monitoring_webhook"]),
+                                        data=repr(discord_message)) as resp:
+                    pass
+        except (aiohttp.ServerConnectionError, aiohttp.ServerTimeoutError):
+            logger.exception("Couldn't communicate with Discord as a result of Server Error when trying to signal domain task issue!")

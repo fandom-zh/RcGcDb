@@ -20,6 +20,8 @@ from collections import defaultdict
 
 from typing import Optional, TYPE_CHECKING
 
+from src.exceptions import EmbedListFull
+
 if TYPE_CHECKING:
 	from wiki import Wiki
 
@@ -155,12 +157,6 @@ class DiscordMessage:
 
 	def return_content(self):
 		return self.webhook_object["content"]
-
-
-class DiscordMessageRaw(DiscordMessage):
-	def __init__(self, content: dict, webhook_url: str):
-		self.webhook_object = content
-		self.webhook_url = webhook_url
 
 
 class MessageTooBig(BaseException):
