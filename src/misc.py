@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+import json
+from functools import cache
 from html.parser import HTMLParser
 import base64, re
 
@@ -186,3 +190,11 @@ class ContentParser(HTMLParser):
 			self.empty = False
 
 
+@cache
+def prepare_settings(display_mode: int) -> dict:
+	"""Prepares dict of RcGcDw compatible settings based on a template and display mode of given call"""
+	with open("src/api/template_settings.json", "r") as template_json:
+		template = json.load(template_json)
+	template["appearance"]["embed"]["embed_images"] = True if display_mode > 1 else False
+	template["appearance"]["embed"]["show_edit_changes"] = True if display_mode > 2 else False
+	return template

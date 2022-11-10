@@ -5,7 +5,7 @@ begin
        perform pg_notify('webhookupdates', concat('REMOVE ', old.wiki));
        return old;
    ELSIF (TG_OP = 'INSERT') then
-       perform pg_notify('webhookupdates', concat('ADD ', new.wiki));
+       perform pg_notify('webhookupdates', concat('ADD ', new.wiki, ' ', new.rcid::text, ' ', new.postid));
        return new;
    end if;
 end;

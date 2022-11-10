@@ -1,6 +1,7 @@
 from __future__ import annotations
 import asyncio
 import logging
+import time
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Optional
 from functools import cache
@@ -103,7 +104,7 @@ class Domain:
                 await self.run_wiki_scan(wiki)
             while True:  # Iterate until hitting return, we don't have to iterate using for since we are sending wiki to the end anyways
                 wiki: src.wiki.Wiki = next(iter(self.wikis.values()))
-                if (wiki.statistics.last_checked_rc or 0) < settings.get("irc_overtime", 3600):  # TODO This makes no sense, comparing last_checked_rc to nothing
+                if (int(time.time()) - (wiki.statistics.last_checked_rc or 0)) > settings.get("irc_overtime", 3600):
                     await self.run_wiki_scan(wiki)
                 else:
                     return  # Recently scanned wikis will get at the end of the self.wikis, so we assume what is first hasn't been checked for a while

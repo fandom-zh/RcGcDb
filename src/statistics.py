@@ -14,6 +14,7 @@ class LogType(Enum):
     VALUE_UPDATE = 4
     SCAN_REASON = 5
 
+
 queue_limit = settings.get("queue_limit", 30)
 
 
@@ -41,7 +42,7 @@ class Statistics:
         self.last_checked_rc: Optional[int] = None
         self.last_action: Optional[int] = rc_id
         self.last_checked_discussion: Optional[int] = None
-        self.last_post: Optional[int] = discussion_id
+        self.last_post: Optional[str] = discussion_id
         self.logs: LimitedList[Log] = LimitedList()
 
     def update(self, *args: Log, **kwargs: dict[str, Union[float, int]]):

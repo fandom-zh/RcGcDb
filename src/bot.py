@@ -54,7 +54,7 @@ async def populate_wikis():
     start = time.time()
     async with db.pool().acquire() as connection:
         async with connection.transaction():
-            async for db_wiki in connection.cursor('SELECT DISTINCT wiki, rcid, postid FROM rcgcdw'):
+            async for db_wiki in connection.cursor('select wiki, MAX(rcid), MAX(postid) from rcgcdw group by wiki;'):
                 try:
                     await domains.new_wiki(Wiki(db_wiki["wiki"], db_wiki["rcid"], db_wiki["postid"]))
                 except WikiExists:  # Can rarely happen when Pub/Sub registers wiki before population

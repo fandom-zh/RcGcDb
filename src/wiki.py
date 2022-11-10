@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import functools
-import json
 import time
 import re
 import logging, aiohttp
 import asyncio
 import requests
-from functools import cache
 
 from api.util import default_message
+from src.misc import prepare_settings
 from src.discord.queue import messagequeue, QueueEntry
 from mw_messages import MWMessages
 from src.exceptions import *
@@ -47,7 +46,8 @@ class Wiki:
 		self.tags: dict[str, Optional[str]] = {}  # Tag can be None if hidden
 		self.first_fetch_done: bool = False
 		self.domain: Optional[Domain] = None
-		self.targets: Optional[defaultdict[Settings, list[str]]] = None
+		self.rc_targets: Optional[defaultdict[Settings, list[str]]] = None
+		self.discussion_targets: Optional[defaultdict[Settings, list[str]]] = None
 		self.client: Client = Client(formatter_hooks, self)
 		self.message_history: list[StackedDiscordMessage] = list()
 		self.namespaces: Optional[dict] = None
@@ -81,8 +81,8 @@ class Wiki:
 
 	def add_message(self, message: StackedDiscordMessage):
 		self.message_history.append(message)
-		if len(self.message_history) > MESSAGE_LIMIT*len(self.targets):
-			self.message_history = self.message_history[len(self.message_history)-MESSAGE_LIMIT*len(self.targets):]
+		if len(self.message_history) > MESSAGE_LIMIT*len(self.rc_targets):
+			self.message_history = self.message_history[len(self.message_history)-MESSAGE_LIMIT*len(self.rc_targets):]
 
 	def set_domain(self, domain: Domain):
 		self.domain = domain
@@ -158,9 +158,17 @@ class Wiki:
 		:returns defaultdict[namedtuple, list[str]] - where namedtuple is a named tuple with settings for given webhooks in list"""
 		Settings = namedtuple("Settings", ["lang", "display"])
 		target_settings: defaultdict[Settings, list[str]] = defaultdict(list)
-		async for webhook in dbmanager.fetch_rows("SELECT webhook, lang, display FROM rcgcdw WHERE wiki = $1 AND (rcid != -1 OR rcid IS NULL)", self.script_url):
-			target_settings[Settings(webhook["lang"], webhook["display"])].append(webhook["webhook"])
-		self.targets = target_settings
+		discussion_targets: defaultdict[Settings, list[str]] = defaultdict(list)
+		async for webhook in dbmanager.fetch_rows("SELECT webhook, lang, display, rcid, postid FROM rcgcdw WHERE wiki = $1", self.script_url):
+			if webhook['rcid'] == -1 and webhook['postid'] == '-1':
+				await self.remove_wiki_from_db(4)
+			if webhook['rcid'] != -1:
+				target_settings[Settings(webhook["lang"], webhook["display"])].append(webhook["webhook"])
+			if webhook['postid'] != '-1':
+				discussion_targets[Settings(webhook["lang"], webhook["display"])].append(webhook["webhook"])
+		self.rc_targets = target_settings
+		self.discussion_targets = discussion_targets
+
 
 	def parse_mw_request_info(self, request_data: dict, url: str):
 		"""A function parsing request JSON message from MediaWiki logging all warnings and raising on MediaWiki errors"""
@@ -353,7 +361,7 @@ class Wiki:
 					if change["rcid"] > self.rc_id:
 						if highest_id is None or change["rcid"] > highest_id:  # make sure that the highest_rc is really highest rcid but do allow other entries with potentially lesser rcids come after without breaking the cycle
 							highest_id = change["rcid"]
-						for combination, webhooks in self.targets.items():
+						for combination, webhooks in self.rc_targets.items():
 							message = await rc_processor(self, change, categorize_events.get(change.get("revid"), None), combination, webhooks)
 							if message is None:
 								break
@@ -361,34 +369,29 @@ class Wiki:
 							message_list.append(QueueEntry(message, webhooks, self))
 				messagequeue.add_messages(message_list)
 				self.statistics.update(last_action=highest_id)
-				dbmanager.add(("UPDATE rcgcdw SET rcid = $1 WHERE wiki = $2", (highest_id, self.script_url)))  # If this is not enough for the future, save rcid in message sending function to make sure we always send all of the changes
+				dbmanager.add(("UPDATE rcgcdw SET rcid = $1 WHERE wiki = $2 AND ( rcid != -1 OR rcid IS NULL )", (highest_id, self.script_url)))  # If this is not enough for the future, save rcid in message sending function to make sure we always send all of the changes
 				return
 
-	async def scan_discussions(self):
+	async def remove_webhook_from_db(self, reason: str):
+		raise NotImplementedError
+
+	async def remove_wiki_from_db(self, reason: str):
+		raise NotImplementedError  # TODO
+
+	async def fetch_discussions(self, params: dict) -> aiohttp.ClientResponse:
 		header = settings["header"]
 		header["Accept"] = "application/hal+json"
 		async with aiohttp.ClientSession(headers=header,
 										 timeout=aiohttp.ClientTimeout(6.0)) as session:
 			url_path = "{wiki}wikia.php".format(wiki=self.script_url)
-			params = {"controller": "DiscussionPost", "method": "getPosts", "includeCounters": "false",
-					  "sortDirection": "descending", "sortKey": "creation_date", "limit": 20}
 			try:
-				feeds_response = session.get(url_path, params=params)
-				response.raise_for_status()
+				feeds_response = await session.get(url_path, params=params)
+				feeds_response.raise_for_status()
 			except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError,
-						aiohttp.ClientResponseError, aiohttp.TooManyRedirects):
+					aiohttp.ClientResponseError, aiohttp.TooManyRedirects):
 				logger.error("A connection error occurred while requesting {}".format(url_path))
 				raise WikiServerError
-
-
-@cache
-def prepare_settings(display_mode: int) -> dict:
-	"""Prepares dict of RcGcDw compatible settings based on a template and display mode of given call"""
-	with open("src/api/template_settings.json", "r") as template_json:
-		template = json.load(template_json)
-	template["appearance"]["embed"]["embed_images"] = True if display_mode > 1 else False
-	template["appearance"]["embed"]["show_edit_changes"] = True if display_mode > 2 else False
-	return template
+		return feeds_response
 
 
 def process_cachable(response: dict, wiki_object: Wiki) -> None:
@@ -543,15 +546,3 @@ async def process_cats(event: dict, local_wiki: Wiki, categorize_events: dict):
 # 	key = len(mw_msgs)
 # 	mw_msgs[key] = msgs  # it may be a little bit messy for sure, however I don't expect any reason to remove mw_msgs entries by one
 # 	local_wiki.mw_messages = key
-
-
-async def essential_feeds(change: dict, comment_pages: dict, db_wiki, target: tuple) -> DiscordMessage:
-	"""Prepares essential information for both embed and compact message format."""
-	appearance_mode = feeds_embed_formatter if target[0][1] > 0 else feeds_compact_formatter
-	identification_string = change["_embedded"]["thread"][0]["containerType"]
-	comment_page = None
-	if identification_string == "ARTICLE_COMMENT" and comment_pages is not None:
-		comment_page = comment_pages.get(change["forumId"], None)
-		if comment_page is not None:
-			comment_page["fullUrl"] = "/".join(db_wiki["wiki"].split("/", 3)[:3]) + comment_page["relativeUrl"]
-	return await appearance_mode(identification_string, change, target, db_wiki["wiki"], article_page=comment_page)

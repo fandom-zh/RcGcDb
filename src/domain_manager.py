@@ -24,7 +24,8 @@ class DomainManager:
         if len(split_payload) < 2:
             raise ValueError("Improper pub/sub message! Pub/sub payload: {}".format(payload))
         if split_payload[0] == "ADD":
-            await self.new_wiki(Wiki(split_payload[1], None, None))
+            await self.new_wiki(Wiki(split_payload[1], int(split_payload[2]) if split_payload[2].isnumeric() else None,
+                                     int(split_payload[3]) if split_payload[3].isnumeric() else None))
         elif split_payload[0] == "REMOVE":
             try:
                 results = await connection.fetch("SELECT * FROM rcgcdw WHERE wiki = $1;", split_payload[1])
