@@ -38,7 +38,7 @@ MESSAGE_LIMIT = settings.get("message_limit", 30)
 
 
 class Wiki:
-	def __init__(self, script_url: str, rc_id: Optional[int], discussion_id: Optional[int]):
+	def __init__(self, script_url: str, rc_id: Optional[int], discussion_id: Optional[str]):
 		self.script_url: str = script_url
 		self.session: aiohttp.ClientSession = aiohttp.ClientSession(headers=settings["header"], timeout=aiohttp.ClientTimeout(total=6))
 		self.statistics: Statistics = Statistics(rc_id, discussion_id)
@@ -335,11 +335,11 @@ class Wiki:
 				raise WikiError
 			if self.rc_id in (0, None, -1):
 				if len(recent_changes) > 0:
-					self.statistics.last_action = recent_changes[-1]["rcid"]
+					self.statistics.update(last_action=recent_changes[-1]["rcid"])
 					dbmanager.add(("UPDATE rcgcdw SET rcid = $1 WHERE wiki = $2 AND ( rcid != -1 OR rcid IS NULL )",
 								   (recent_changes[-1]["rcid"], self.script_url)))
 				else:
-					self.statistics.last_action = 0
+					self.statistics.update(last_action=0)
 					dbmanager.add(("UPDATE rcgcdw SET rcid = 0 WHERE wiki = $1 AND ( rcid != -1 OR rcid IS NULL )", (self.script_url)))
 				return   # TODO Add a log entry?
 			categorize_events = {}
@@ -388,9 +388,9 @@ class Wiki:
 				feeds_response = await session.get(url_path, params=params)
 				feeds_response.raise_for_status()
 			except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError,
-					aiohttp.ClientResponseError, aiohttp.TooManyRedirects):
+					aiohttp.ClientResponseError, aiohttp.TooManyRedirects) as e:
 				logger.error("A connection error occurred while requesting {}".format(url_path))
-				raise WikiServerError
+				raise WikiServerError(e)
 		return feeds_response
 
 
@@ -421,7 +421,7 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 	LinkParser = LinkParser(wiki.client.WIKI_ARTICLE_PATH)
 	metadata = DiscordMessageMetadata("POST", rev_id=change.get("revid", None), log_id=change.get("logid", None),
 													  page_id=change.get("pageid", None))
-	context = Context("embed" if display_options.display > 0 else "compact", "recentchanges", webhooks, wiki.client, langs[display_options.lang]["rc_formatters"], prepare_settings(display_options.display))
+	context = Context("embed" if display_options.display > 0 else "compact", "recentchanges", webhooks, wiki.client, langs[display_options.lang]["formatters"], prepare_settings(display_options.display))
 	if ("actionhidden" in change or "suppressed" in change) and "suppressed" not in settings["ignored"]:  # if event is hidden using suppression
 		context.event = "suppressed"
 		try:

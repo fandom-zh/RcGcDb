@@ -4,12 +4,12 @@ import asyncio
 import functools
 import logging
 import time
-import typing
 import aiohttp
-
+import traceback
 from api.context import Context
 from api.hooks import formatter_hooks
 from api.util import default_message
+from discord.queue import QueueEntry, messagequeue
 from src.i18n import langs
 from src.misc import prepare_settings
 from src.exceptions import WikiError
@@ -17,7 +17,6 @@ from src.config import settings
 from src.queue_handler import dbmanager
 from src.argparser import command_line_args
 from src.discord.message import DiscordMessageMetadata, DiscordMessage
-from collections import OrderedDict, defaultdict
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
@@ -25,6 +24,7 @@ if TYPE_CHECKING:
     from src.wiki import Wiki, Settings
 
 logger = logging.getLogger("rcgcdb.discussions")
+
 
 class Discussions:
     def __init__(self, domain):
@@ -46,7 +46,7 @@ class Discussions:
             await self.run_discussion_scan(wiki)
 
         for wiki in self.filter_and_sort():
-            if (int(time.time()) - wiki.statistics.last_checked_discussion) > settings.get("irc_overtime", 3600):
+            if (int(time.time()) - (wiki.statistics.last_checked_discussion or 0)) > settings.get("irc_overtime", 3600):
                 await self.run_discussion_scan(wiki)
             else:
                 return  # Recently scanned wikis will get at the end of the self.wikis, so we assume what is first hasn't been checked for a while
@@ -54,7 +54,7 @@ class Discussions:
     def filter_and_sort(self) -> list[Wiki]:
         """Filters and sorts wikis from domain to return only the ones that aren't -1 and sorts them from oldest in checking to newest"""
         # return OrderedDict(sorted(filter(lambda wiki: wiki[1].discussion_id != -1, self.domain_object.wikis.items()), key=lambda wiki: wiki[1].statistics.last_checked_discussion))
-        return sorted(filter(lambda wiki: wiki.discussion_id != -1, self.domain_object.wikis.values()), key=lambda wiki: wiki.statistics.last_checked_discussion)
+        return sorted(filter(lambda wiki: wiki.discussion_id != "-1", self.domain_object.wikis.values()), key=lambda wiki: wiki.statistics.last_checked_discussion or 0)
 
     async def run_discussion_scan(self, wiki: Wiki):
         wiki.statistics.last_checked_discussion = int(time.time())
@@ -78,14 +78,15 @@ class Discussions:
         except asyncio.TimeoutError:
             logger.debug("Timeout on reading JSON of discussion post feed.")
             return
-        if wiki.statistics.last_post is None:  # new wiki, just get the last post to not spam the channel
+        if wiki.discussion_id is None:  # new wiki, just get the last post to not spam the channel
             if len(discussion_feed) > 0:
                 dbmanager.add(("UPDATE rcgcdw SET postid = $1 WHERE wiki = $2 AND ( postid != -1 OR postid IS NULL )", (
                     discussion_feed[-1]["id"],
                     wiki.script_url)))
+                wiki.statistics.update(last_post=discussion_feed[-1]["id"])
             else:
                 dbmanager.add(wiki.script_url, "0", True)
-            await dbmanager.update_db()
+                wiki.statistics.update(last_post="0")
             return
         comment_events = []
         for post in discussion_feed:
@@ -107,33 +108,30 @@ class Discussions:
                 else:
                     logger.exception("Exception on Feeds article comment request")
                     # TODO
-        message_list = defaultdict(list)
+        message_list = list()
         for post in discussion_feed:  # Yeah, second loop since the comments require an extra request
             if post["id"] > wiki.discussion_id:
                 for target in wiki.discussion_targets.items():
                     try:
                         message = await essential_feeds(post, comment_pages, wiki, target)
                         if message is not None:
-                            message_list[target[0]].append(message)
+                            message_list.append(QueueEntry(message, target[1], wiki))
                     except asyncio.CancelledError:
                         raise
                     except:
                         if command_line_args.debug:
                             logger.exception("Exception on Feeds formatter")
-                            shutdown(loop=asyncio.get_event_loop())
+                            # shutdown(loop=asyncio.get_event_loop())
                         else:
                             logger.exception("Exception on Feeds formatter")
-                            await generic_msg_sender_exception_logger(traceback.format_exc(),
-                                                                      "Exception in feed formatter",
-                                                                      Post=str(post)[0:1000], Wiki=db_wiki["wiki"])
-        # Lets stack the messages
-        for messages in message_list.values():
-            messages = stack_message_list(messages)
-            for message in messages:
-                await send_to_discord(message)
+                            # await generic_msg_sender_exception_logger(traceback.format_exc(),
+                            #                                           "Exception in feed formatter",
+                            #                                           Post=str(post)[0:1000], Wiki=wiki.script_url)
+        messagequeue.add_messages(message_list)
         if discussion_feed:
-            DBHandler.add(db_wiki["wiki"], post["id"], True)
-        await asyncio.sleep(delay=2.0)  # hardcoded really doesn't need much mor
+            wiki.statistics.update(last_post=discussion_feed[-1]["id"])
+            dbmanager.add(("UPDATE rcgcdw SET postid = $1 WHERE wiki = $2 AND ( postid != -1 OR postid IS NULL )", (discussion_feed[-1]["id"],
+                                                                                                          wiki.script_url)))  # If this is not enough for the future, save rcid in message sending function to make sure we always send all of the changes
 
 
 async def essential_feeds(change: dict, comment_pages: dict, wiki: Wiki, target: tuple[Settings, list[str]]) -> DiscordMessage:
@@ -146,11 +144,12 @@ async def essential_feeds(change: dict, comment_pages: dict, wiki: Wiki, target:
             comment_page["fullUrl"] = "/".join(wiki.script_url.split("/", 3)[:3]) + comment_page["relativeUrl"]
     metadata = DiscordMessageMetadata("POST", rev_id=None, log_id=None, page_id=None)
     context = Context("embed" if target[0].display > 0 else "compact", "recentchanges", target[1], wiki.client,
-                      langs[target[0].lang]["rc_formatters"], prepare_settings(target[0].display))
+                      langs[target[0].lang]["formatters"], prepare_settings(target[0].display))
+    context.set_comment_page(comment_page)
     discord_message: Optional[DiscordMessage] = None
     try:
         discord_message = await asyncio.get_event_loop().run_in_executor(
-                None, functools.partial(default_message(identification_string,context.message_type,formatter_hooks), context, change))
+                None, functools.partial(default_message(identification_string, context.message_type, formatter_hooks), context, change))
     except:
         if settings.get("error_tolerance", 1) > 0:
             logger.exception("Exception on discord message creation in essential_feeds")

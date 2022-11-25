@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 from urllib.parse import urlparse, urlunparse
 import logging
 import asyncpg
@@ -13,6 +13,13 @@ from src.wiki import Wiki
 
 logger = logging.getLogger("rcgcdb.domain_manager")
 
+
+def safe_type_for_id(unsafe_id: str, target: Callable):
+    if unsafe_id == "null":  # TODO Verify if correct
+        return None
+    return target(unsafe_id)
+
+
 class DomainManager:
     def __init__(self):
         self.domains: dict[str, Domain] = {}
@@ -24,8 +31,7 @@ class DomainManager:
         if len(split_payload) < 2:
             raise ValueError("Improper pub/sub message! Pub/sub payload: {}".format(payload))
         if split_payload[0] == "ADD":
-            await self.new_wiki(Wiki(split_payload[1], int(split_payload[2]) if split_payload[2].isnumeric() else None,
-                                     int(split_payload[3]) if split_payload[3].isnumeric() else None))
+            await self.new_wiki(Wiki(split_payload[1], safe_type_for_id(split_payload[2], int), safe_type_for_id(split_payload[3], str)))
         elif split_payload[0] == "REMOVE":
             try:
                 results = await connection.fetch("SELECT * FROM rcgcdw WHERE wiki = $1;", split_payload[1])
@@ -35,6 +41,8 @@ class DomainManager:
                 logger.error("Couldn't check amount of webhooks with {} wiki!".format(split_payload[1]))
                 return
             self.remove_wiki(split_payload[1])
+        elif split_payload[0] == "UPDATE":
+            await self.return_domain(self.get_domain(split_payload[1])).get_wiki(split_payload[1]).update_targets()
         else:
             raise ValueError("Unknown pub/sub command! Payload: {}".format(payload))
 

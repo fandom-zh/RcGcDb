@@ -17,7 +17,7 @@ from src.config import settings
 from src.database import db
 from src.exceptions import *
 from src.queue_handler import dbmanager
-from src.wiki import Wiki, process_cats, essential_feeds
+from src.wiki import Wiki, process_cats
 from src.domain_manager import domains
 
 
@@ -54,7 +54,8 @@ async def populate_wikis():
     start = time.time()
     async with db.pool().acquire() as connection:
         async with connection.transaction():
-            async for db_wiki in connection.cursor('select wiki, MAX(rcid), MAX(postid) from rcgcdw group by wiki;'):
+            async for db_wiki in connection.cursor('select wiki, MAX(rcid) AS rcid, MAX(postid) AS postid from rcgcdw group by wiki;'):
+                print(db_wiki)
                 try:
                     await domains.new_wiki(Wiki(db_wiki["wiki"], db_wiki["rcid"], db_wiki["postid"]))
                 except WikiExists:  # Can rarely happen when Pub/Sub registers wiki before population

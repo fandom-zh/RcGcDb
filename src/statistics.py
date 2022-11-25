@@ -1,5 +1,5 @@
 import time
-
+from datetime import datetime
 import aiohttp.web_request
 
 from src.config import settings
@@ -26,6 +26,12 @@ class Log:
         self.title: str = kwargs["title"]
         self.details: Optional[str] = kwargs.get("details", None)
 
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return f"<Log {self.type.name} at {datetime.fromtimestamp(float(self.time)).isoformat()} on {self.title} with details: {self.details}>"
+
 
 class LimitedList(list):
     def __init__(self, *args):
@@ -33,11 +39,14 @@ class LimitedList(list):
 
     def append(self, obj: Log) -> None:
         if len(self) > queue_limit:
-            self.pop()
+            self.pop(0)
+        super(LimitedList, self).append(obj)
 
+    def __repr__(self):
+        return "\n".join(self)
 
 class Statistics:
-    def __init__(self, rc_id: Optional[int], discussion_id: Optional[int]):
+    def __init__(self, rc_id: Optional[int], discussion_id: Optional[str]):
         self.last_request: Optional[aiohttp.web_request.Request] = None
         self.last_checked_rc: Optional[int] = None
         self.last_action: Optional[int] = rc_id
@@ -45,7 +54,7 @@ class Statistics:
         self.last_post: Optional[str] = discussion_id
         self.logs: LimitedList[Log] = LimitedList()
 
-    def update(self, *args: Log, **kwargs: dict[str, Union[float, int]]):
+    def update(self, *args: Log, **kwargs: Union[float, int, str]):
         for key, value in kwargs.items():
             self.__setattr__(key, value)
         for log in args:
