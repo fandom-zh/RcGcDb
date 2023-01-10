@@ -108,13 +108,13 @@ class DiscordMessage:
 				raise EmbedListFull
 			self.webhook_object["embeds"].append(self.embed)
 
-	def set_author(self, name: str, url="", icon_url=""):
+	def set_author(self, name: str, url=None, icon_url=None):
 		self.length += len(name)
 		self.embed["author"]["name"] = name
 		self.embed["author"]["url"] = url
 		self.embed["author"]["icon_url"] = icon_url
 
-	def set_footer(self, text: str, icon_url=""):
+	def set_footer(self, text: str, icon_url=None):
 		self.length += len(text)
 		self.embed["footer"]["text"] = text
 		self.embed["footer"]["icon_url"] = icon_url
