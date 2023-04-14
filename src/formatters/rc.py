@@ -389,6 +389,11 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		content = _("[{author}]({author_url}) modified user group *{group_name}*{comment}").format(
 			author=author, author_url=author_url, group_name=group_name, comment=parsed_comment
 		)
+	elif action == "managewiki/delete-group":
+		group_name = change["title"].split("/permissions/", 1)[1]
+		content = _("[{author}]({author_url}) deleted user group *{group_name}*{comment}").format(
+			author=author, author_url=author_url, group_name=group_name, comment=parsed_comment
+		)
 	elif action == "managewiki/undelete":
 		content = _("[{author}]({author_url}) undeleted a wiki *{wiki_name}*{comment}").format(
 			author=author, author_url=author_url, wiki_name=change["logparams"].get("wiki", _("Unknown")), comment=parsed_comment
@@ -1024,6 +1029,10 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 	elif action == "managewiki/rights":
 		group_name = change["title"].split("/permissions/", 1)[1]
 		embed["title"] = _("Modified \"{usergroup_name}\" usergroup").format(usergroup_name=group_name)
+		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
+	elif action == "managewiki/delete-group":
+		group_name = change["title"].split("/permissions/", 1)[1]
+		embed["title"] = _("Deleted \"{usergroup_name}\" usergroup").format(usergroup_name=group_name)
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 	elif action == "managewiki/undelete":
 		embed["title"] = _("Undeleted a \"{wiki}\" wiki").format(wiki=change["logparams"].get("wiki", _("Unknown")))
