@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: RcGcDb\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-04-14 16:00+0200\n"
-"PO-Revision-Date: 2020-12-22 09:32+0000\n"
+"PO-Revision-Date: 2023-04-18 16:18+0000\n"
 "Last-Translator: Winston Sung <winston21.sung@gmail.com>\n"
 "Language-Team: Chinese (Traditional) <https://translate.wikibot.de/projects/"
 "rcgcdw/rcgcdb/zh-hant/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 4.2.1\n"
+"X-Generator: Weblate 4.16.4\n"
 
 #: src/discord.py:29
 msgid "wiki deleted"
@@ -29,7 +29,7 @@ msgstr "wiki 無法存取"
 
 #: src/discord.py:30
 msgid "discussions disabled"
-msgstr "討論版已停用"
+msgstr "討論板已停用"
 
 #: src/discord.py:31
 msgid "unknown error"
