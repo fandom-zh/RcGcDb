@@ -78,7 +78,7 @@ def link_formatter(link: str) -> str:
 
 def escape_formatting(data: str) -> str:
 	"""Escape Discord formatting"""
-	return re.sub(r"([`_*~:<>{}@/|\\\[\]\(\)])", "\\\\\\1", data, 0) if data is not None else ""
+	return re.sub(r"([`_*~:<>{}@/|#\-\.\\\[\]\(\)])", "\\\\\\1", data, 0) if data is not None else ""
 
 
 def create_article_path(article: str, WIKI_ARTICLE_PATH: str) -> str:
