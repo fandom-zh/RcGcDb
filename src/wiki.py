@@ -378,7 +378,7 @@ class Wiki:
 	async def remove_wiki_from_db(self, reason: str):
 		raise NotImplementedError  # TODO
 
-	async def fetch_discussions(self, params: dict) -> aiohttp.ClientResponse:
+	async def fetch_discussions(self, params: dict) -> tuple[aiohttp.ClientResponse, dict]:
 		header = settings["header"]
 		header["Accept"] = "application/hal+json"
 		async with aiohttp.ClientSession(headers=header,
@@ -389,9 +389,9 @@ class Wiki:
 				feeds_response.raise_for_status()
 			except (aiohttp.ClientConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError,
 					aiohttp.ClientResponseError, aiohttp.TooManyRedirects) as e:
-				logger.error("A connection error occurred while requesting {}".format(url_path))
+				logger.error("A connection error occurred while requesting {}".format(feeds_response.url))
 				raise WikiServerError(e)
-		return feeds_response
+			return feeds_response, await feeds_response.json(encoding="UTF-8")
 
 
 def process_cachable(response: dict, wiki_object: Wiki) -> None:

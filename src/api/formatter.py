@@ -40,6 +40,7 @@ def _register_formatter(func, kwargs, formatter_type: str, action_type=None):
 						   f"{src.api.hooks.formatter_hooks[formatter_type][act].__module__}! "
 						   f"Overwriting it with one from {func.__module__}")
 		src.api.hooks.formatter_hooks[formatter_type][act] = func
+		logger.debug("Registering {type} hook for {event} event".format(type=formatter_type, event=act))
 
 
 def embed(**kwargs):

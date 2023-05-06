@@ -43,6 +43,8 @@ class DomainManager:
             self.remove_wiki(split_payload[1])
         elif split_payload[0] == "UPDATE":
             await self.return_domain(self.get_domain(split_payload[1])).get_wiki(split_payload[1]).update_targets()
+        elif split_payload[0] == "DEBUG":
+            logger.info(self.domains)
         else:
             raise ValueError("Unknown pub/sub command! Payload: {}".format(payload))
 

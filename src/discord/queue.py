@@ -174,14 +174,16 @@ class MessageQueue:
 messagequeue = MessageQueue()
 
 
-def handle_discord_http(code: int, formatted_embed: str, result: ClientResponse):
+async def handle_discord_http(code: int, formatted_embed: str, result: ClientResponse):
+	text = await result.text()
+	print("HTTP response is {} and response {}".format(code, text))
 	if 300 > code > 199:  # message went through
 		return 0
 	elif code == 400:  # HTTP BAD REQUEST result.status_code, data, result, header
 		logger.error(
 			"Following message has been rejected by Discord, please submit a bug on our bugtracker adding it:")
 		logger.error(formatted_embed)
-		logger.error(result.text())
+		logger.error(text)
 		raise aiohttp.ClientError("Message rejected.")
 	elif code == 401 or code == 404:  # HTTP UNAUTHORIZED AND NOT FOUND
 		if result.method == "POST":  # Ignore not found for DELETE and PATCH requests since the message could already be removed by admin
@@ -206,12 +208,13 @@ def handle_discord_http(code: int, formatted_embed: str, result: ClientResponse)
 
 
 async def send_to_discord_webhook(message: [StackedDiscordMessage, DiscordMessageMetadata], webhook_path: str, method: str):
+	logger.debug("We are at sent_to_discord for {}".format(message))
 	header = settings["header"]
 	header['Content-Type'] = 'application/json'
 	header['X-RateLimit-Precision'] = "millisecond"
 	async with aiohttp.ClientSession(headers=header, timeout=aiohttp.ClientTimeout(total=6)) as session:
 		if isinstance(message, StackedDiscordMessage):
-			async with session.post(f"https://discord.com/api/webhooks/{webhook_path}?wait=true", data=repr(message)) as resp:
+			async with session.post(f"https://discord.com/api/webhooks/{webhook_path}?wait=true", data=repr(message)) as resp:  # TODO Detect Invalid Webhook Token
 				try:
 					resp_json = await resp.json()
 					# Add Discord Message ID which we can later use to delete/redact messages if we want
@@ -222,10 +225,10 @@ async def send_to_discord_webhook(message: [StackedDiscordMessage, DiscordMessag
 					logger.exception("Could not receive message ID from Discord due to invalid MIME type of response.")
 				except ValueError:
 					logger.exception(f"Could not decode JSON response from Discord. Response: {await resp.text()}]")
-				return handle_discord_http(resp.status, repr(message), resp)
+				return await handle_discord_http(resp.status, repr(message), resp)
 		elif method == "DELETE":
 			async with session.request(method=message.method, url=f"https://discord.com/api/webhooks/{webhook_path}/messages/{message.discord_callback_message_id}") as resp:
-				return handle_discord_http(resp.status, repr(message), resp)
+				return await handle_discord_http(resp.status, repr(message), resp)
 		elif method == "PATCH":
 			async with session.request(method=message.method, url=f"https://discord.com/api/webhooks/{webhook_path}/messages/{message.discord_callback_message_id}", data=repr(message)) as resp:
-				return handle_discord_http(resp.status, repr(message), resp)
+				return await handle_discord_http(resp.status, repr(message), resp)

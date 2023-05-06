@@ -6,9 +6,9 @@ import logging
 import time
 import aiohttp
 import traceback
-from api.context import Context
-from api.hooks import formatter_hooks
-from api.util import default_message
+from src.api.context import Context
+from src.api.hooks import formatter_hooks
+from src.api.util import default_message
 from discord.queue import QueueEntry, messagequeue
 from src.i18n import langs
 from src.misc import prepare_settings
@@ -33,23 +33,24 @@ class Discussions:
     async def tick_discussions(self):
         if self.domain_object is None:
             raise asyncio.CancelledError("fandom.com is not a domain we have any wikis for.")
-
         while True:
-            try:
-                wiki_url = self.domain_object.irc.updated_discussions.pop()
-            except KeyError:
-                break
-            wiki = self.domain_object.get_wiki(wiki_url)
-            if wiki is None:
-                logger.error(f"Could not find a wiki with URL {wiki_url} in the domain group!")
-                continue
-            await self.run_discussion_scan(wiki)
-
-        for wiki in self.filter_and_sort():
-            if (int(time.time()) - (wiki.statistics.last_checked_discussion or 0)) > settings.get("irc_overtime", 3600):
+            while True:
+                try:
+                    wiki_url = self.domain_object.irc.updated_discussions.pop()
+                except KeyError:
+                    break
+                wiki = self.domain_object.get_wiki(wiki_url)
+                if wiki is None:
+                    logger.error(f"Could not find a wiki with URL {wiki_url} in the domain group!")
+                    continue
                 await self.run_discussion_scan(wiki)
-            else:
-                return  # Recently scanned wikis will get at the end of the self.wikis, so we assume what is first hasn't been checked for a while
+
+            for wiki in self.filter_and_sort():
+                if (int(time.time()) - (wiki.statistics.last_checked_discussion or 0)) > settings.get("irc_overtime", 3600):
+                    await self.run_discussion_scan(wiki)
+                else:
+                    return  # Recently scanned wikis will get at the end of the self.wikis, so we assume what is first hasn't been checked for a while
+            await asyncio.sleep(5.0)
 
     def filter_and_sort(self) -> list[Wiki]:
         """Filters and sorts wikis from domain to return only the ones that aren't -1 and sorts them from oldest in checking to newest"""
@@ -60,9 +61,8 @@ class Discussions:
         wiki.statistics.last_checked_discussion = int(time.time())
         params = {"controller": "DiscussionPost", "method": "getPosts", "includeCounters": "false",
                   "sortDirection": "descending", "sortKey": "creation_date", "limit": 20}
-        feeds_response = await wiki.fetch_discussions(params)
         try:
-            discussion_feed_resp = await feeds_response.json(encoding="UTF-8")
+            feeds_response, discussion_feed_resp = await wiki.fetch_discussions(params)
             if "error" in discussion_feed_resp:
                 error = discussion_feed_resp["error"]
                 if error == "NotFoundException":  # Discussions disabled
@@ -80,8 +80,8 @@ class Discussions:
             return
         if wiki.discussion_id is None:  # new wiki, just get the last post to not spam the channel
             if len(discussion_feed) > 0:
-                dbmanager.add(("UPDATE rcgcdw SET postid = $1 WHERE wiki = $2 AND ( postid != -1 OR postid IS NULL )", (
-                    discussion_feed[-1]["id"],
+                dbmanager.add(("UPDATE rcgcdw SET postid = $1 WHERE wiki = $2 AND ( postid != '-1' OR postid IS NULL )", (
+                    str(discussion_feed[-1]["id"]),
                     wiki.script_url)))
                 wiki.statistics.update(last_post=discussion_feed[-1]["id"])
             else:
@@ -130,7 +130,7 @@ class Discussions:
         messagequeue.add_messages(message_list)
         if discussion_feed:
             wiki.statistics.update(last_post=discussion_feed[-1]["id"])
-            dbmanager.add(("UPDATE rcgcdw SET postid = $1 WHERE wiki = $2 AND ( postid != -1 OR postid IS NULL )", (discussion_feed[-1]["id"],
+            dbmanager.add(("UPDATE rcgcdw SET postid = $1 WHERE wiki = $2 AND ( postid != '-1' OR postid IS NULL )", (str(discussion_feed[-1]["id"]),
                                                                                                           wiki.script_url)))  # If this is not enough for the future, save rcid in message sending function to make sure we always send all of the changes
 
 
@@ -148,8 +148,9 @@ async def essential_feeds(change: dict, comment_pages: dict, wiki: Wiki, target:
     context.set_comment_page(comment_page)
     discord_message: Optional[DiscordMessage] = None
     try:
+
         discord_message = await asyncio.get_event_loop().run_in_executor(
-                None, functools.partial(default_message(identification_string, context.message_type, formatter_hooks), context, change))
+                None, functools.partial(default_message(f"discussion/{identification_string.lower()}", context.message_type, formatter_hooks), context, change))
     except:
         if settings.get("error_tolerance", 1) > 0:
             logger.exception("Exception on discord message creation in essential_feeds")

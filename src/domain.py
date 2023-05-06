@@ -33,6 +33,12 @@ class Domain:
     def __iter__(self):
         return iter(self.wikis)
 
+    def __str__(self) -> str:
+        return f"<Domain name='{self.name}' task='{self.task}' wikis='{self.wikis}' irc='{self.irc.connection.connected}' failures={self.failures}>"
+
+    def __repr__(self):
+        return self.__str__()
+
     def __getitem__(self, item):
         return
 

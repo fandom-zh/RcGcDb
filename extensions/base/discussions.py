@@ -136,16 +136,16 @@ def common_discussions(post: dict, embed: DiscordMessage, ctx: Context):
 
 @formatter.embed(event="discussion/forum")
 def embed_discussion_forum(ctx: Context, post: dict):
-    embed = DiscordMessage("embed", "discussion", ctx.settings["fandom_discussions"]["webhookURL"])
+    embed = DiscordMessage("embed", "discussion", ctx.webhook_url)
     common_discussions(post, embed, ctx)
     author = ctx._("unknown")  # Fail safe
     if post["createdBy"]["name"]:
         author = post["createdBy"]["name"]
-    embed.set_author(author, "{url}f/u/{creatorId}".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
+    embed.set_author(author, "{url}f/u/{creatorId}".format(url=ctx.client.WIKI_SCRIPT_PATH,
                                                            creatorId=post["creatorId"]),
                                                            icon_url=post["createdBy"]["avatarUrl"])
     if not post["isReply"]:
-        embed["url"] = "{url}f/p/{threadId}".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
+        embed["url"] = "{url}f/p/{threadId}".format(url=ctx.client.WIKI_SCRIPT_PATH,
                                                     threadId=post["threadId"])
         embed["title"] = ctx._("Created \"{title}\"").format(title=post["title"])
         thread_funnel = post.get("funnel")
@@ -189,7 +189,7 @@ def embed_discussion_forum(ctx: Context, post: dict):
     else:
         embed.event_type = "discussion/forum/reply"
         embed["title"] = ctx._("Replied to \"{title}\"").format(title=post["_embedded"]["thread"][0]["title"])
-        embed["url"] = "{url}f/p/{threadId}/r/{postId}".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
+        embed["url"] = "{url}f/p/{threadId}/r/{postId}".format(url=ctx.client.WIKI_SCRIPT_PATH,
                                                                threadId=post["threadId"], postId=post["id"])
     return embed
 
@@ -200,7 +200,7 @@ def compact_discussion_forum(ctx: Context, post: dict):
     author = ctx._("unknown")  # Fail safe
     if post["createdBy"]["name"]:
         author = post["createdBy"]["name"]
-    author_url = "<{url}f/u/{creatorId}>".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
+    author_url = "<{url}f/u/{creatorId}>".format(url=ctx.client.WIKI_SCRIPT_PATH,
                                                  creatorId=post["creatorId"])
     if not post["isReply"]:
         thread_funnel = post.get("funnel")
@@ -219,13 +219,13 @@ def compact_discussion_forum(ctx: Context, post: dict):
                     thread_funnel))
             event_type = "unknown"
         message = msg_text.format(author=author, author_url=author_url, title=post["title"],
-                                  url=ctx.settings["fandom_discussions"]["wiki_url"], threadId=post["threadId"],
+                                  url=ctx.client.WIKI_SCRIPT_PATH, threadId=post["threadId"],
                                   forumName=post["forumName"])
     else:
         event_type = "discussion/forum/reply"
         message = ctx._(
             "[{author}]({author_url}) created a [reply](<{url}f/p/{threadId}/r/{postId}>) to [{title}](<{url}f/p/{threadId}>) in {forumName}").format(
-            author=author, author_url=author_url, url=ctx.settings["fandom_discussions"]["wiki_url"],
+            author=author, author_url=author_url, url=ctx.client.WIKI_SCRIPT_PATH,
             threadId=post["threadId"], postId=post["id"], title=post["_embedded"]["thread"][0]["title"],
             forumName=post["forumName"])
     return DiscordMessage("compact", event_type, ctx.webhook_url, content=message)
@@ -238,14 +238,14 @@ def compact_author_discussions(post: dict, ctx: Context):
     author = ctx._("unknown")  # Fail safe
     if post["creatorIp"]:
         author = post["creatorIp"][1:] if ctx.settings.get("hide_ips", False) is False else ctx._("Unregistered user")
-        author_url = "<{url}wiki/Special:Contributions{creatorIp}>".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
+        author_url = "<{url}wiki/Special:Contributions{creatorIp}>".format(url=ctx.client.WIKI_SCRIPT_PATH,
                                                                            creatorIp=post["creatorIp"])
     else:
         if post["createdBy"]["name"]:
             author = post["createdBy"]["name"]
             author_url = clean_link(ctx.client.create_article_path("User:{user}".format(user=author)))
         else:
-            author_url = "<{url}f/u/{creatorId}>".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
+            author_url = "<{url}f/u/{creatorId}>".format(url=ctx.client.WIKI_SCRIPT_PATH,
                                                      creatorId=post["creatorId"])
     return author, author_url
 
@@ -256,22 +256,22 @@ def embed_author_discussions(post: dict, embed: DiscordMessage, ctx: Context):
         author = post["creatorIp"][1:]
         embed.set_author(author if ctx.settings.get("hide_ips", False) is False else ctx._("Unregistered user"),
                          "{url}wiki/Special:Contributions{creatorIp}".format(
-                             url=ctx.settings["fandom_discussions"]["wiki_url"], creatorIp=post["creatorIp"]))
+                             url=ctx.client.WIKI_SCRIPT_PATH, creatorIp=post["creatorIp"]))
     else:
         if post["createdBy"]["name"]:
             author = post["createdBy"]["name"]
-            embed.set_author(author, "{url}wiki/User:{creator}".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
+            embed.set_author(author, "{url}wiki/User:{creator}".format(url=ctx.client.WIKI_SCRIPT_PATH,
                                                                        creator=author.replace(" ", "_")),
                              icon_url=post["createdBy"]["avatarUrl"])
         else:
-            embed.set_author(author, "{url}f/u/{creatorId}".format(url=ctx.settings["fandom_discussions"]["wiki_url"],
+            embed.set_author(author, "{url}f/u/{creatorId}".format(url=ctx.client.WIKI_SCRIPT_PATH,
                                                                    creatorId=post["creatorId"]),
                              icon_url=post["createdBy"]["avatarUrl"])
 
 
 @formatter.embed(event="discussion/wall")
 def embed_discussion_wall(ctx: Context, post: dict):
-    embed = DiscordMessage("embed", "discussion", ctx.settings["fandom_discussions"]["webhookURL"])
+    embed = DiscordMessage("embed", "discussion", ctx.webhook_url)
     common_discussions(post, embed, ctx)
     embed_author_discussions(post, embed, ctx)
     user_wall = ctx._("unknown")  # Fail safe
@@ -280,13 +280,13 @@ def embed_discussion_wall(ctx: Context, post: dict):
     if not post["isReply"]:
         embed.event_type = "discussion/wall/post"
         embed["url"] = "{url}wiki/Message_Wall:{user_wall}?threadId={threadId}".format(
-            url=ctx.settings["fandom_discussions"]["wiki_url"], user_wall=quote_plus(user_wall.replace(" ", "_")),
+            url=ctx.client.WIKI_SCRIPT_PATH, user_wall=quote_plus(user_wall.replace(" ", "_")),
             threadId=post["threadId"])
         embed["title"] = ctx._("Created \"{title}\" on {user}'s Message Wall").format(title=post["title"], user=user_wall)
     else:
         embed.event_type = "discussion/wall/reply"
         embed["url"] = "{url}wiki/Message_Wall:{user_wall}?threadId={threadId}#{replyId}".format(
-            url=ctx.settings["fandom_discussions"]["wiki_url"], user_wall=quote_plus(user_wall.replace(" ", "_")),
+            url=ctx.client.WIKI_SCRIPT_PATH, user_wall=quote_plus(user_wall.replace(" ", "_")),
             threadId=post["threadId"], replyId=post["id"])
         embed["title"] = ctx._("Replied to \"{title}\" on {user}'s Message Wall").format(
             title=post["_embedded"]["thread"][0]["title"], user=user_wall)
@@ -303,13 +303,13 @@ def compact_discussion_wall(ctx: Context, post: dict):
         event_type = "discussion/wall/post"
         message = ctx._(
             "[{author}]({author_url}) created [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(
-            author=author, author_url=author_url, title=post["title"], url=ctx.settings["fandom_discussions"]["wiki_url"],
+            author=author, author_url=author_url, title=post["title"], url=ctx.client.WIKI_SCRIPT_PATH,
             user=user_wall, user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"])
     else:
         event_type = "discussion/wall/reply"
         message = ctx._(
             "[{author}]({author_url}) created a [reply](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}#{replyId}>) to [{title}](<{url}wiki/Message_Wall:{user_wall}?threadId={threadId}>) on [{user}'s Message Wall](<{url}wiki/Message_Wall:{user_wall}>)").format(
-            author=author, author_url=author_url, url=ctx.settings["fandom_discussions"]["wiki_url"],
+            author=author, author_url=author_url, url=ctx.client.WIKI_SCRIPT_PATH,
             title=post["_embedded"]["thread"][0]["title"], user=user_wall,
             user_wall=quote_plus(user_wall.replace(" ", "_")), threadId=post["threadId"], replyId=post["id"])
     return DiscordMessage("compact", event_type, ctx.webhook_url, content=message)
@@ -319,12 +319,12 @@ def compact_discussion_wall(ctx: Context, post: dict):
 
 @formatter.embed(event="discussion/article_comment")
 def embed_discussion_article_comment(ctx: Context, post: dict):
-    embed = DiscordMessage("embed", "discussion", ctx.settings["fandom_discussions"]["webhookURL"])
+    embed = DiscordMessage("embed", "discussion", ctx.webhook_url)
     common_discussions(post, embed, ctx)
     embed_author_discussions(post, embed, ctx)
     article_paths = ctx.comment_page
     if article_paths is None:
-        article_paths = {"title": ctx._("unknown"), "fullUrl": ctx.settings["fandom_discussions"]["wiki_url"]}  # No page known
+        article_paths = {"title": ctx._("unknown"), "fullUrl": ctx.client.WIKI_SCRIPT_PATH}  # No page known
     if not post["isReply"]:
         embed.event_type = "discussion/comment/post"
         embed["url"] = "{url}?commentId={commentId}".format(url=article_paths["fullUrl"], commentId=post["threadId"])
@@ -344,7 +344,7 @@ def compact_discussion_article_comment(ctx: Context, post: dict):
     author, author_url = compact_author_discussions(post, ctx)
     article_paths = ctx.comment_page
     if article_paths is None:
-        article_paths = {"title": ctx._("unknown"), "fullUrl": ctx.settings["fandom_discussions"]["wiki_url"]}  # No page known
+        article_paths = {"title": ctx._("unknown"), "fullUrl": ctx.client.WIKI_SCRIPT_PATH}  # No page known
     article_paths["fullUrl"] = article_paths["fullUrl"].replace(")", "\)").replace("()", "\(")
     if not post["isReply"]:
         event_type = "discussion/comment/post"

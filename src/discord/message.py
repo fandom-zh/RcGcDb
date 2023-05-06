@@ -183,6 +183,11 @@ class StackedDiscordMessage():
 			message_structure["embeds"] = [message.embed for message in self.message_list]
 		return json.dumps(message_structure)
 
+	def check_for_length(self, message_length: int):
+		if self.message_type:
+			return len(self) + message_length > 6000 or len(self.message_list) > 9
+		return (len(self) + message_length) > 2000
+
 	def filter(self, params: dict) -> list[tuple[int, DiscordMessage]]:
 		"""Filters messages by their metadata"""
 		return [(num, message) for num, message in enumerate(self.message_list) if message.matches(params)]
@@ -193,9 +198,9 @@ class StackedDiscordMessage():
 			self.message_list.pop(message_id)
 
 	def add_message(self, message: DiscordMessage):
-		if len(self) + len(message) > 6000 or len(self.message_list) > 9:
+		if self.check_for_length(len(message)):
 			raise MessageTooBig
-		self.length += len(message)
+		self.length += len(message) + (self.message_type == 0)
 		self.message_list.append(message)
 		# self._setup_embed()
 		# self.embed = message.embed

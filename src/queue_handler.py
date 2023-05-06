@@ -33,6 +33,7 @@ class UpdateDB:
 					async with db.pool().acquire() as connection:
 						async with connection.transaction():
 							for update in self.updated:
+								logger.debug("Executing: {} {}".format(update[0], update[1]))
 								await connection.execute(update[0], *update[1])
 							self.clear_list()
 				await asyncio.sleep(10.0)
