@@ -126,6 +126,8 @@ class DiscordMessage:
 		self.embed["fields"].append(dict(name=name, value=value, inline=inline))
 
 	def add_button(self, custom_id, label, style=2, emoji=None):
+		if len(custom_id) > 100:
+			return
 		if "components" not in self.webhook_object:
 			self.webhook_object["components"] = [{"type": 1, "components": []}]
 		if len(self.webhook_object["components"][-1]["components"]) >= 5:
