@@ -125,6 +125,13 @@ class DiscordMessage:
 		self.length += len(name) + len(value)
 		self.embed["fields"].append(dict(name=name, value=value, inline=inline))
 
+	def add_button(self, custom_id, label, style=2, emoji=None):
+		if "components" not in self.webhook_object:
+			self.webhook_object["components"] = [{"type": 1, "components": []}]
+		if len(self.webhook_object["components"][-1]["components"]) >= 5:
+			self.webhook_object["components"].append({"type": 1, "components": []})
+		self.webhook_object["components"][-1]["components"].append({"type": 2, "custom_id": custom_id, "style": style, "label": label, "emoji": emoji})
+
 	def set_avatar(self, url):
 		self.webhook_object["avatar_url"] = url
 
