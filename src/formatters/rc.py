@@ -30,7 +30,7 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 	WIKI_SCRIPT_PATH = paths[1]
 	WIKI_ARTICLE_PATH = paths[2]
 	WIKI_JUST_DOMAIN = paths[3]
-	BUTTON_PREFIX = "rc_/" + WIKI_SCRIPT_PATH[len(WIKI_JUST_DOMAIN):]
+	BUTTON_PREFIX = "rc_" + WIKI_SCRIPT_PATH[len(WIKI_JUST_DOMAIN):]
 	action_buttons = message_target[0][2].split('|') if message_target[0][2] is not None else []
 	message_buttons = []
 	if action != "suppressed":
@@ -624,7 +624,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 	WIKI_SCRIPT_PATH = paths[1]
 	WIKI_ARTICLE_PATH = paths[2]
 	WIKI_JUST_DOMAIN = paths[3]
-	BUTTON_PREFIX = "rc_/" + WIKI_SCRIPT_PATH[len(WIKI_JUST_DOMAIN):]
+	BUTTON_PREFIX = "rc_" + WIKI_SCRIPT_PATH[len(WIKI_JUST_DOMAIN):]
 	action_buttons = message_target[0][2].split('|') if message_target[0][2] is not None else []
 	embed = DiscordMessage("embed", action, message_target[1], wiki=WIKI_SCRIPT_PATH)
 	if parsed_comment is None:
