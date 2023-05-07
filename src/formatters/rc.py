@@ -40,7 +40,7 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 			author_url = link_formatter(create_article_path("User:{user}".format(user=change["user"]), WIKI_ARTICLE_PATH))
 		author = change["user"]
 		if "block" in action_buttons:
-			message_buttons.append((BUTTON_PREFIX + " block " + ( "#" + str(change["userid"]) if change["userid"] else change["user"] ), _("Block user"), 4, {"id": None, "name": "🚫"}))
+			message_buttons.append((BUTTON_PREFIX + " block " + ( "#" + str(change["userid"]) if change["userid"] else change["user"] ), _("Block user"), 4, {"id": None, "name": "🚧"}))
 	parsed_comment = "" if parsed_comment is None else " *("+parsed_comment+")*"
 	if action in ["edit", "new"]:
 		edit_link = link_formatter("{wiki}index.php?title={article}&curid={pageid}&diff={diff}&oldid={oldrev}".format(
@@ -636,7 +636,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 			author_url = create_article_path("User:{}".format(change["user"]), WIKI_ARTICLE_PATH)
 		embed.set_author(change["user"], author_url)
 		if "block" in action_buttons:
-			embed.add_button(BUTTON_PREFIX + " block " + ( "#" + str(change["userid"]) if change["userid"] else change["user"] ), _("Block user"), 4, {"id": None, "name": "🚫"})
+			embed.add_button(BUTTON_PREFIX + " block " + ( "#" + str(change["userid"]) if change["userid"] else change["user"] ), _("Block user"), 4, {"id": None, "name": "🚧"})
 	if action in ("edit", "new"):  # edit or new page
 		editsize = change["newlen"] - change["oldlen"]
 		if editsize > 0:
