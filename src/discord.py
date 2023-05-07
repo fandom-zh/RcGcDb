@@ -180,7 +180,7 @@ class StackedDiscordMessage(DiscordMessage):
 			self.add_embed(message)
 
 	def add_embed(self, message):
-		if len(self) + len(message) > 6000 or len(self.webhook_object["embeds"]) == 10 or check_for_components(message.webhook_object, self):
+		if len(self) + len(message) > 6000 or len(self.webhook_object["embeds"]) == 10 or check_for_components(message, self):
 			raise EmbedListFull
 		self.length += len(message)
 		self._setup_embed()
