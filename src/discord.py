@@ -40,7 +40,6 @@ async def wiki_removal(wiki_url, status):
 async def webhook_removal_monitor(webhook_url: str, reason: int):
 	await send_to_discord_webhook_monitoring(DiscordMessage("compact", "webhook/remove", None, content="The webhook {} has been removed due to {}.".format("https://discord.com/api/webhooks/" + webhook_url, reason), wiki=None))
 
-
 class DiscordMessage:
 	"""A class defining a typical Discord JSON representation of webhook payload."""
 	def __init__(self, message_type: str, event_type: str, webhook_url: list, wiki, content=None):
@@ -131,10 +130,12 @@ class DiscordMessage:
 	def set_name(self, name):
 		self.webhook_object["username"] = name
 
-def stack_message_list(messages: list[DiscordMessage]) -> list:
-	def check_for_components(*messages: DiscordMessage):
-		return any([True for x in messages if "components" in x.webhook_object])
 
+def check_for_components(*messages):
+	return any([True for x in messages if "components" in x.webhook_object])
+
+
+def stack_message_list(messages: list[DiscordMessage]) -> list:
 	if len(messages) > 1:
 		if messages[0].message_type() == "embed":
 			index = 0
@@ -170,7 +171,7 @@ class StackedDiscordMessage(DiscordMessage):
 			self.add_embed(message)
 
 	def add_embed(self, message):
-		if len(self) + len(message) > 6000 or len(self.webhook_object["embeds"]) == 10 or "components" in message.webhook_object:
+		if len(self) + len(message) > 6000 or len(self.webhook_object["embeds"]) == 10 or check_for_components(message.webhook_object, self):
 			raise EmbedListFull
 		self.length += len(message)
 		self._setup_embed()
