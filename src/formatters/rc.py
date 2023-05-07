@@ -30,12 +30,17 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 	WIKI_SCRIPT_PATH = paths[1]
 	WIKI_ARTICLE_PATH = paths[2]
 	WIKI_JUST_DOMAIN = paths[3]
+	BUTTON_PREFIX = "rc_" + WIKI_SCRIPT_PATH[len(WIKI_JUST_DOMAIN):]
+	action_buttons = message_target[0][2].split('|') if message_target[0][2] is not None else []
+	message_buttons = []
 	if action != "suppressed":
 		if "anon" in change:
 			author_url = link_formatter(create_article_path("Special:Contributions/{user}".format(user=change["user"]), WIKI_ARTICLE_PATH))
 		else:
 			author_url = link_formatter(create_article_path("User:{user}".format(user=change["user"]), WIKI_ARTICLE_PATH))
 		author = change["user"]
+		if "block" in action_buttons:
+			message_buttons.append((BUTTON_PREFIX + " block " + ( "#" + str(change["userid"]) if change["userid"] else change["user"] ), _("Block user"), 4, {"id": None, "name": "🚧"}))
 	parsed_comment = "" if parsed_comment is None else " *("+parsed_comment+")*"
 	if action in ["edit", "new"]:
 		edit_link = link_formatter("{wiki}index.php?title={article}&curid={pageid}&diff={diff}&oldid={oldrev}".format(
@@ -50,8 +55,14 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 			bold = "**"
 		if action == "edit":
 			content = _("[{author}]({author_url}) edited [{article}]({edit_link}){comment} {bold}({sign}{edit_size}){bold}").format(author=author, author_url=author_url, article=change["title"], edit_link=edit_link, comment=parsed_comment, edit_size=edit_size, sign=sign, bold=bold)
+			if "rollback" in action_buttons:
+				message_buttons.append((BUTTON_PREFIX + " rollback " + str(change["pageid"]) + " " + ( "#" + str(change["userid"]) if change["userid"] else change["user"] ), _("Rollback"), 1, {"id": None, "name": "🔁"}))
+			if "undo" in action_buttons:
+				message_buttons.append((BUTTON_PREFIX + " undo " + str(change["pageid"]) + " " + str(change["revid"]), _("Undo"), 2, {"id": None, "name": "🔂"}))
 		else:
 			content = _("[{author}]({author_url}) created [{article}]({edit_link}){comment} {bold}({sign}{edit_size}){bold}").format(author=author, author_url=author_url, article=change["title"], edit_link=edit_link, comment=parsed_comment, edit_size=edit_size, sign=sign, bold=bold)
+			if "delete" in action_buttons:
+				message_buttons.append((BUTTON_PREFIX + " delete " + str(change["pageid"]), _("Delete"), 4, {"id": None, "name": "🗑️"}))
 	elif action =="upload/upload":
 		file_link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) uploaded [{file}]({file_link}){comment}").format(author=author,
@@ -59,6 +70,8 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		                                                                                    file=change["title"],
 		                                                                                    file_link=file_link,
 		                                                                                    comment=parsed_comment)
+		if "delete" in action_buttons:
+			message_buttons.append((BUTTON_PREFIX + " delete " + str(change["pageid"]), _("Delete"), 4, {"id": None, "name": "🗑️"}))
 	elif action == "upload/revert":
 		file_link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) reverted a version of [{file}]({file_link}){comment}").format(
@@ -79,12 +92,16 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		redirect_status = _("without making a redirect") if "suppressredirect" in change["logparams"] else _("with a redirect")
 		content = _("[{author}]({author_url}) moved {redirect}*{article}* to [{target}]({target_url}) {made_a_redirect}{comment}").format(author=author, author_url=author_url, redirect="⤷ " if "redirect" in change else "", article=change["title"],
 			target=change["logparams"]['target_title'], target_url=link, comment=parsed_comment, made_a_redirect=redirect_status)
+		if "move" in action_buttons:
+			message_buttons.append((BUTTON_PREFIX + " move " + str(change["pageid"]) + " " + change["title"], _("Move back"), 2, {"id": None, "name": "🔂"}))
 	elif action == "move/move_redir":
 		link = link_formatter(create_article_path(change["logparams"]["target_title"], WIKI_ARTICLE_PATH))
 		redirect_status = _("without making a redirect") if "suppressredirect" in change["logparams"] else _(
 			"with a redirect")
 		content = _("[{author}]({author_url}) moved {redirect}*{article}* over redirect to [{target}]({target_url}) {made_a_redirect}{comment}").format(author=author, author_url=author_url, redirect="⤷ " if "redirect" in change else "", article=change["title"],
 			target=change["logparams"]['target_title'], target_url=link, comment=parsed_comment, made_a_redirect=redirect_status)
+		if "move" in action_buttons:
+			message_buttons.append((BUTTON_PREFIX + " move " + str(change["pageid"]) + " " + change["title"], _("Move back"), 2, {"id": None, "name": "🔂"}))
 	elif action == "protect/move_prot":
 		link = link_formatter(create_article_path(change["logparams"]["oldtitle_title"], WIKI_ARTICLE_PATH))
 		content = _(
@@ -591,7 +608,10 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		else:
 			content = _("Unknown event `{event}` by [{author}]({author_url}), report it on the [support server](<{support}>).").format(event=action, author=author, author_url=author_url, support=settings["support"])
 			action = "unknown"
-	return DiscordMessage("compact", action, message_target[1], content=content, wiki=WIKI_SCRIPT_PATH)
+	message = DiscordMessage("compact", action, message_target[1], content=content, wiki=WIKI_SCRIPT_PATH)
+	for message_button in message_buttons:
+		message.add_button(*message_button)
+	return message
 
 
 async def embed_formatter(action, change, parsed_comment, categories, recent_changes, message_target, paths, rate_limiter, additional_data=None) -> DiscordMessage:
@@ -604,6 +624,8 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 	WIKI_SCRIPT_PATH = paths[1]
 	WIKI_ARTICLE_PATH = paths[2]
 	WIKI_JUST_DOMAIN = paths[3]
+	BUTTON_PREFIX = "rc_" + WIKI_SCRIPT_PATH[len(WIKI_JUST_DOMAIN):]
+	action_buttons = message_target[0][2].split('|') if message_target[0][2] is not None else []
 	embed = DiscordMessage("embed", action, message_target[1], wiki=WIKI_SCRIPT_PATH)
 	if parsed_comment is None:
 		parsed_comment = _("No description provided")
@@ -613,6 +635,8 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		else:
 			author_url = create_article_path("User:{}".format(change["user"]), WIKI_ARTICLE_PATH)
 		embed.set_author(change["user"], author_url)
+		if "block" in action_buttons:
+			embed.add_button(BUTTON_PREFIX + " block " + ( "#" + str(change["userid"]) if change["userid"] else change["user"] ), _("Block user"), 4, {"id": None, "name": "🚧"})
 	if action in ("edit", "new"):  # edit or new page
 		editsize = change["newlen"] - change["oldlen"]
 		if editsize > 0:
@@ -667,6 +691,13 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 					embed.add_field(_("Added"), "{data}".format(data=EditDiff.small_prev_ins), inline=True)
 			else:
 				logger.warning("Unable to download data on the edit content!")
+		if action == "new" and "delete" in action_buttons:
+			embed.add_button(BUTTON_PREFIX + " delete " + str(change["pageid"]), _("Delete"), 4, {"id": None, "name": "🗑️"})
+		if action == "edit":
+			if "rollback" in action_buttons:
+				embed.add_button(BUTTON_PREFIX + " rollback " + str(change["pageid"]) + " " + ( "#" + str(change["userid"]) if change["userid"] else change["user"] ), _("Rollback"), 1, {"id": None, "name": "🔁"})
+			if "undo" in action_buttons:
+				embed.add_button(BUTTON_PREFIX + " undo " + str(change["pageid"]) + " " + str(change["revid"]), _("Undo"), 2, {"id": None, "name": "🔂"})
 	elif action in ("upload/overwrite", "upload/upload", "upload/revert"):  # sending files
 		license = None
 		try:
@@ -705,6 +736,8 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 						wiki=WIKI_SCRIPT_PATH, filename=article_encoded, archiveid=revision["archivename"])
 					embed.add_field(_("Options"), _("([preview]({link}) | [undo]({undolink}))").format(
 						link=image_direct_url, undolink=undolink))
+					if "filerevert" in action_buttons:
+						embed.add_button(BUTTON_PREFIX + " file " + str(change["pageid"]) + " " + revision["archivename"].split("!")[0], _("Revert"), 2, {"id": None, "name": "🔂"})
 				if message_target[0][1] > 1:
 					embed["image"]["url"] = image_direct_url
 			if action == "upload/overwrite":
@@ -717,6 +750,8 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 				embed.add_field(_("Options"), _("([preview]({link}))").format(link=image_direct_url))
 				if message_target[0][1] > 1:
 					embed["image"]["url"] = image_direct_url
+			if "delete" in action_buttons:
+				embed.add_button(BUTTON_PREFIX + " delete " + str(change["pageid"]), _("Delete"), 4, {"id": None, "name": "🗑️"})
 	elif action == "delete/delete":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		embed["title"] = _("Deleted page {article}").format(article=change["title"])
@@ -729,10 +764,14 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		                                            supress=_("No redirect has been made") if "suppressredirect" in change["logparams"] else _(
 			                                            "A redirect has been made"))
 		embed["title"] = _("Moved {redirect}{article} to {target}").format(redirect="⤷ " if "redirect" in change else "", article=change["title"], target=change["logparams"]['target_title'])
+		if "move" in action_buttons:
+			embed.add_button(BUTTON_PREFIX + " move " + str(change["pageid"]) + " " + change["title"], _("Move back"), 2, {"id": None, "name": "🔂"})
 	elif action == "move/move_redir":
 		link = create_article_path(change["logparams"]["target_title"], WIKI_ARTICLE_PATH)
 		embed["title"] = _("Moved {redirect}{article} to {title} over redirect").format(redirect="⤷ " if "redirect" in change else "", article=change["title"],
 		                                                                      title=change["logparams"]["target_title"])
+		if "move" in action_buttons:
+			embed.add_button(BUTTON_PREFIX + " move " + str(change["pageid"]) + " " + change["title"], _("Move back"), 2, {"id": None, "name": "🔂"})
 	elif action == "protect/move_prot":
 		link = create_article_path(change["logparams"]["oldtitle_title"], WIKI_ARTICLE_PATH)
 		embed["title"] = _("Moved protection settings from {redirect}{article} to {title}").format(redirect="⤷ " if "redirect" in change else "", article=change["logparams"]["oldtitle_title"],

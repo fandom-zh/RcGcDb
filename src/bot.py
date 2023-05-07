@@ -240,8 +240,8 @@ async def generate_targets(wiki_url: str, additional_requirements: str) -> defau
 	combinations = defaultdict(list)
 	async with db.pool().acquire() as connection:
 		async with connection.transaction():
-			async for webhook in connection.cursor('SELECT webhook, lang, display FROM rcgcdw WHERE wiki = $1 {}'.format(additional_requirements), wiki_url):
-				combination = (webhook["lang"], webhook["display"])
+			async for webhook in connection.cursor('SELECT webhook, lang, display, buttons FROM rcgcdw WHERE wiki = $1 {}'.format(additional_requirements), wiki_url):
+				combination = (webhook["lang"], webhook["display"], webhook["buttons"])
 				combinations[combination].append(webhook["webhook"])
 	return combinations
 

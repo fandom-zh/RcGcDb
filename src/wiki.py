@@ -35,7 +35,7 @@ class Wiki:
 			params = {"action": "query", "format": "json", "uselang": "content", "list": "tags|recentchanges",
 			          "meta": "allmessages|siteinfo",
 			          "utf8": 1, "tglimit": "max", "tgprop": "displayname",
-			          "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user",
+			          "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user|userid",
 			          "rclimit": amount, "rcshow": "!bot", "rctype": "edit|new|log|categorize",
 			          "ammessages": "recentchanges-page-added-to-category|recentchanges-page-removed-from-category|recentchanges-page-added-to-category-bundled|recentchanges-page-removed-from-category-bundled",
 			          "amenableparser": 1, "amincludelocal": 1, "siprop": "namespaces|general"}
@@ -43,7 +43,7 @@ class Wiki:
 			params = {"action": "query", "format": "json", "uselang": "content", "list": "tags|recentchanges",
 			          "meta": "siteinfo", "utf8": 1,
 			          "tglimit": "max", "rcshow": "!bot", "tgprop": "displayname",
-			          "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user",
+			          "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user|userid",
 			          "rclimit": amount, "rctype": "edit|new|log|categorize", "siprop": "namespaces|general"}
 		try:
 			response = await session.get(url_path, params=params)
