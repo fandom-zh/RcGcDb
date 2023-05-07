@@ -131,31 +131,25 @@ class DiscordMessage:
 	def set_name(self, name):
 		self.webhook_object["username"] = name
 
-def stack_message_list(messages: list) -> list:
+def stack_message_list(messages: list[DiscordMessage]) -> list:
+	def check_for_components(*messages: DiscordMessage):
+		return any([True for x in messages if "components" in x.webhook_object])
+
 	if len(messages) > 1:
 		if messages[0].message_type() == "embed":
-			# for i, msg in enumerate(messages):
-			# 	if not isinstance(msg, StackedDiscordMessage):
-			# 		break
-			# else:  # all messages in messages are stacked, exit this if
-			# 	i += 1
-			removed_msgs = 0
-			# We split messages into groups of 10
-			for group_index in range(ceil((len(messages)) / 10)):
-				message_group_index = group_index * 10 - removed_msgs  # this helps us with calculations which messages we need
-				stackable = StackedDiscordMessage(messages[message_group_index])  # treat the first message from the group as main
-				for message in messages[message_group_index + 1:message_group_index + 10]:  # we grab messages from messages list
-					try:
-						stackable.add_embed(message)  # and to our main message we add ones after it that are from same group
-					except EmbedListFull:  # if there are too many messages in our group we simply break so another group can be made
-						break
-					messages.remove(message)
-					removed_msgs += 1  # helps with calculating message_group_index
-				messages[message_group_index] = stackable
+			index = 0
+			while index+1 < len(messages):
+				if not isinstance(messages[index], StackedDiscordMessage):  # Make first message a stack
+					messages[index] = StackedDiscordMessage(messages[index])
+				try:
+					messages[index].add_embed(messages[index+1])  # Add an embed from next message to a stack
+					messages.remove(messages[index+1])
+				except EmbedListFull:
+					index += 1
 		elif messages[0].message_type() == "compact":
 			message_index = 0
 			while len(messages) > message_index+1:  # as long as we have messages to stack
-				if (len(messages[message_index]) + len(messages[message_index+1])) < 2000:  # if overall length is lower than 2000
+				if ((len(messages[message_index]) + len(messages[message_index+1])) < 2000) and not check_for_components(messages[message_index], messages[message_index+1]):  # if overall length is lower than 2000
 					messages[message_index].webhook_object["content"] = messages[message_index].webhook_object["content"] + "\n" + messages[message_index + 1].webhook_object["content"]
 					messages[message_index].length += (len(messages[message_index + 1]) + 1)
 					messages.remove(messages[message_index + 1])
@@ -176,7 +170,7 @@ class StackedDiscordMessage(DiscordMessage):
 			self.add_embed(message)
 
 	def add_embed(self, message):
-		if len(self) + len(message) > 6000:
+		if len(self) + len(message) > 6000 or len(self.webhook_object["embeds"]) == 10 or "components" in message.webhook_object:
 			raise EmbedListFull
 		self.length += len(message)
 		self._setup_embed()
