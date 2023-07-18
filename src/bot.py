@@ -284,8 +284,8 @@ async def scan_group(group: str):
 						if not isinstance(recent_changes_resp, dict):
 							logger.error(f"recent_changes_resp has a bad type, found {type(recent_changes_resp)}, __repr__ here: {recent_changes_resp}.")
 							raise TypeError
-						if "errors" in recent_changes_resp:
-							error = recent_changes_resp.get('errors')
+						if "error" in recent_changes_resp:
+							error = recent_changes_resp.get('error')
 							if error["code"] == "readapidenied":
 								await local_wiki.fail_add(queued_wiki.url, 410)
 								continue
