@@ -292,10 +292,13 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		content = _("[{author}]({author_url}) changed visibility of log events{comment}").format(author=author, author_url=author_url, comment=parsed_comment)
 	elif action == "import/interwiki":
 		link = link_formatter(create_article_path(change["title"], WIKI_ARTICLE_PATH))
-		source_link = link_formatter(create_article_path(change["logparams"]["interwiki_title"], WIKI_ARTICLE_PATH))
-		content = ngettext("[{author}]({author_url}) imported [{article}]({article_url}) with {count} revision from [{source}]({source_url}){comment}",
-		                          "[{author}]({author_url}) imported [{article}]({article_url}) with {count} revisions from [{source}]({source_url}){comment}", change["logparams"]["count"]).format(
-			author=author, author_url=author_url, article=change["title"], article_url=link, count=change["logparams"]["count"], source=change["logparams"]["interwiki_title"], source_url=source_link, comment=parsed_comment)
+		if "count" in change["logparams"] and "interwiki_title" in change["logparams"]:
+			source_link = link_formatter(create_article_path(change["logparams"]["interwiki_title"], WIKI_ARTICLE_PATH))
+			content = ngettext("[{author}]({author_url}) imported [{article}]({article_url}) with {count} revision from [{source}]({source_url}){comment}",
+			                          "[{author}]({author_url}) imported [{article}]({article_url}) with {count} revisions from [{source}]({source_url}){comment}", change["logparams"]["count"]).format(
+				author=author, author_url=author_url, article=change["title"], article_url=link, count=change["logparams"]["count"], source=change["logparams"]["interwiki_title"], source_url=source_link, comment=parsed_comment)
+		else:
+			content = _("[{author}]({author_url}) imported [{article}]({article_url}){comment}").format(author=author, author_url=author_url, article=change["title"], article_url=link, comment=parsed_comment)
 	elif action == "abusefilter/modify":
 		link = link_formatter(create_article_path("Special:AbuseFilter/history/{number}/diff/prev/{historyid}".format(number=change["logparams"]['newId'], historyid=change["logparams"]["historyId"]), WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) edited abuse filter [number {number}]({filter_url})").format(author=author, author_url=author_url, number=change["logparams"]['newId'], filter_url=link)
@@ -946,9 +949,12 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		embed["title"] = _("Changed visibility of log events")
 	elif action == "import/interwiki":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
-		embed["title"] = ngettext("Imported {article} with {count} revision from \"{source}\"",
-		                          "Imported {article} with {count} revisions from \"{source}\"", change["logparams"]["count"]).format(
-			article=change["title"], count=change["logparams"]["count"], source=change["logparams"]["interwiki_title"])
+		if "count" in change["logparams"] and "interwiki_title" in change["logparams"]:
+			embed["title"] = ngettext("Imported {article} with {count} revision from \"{source}\"",
+			                          "Imported {article} with {count} revisions from \"{source}\"", change["logparams"]["count"]).format(
+				article=change["title"], count=change["logparams"]["count"], source=change["logparams"]["interwiki_title"])
+		else:
+			embed["title"] = _("Imported {article}").format(article=change["title"])
 	elif action == "abusefilter/modify":
 		link = create_article_path("Special:AbuseFilter/history/{number}/diff/prev/{historyid}".format(number=change["logparams"]['newId'], historyid=change["logparams"]["historyId"]), WIKI_ARTICLE_PATH)
 		embed["title"] = _("Edited abuse filter number {number}").format(number=change["logparams"]['newId'])
