@@ -10,7 +10,7 @@ from typing import Generator
 import importlib
 from contextlib import asynccontextmanager
 
-from discussions import Discussions
+from src.discussions import Discussions
 from src.discord.queue import messagequeue
 from src.argparser import command_line_args
 from src.config import settings
