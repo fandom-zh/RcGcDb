@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 	def connect(self, *args, **kwargs):
+		logger.debug("Connecting with {}...".format(args))
 		super().connect(*args, **kwargs)
 		self.connection_details = (args, kwargs)
 
