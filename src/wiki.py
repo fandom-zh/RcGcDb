@@ -159,7 +159,7 @@ class Wiki:
 		Settings = namedtuple("Settings", ["lang", "display"])
 		target_settings: defaultdict[Settings, list[str]] = defaultdict(list)
 		discussion_targets: defaultdict[Settings, list[str]] = defaultdict(list)
-		async for webhook in dbmanager.fetch_rows("SELECT webhook, lang, display, rcid, postid FROM rcgcdw WHERE wiki = $1", self.script_url):
+		async for webhook in dbmanager.fetch_rows("SELECT webhook, lang, display, rcid, postid FROM rcgcdb WHERE wiki = $1", self.script_url):
 			if webhook['rcid'] == -1 and webhook['postid'] == '-1':
 				await self.remove_wiki_from_db(4)
 			if webhook['rcid'] != -1:
@@ -336,11 +336,11 @@ class Wiki:
 			if self.rc_id in (0, None, -1):
 				if len(recent_changes) > 0:
 					self.statistics.update(last_action=recent_changes[-1]["rcid"])
-					dbmanager.add(("UPDATE rcgcdw SET rcid = $1 WHERE wiki = $2 AND ( rcid != -1 OR rcid IS NULL )",
+					dbmanager.add(("UPDATE rcgcdb SET rcid = $1 WHERE wiki = $2 AND ( rcid != -1 OR rcid IS NULL )",
 								   (recent_changes[-1]["rcid"], self.script_url)))
 				else:
 					self.statistics.update(last_action=0)
-					dbmanager.add(("UPDATE rcgcdw SET rcid = 0 WHERE wiki = $1 AND ( rcid != -1 OR rcid IS NULL )", (self.script_url)))
+					dbmanager.add(("UPDATE rcgcdb SET rcid = 0 WHERE wiki = $1 AND ( rcid != -1 OR rcid IS NULL )", (self.script_url)))
 				return   # TODO Add a log entry?
 			categorize_events = {}
 			new_events = 0
@@ -369,7 +369,7 @@ class Wiki:
 							message_list.append(QueueEntry(message, webhooks, self))
 				messagequeue.add_messages(message_list)
 				self.statistics.update(last_action=highest_id)
-				dbmanager.add(("UPDATE rcgcdw SET rcid = $1 WHERE wiki = $2 AND ( rcid != -1 OR rcid IS NULL )", (highest_id, self.script_url)))  # If this is not enough for the future, save rcid in message sending function to make sure we always send all of the changes
+				dbmanager.add(("UPDATE rcgcdb SET rcid = $1 WHERE wiki = $2 AND ( rcid != -1 OR rcid IS NULL )", (highest_id, self.script_url)))  # If this is not enough for the future, save rcid in message sending function to make sure we always send all of the changes
 				return
 
 	async def remove_webhook_from_db(self, reason: str):

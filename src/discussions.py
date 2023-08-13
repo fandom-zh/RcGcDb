@@ -66,7 +66,7 @@ class Discussions:
             if "error" in discussion_feed_resp:
                 error = discussion_feed_resp["error"]
                 if error == "NotFoundException":  # Discussions disabled
-                    await dbmanager.add("UPDATE rcgcdw SET postid = $1 WHERE wiki = $2", "-1", wiki.script_url)
+                    await dbmanager.add("UPDATE rcgcdb SET postid = $1 WHERE wiki = $2", "-1", wiki.script_url)
                     await dbmanager.update_db()
                     await wiki.update_targets()
                 raise WikiError
@@ -80,7 +80,7 @@ class Discussions:
             return
         if wiki.discussion_id is None:  # new wiki, just get the last post to not spam the channel
             if len(discussion_feed) > 0:
-                dbmanager.add(("UPDATE rcgcdw SET postid = $1 WHERE wiki = $2 AND ( postid != '-1' OR postid IS NULL )", (
+                dbmanager.add(("UPDATE rcgcdb SET postid = $1 WHERE wiki = $2 AND ( postid != '-1' OR postid IS NULL )", (
                     str(discussion_feed[-1]["id"]),
                     wiki.script_url)))
                 wiki.statistics.update(last_post=discussion_feed[-1]["id"])
@@ -129,7 +129,7 @@ class Discussions:
         messagequeue.add_messages(message_list)
         if discussion_feed:
             wiki.statistics.update(last_post=discussion_feed[-1]["id"])
-            dbmanager.add(("UPDATE rcgcdw SET postid = $1 WHERE wiki = $2 AND ( postid != '-1' OR postid IS NULL )", (str(discussion_feed[-1]["id"]),
+            dbmanager.add(("UPDATE rcgcdb SET postid = $1 WHERE wiki = $2 AND ( postid != '-1' OR postid IS NULL )", (str(discussion_feed[-1]["id"]),
                                                                                                           wiki.script_url)))  # If this is not enough for the future, save rcid in message sending function to make sure we always send all of the changes
 
 

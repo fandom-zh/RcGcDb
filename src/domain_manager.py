@@ -34,7 +34,7 @@ class DomainManager:
             await self.new_wiki(Wiki(split_payload[1], safe_type_for_id(split_payload[2], int), safe_type_for_id(split_payload[3], str)))
         elif split_payload[0] == "REMOVE":
             try:
-                results = await connection.fetch("SELECT * FROM rcgcdw WHERE wiki = $1;", split_payload[1])
+                results = await connection.fetch("SELECT * FROM rcgcdb WHERE wiki = $1;", split_payload[1])
                 if len(results) > 0:  # If there are still webhooks for this wiki - just update its targets
                     await self.return_domain(self.get_domain(split_payload[1])).get_wiki(split_payload[1]).update_targets()
             except asyncpg.IdleSessionTimeoutError:
