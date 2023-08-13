@@ -98,8 +98,7 @@ class Discussions:
                 params = {"controller": "FeedsAndPosts", "method": "getArticleNamesAndUsernames",
                           "stablePageIds": ",".join(comment_events), "format": "json"}
                 comment_pages_request = await wiki.fetch_discussions(params)
-                comment_pages = await comment_pages_request.json()
-                comment_pages = comment_pages["articleNames"]
+                comment_pages = comment_pages_request[1]["articleNames"]
             except aiohttp.ClientResponseError:  # Fandom can be funny sometimes... See #30
                 comment_pages = None
             except:

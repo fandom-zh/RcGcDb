@@ -393,6 +393,22 @@ class Wiki:
 				raise WikiServerError(e)
 			return feeds_response, await feeds_response.json(encoding="UTF-8")
 
+	def pull_comment(self, comment_id):
+		try:
+			comment = self.sync_api_request("?action=comment&do=getRaw&comment_id={comment}&format=json".format(comment=comment_id), "text")
+			logger.debug("Got the following comment from the API: {}".format(comment))
+		except (ServerError, MediaWikiError):
+			pass
+		except (BadRequest, ClientError):
+			logger.exception("Some kind of issue while creating a request (most likely client error).")
+		except KeyError:
+			logger.exception("CurseProfile extension API did not respond with a valid comment content.")
+		else:
+			if len(comment) > 1000:
+				comment = comment[0:1000] + "…"
+			return comment
+		return ""
+
 
 def process_cachable(response: dict, wiki_object: Wiki) -> None:
 	"""This function processes cachable objects – such as MediaWiki system messages and wiki tag display names to be used
