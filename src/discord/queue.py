@@ -121,13 +121,13 @@ class MessageQueue:
 													 message.wiki)
 			else:
 				yield message.discord_message, index, message.method
-			message = message.discord_message
+			discord_message = message.discord_message
 			try:
-				current_pack.add_message(message)
+				current_pack.add_message(discord_message)
 			except MessageTooBig:
 				yield current_pack, index-1, "POST"
-				current_pack = StackedDiscordMessage(0 if message.message_type == "compact" else 1, message.wiki)  # next messages
-				current_pack.add_message(message)
+				current_pack = StackedDiscordMessage(0 if discord_message.message_type == "compact" else 1, message.wiki)  # next messages
+				current_pack.add_message(discord_message)
 		yield current_pack, index, "POST"
 
 	async def send_msg_set(self, msg_set: tuple[str, list[QueueEntry]]):

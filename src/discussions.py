@@ -9,7 +9,7 @@ import traceback
 from src.api.context import Context
 from src.api.hooks import formatter_hooks
 from src.api.util import default_message
-from discord.queue import QueueEntry, messagequeue
+from src.discord.queue import QueueEntry, messagequeue
 from src.i18n import langs
 from src.misc import prepare_settings
 from src.exceptions import WikiError
