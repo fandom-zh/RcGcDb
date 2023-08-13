@@ -8,7 +8,7 @@ from functools import cache
 
 import aiohttp
 
-from discord.message import DiscordMessage
+from src.discord.message import DiscordMessage
 from src.config import settings
 from src.argparser import command_line_args
 # from src.discussions import Discussions

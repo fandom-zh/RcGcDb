@@ -7,10 +7,10 @@ import logging, aiohttp
 import asyncio
 import requests
 
-from api.util import default_message
+from src.api.util import default_message
 from src.misc import prepare_settings
 from src.discord.queue import messagequeue, QueueEntry
-from mw_messages import MWMessages
+from src.mw_messages import MWMessages
 from src.exceptions import *
 from src.queue_handler import dbmanager
 from src.api.hooks import formatter_hooks
