@@ -2,6 +2,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+import traceback
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Optional
 from functools import cache
@@ -119,8 +120,9 @@ class Domain:
             if command_line_args.debug:
                 logger.exception("IRC scheduler task for domain {} failed!".format(self.name))
             else:
-                await self.send_exception_to_monitoring(e)
                 self.failures += 1
+                traceback.print_exc()
+                await self.send_exception_to_monitoring(e)
                 if self.failures > 2:
                     raise asyncio.exceptions.CancelledError
 
@@ -163,7 +165,7 @@ class Domain:
     async def send_exception_to_monitoring(self, ex: Exception):
         discord_message = DiscordMessage("embed", "generic", [""])
         discord_message["title"] = "Domain scheduler exception for {} (recovered)".format(self.name)
-        discord_message["content"] = str(ex)[0:1995]
+        discord_message["content"] = traceback.format_exc(ex)[0:1995]
         discord_message.add_field("Failure count", str(self.failures))
         discord_message.finish_embed_message()
         header = settings["header"]

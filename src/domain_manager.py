@@ -47,7 +47,7 @@ class DomainManager:
             logger.info(self.domains)
             for name, domain in self.domains.items():
                 logger.info("{name} - Status: {status}, exception: {exception}".format(name=name, status=domain.task.done(),
-                                                                                       exception=domain.task.get_stack()))
+                                                                                       exception=domain.task.print_stack()))
         else:
             raise ValueError("Unknown pub/sub command! Payload: {}".format(payload))
 
