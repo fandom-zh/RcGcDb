@@ -43,7 +43,7 @@ class LimitedList(list):
         super(LimitedList, self).append(obj)
 
     def __repr__(self):
-        return "\n".join(self)
+        return "\n".join([str(x) for x in self])
 
 
 class Statistics:
