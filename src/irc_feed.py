@@ -82,7 +82,6 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 				return
 			url = urlparse(post.get('url'))
 			full_url ="https://"+ url.netloc + recognize_langs(url.path)
-			logger.debug(f"Checking {full_url}")
 			wiki = self.domain.get_wiki(full_url)
 			if wiki and wiki.discussion_id != -1:
 				self.updated_discussions.add(full_url)
