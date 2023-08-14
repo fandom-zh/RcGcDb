@@ -256,7 +256,7 @@ async def main_loop():
     try:
         main_tasks = {"message_sender": asyncio.create_task(message_sender()),
                       "database_updates": asyncio.create_task(dbmanager.update_db()),
-                      "fandom_discussions": asyncio.create_task(discussions.tick_discussions())}  # "discussion_handler": asyncio.create_task(discussion_handler()),
+                      "fandom_discussions": asyncio.create_task(discussions.tick_discussions(), name="discussions")}  # "discussion_handler": asyncio.create_task(discussion_handler()),
         main_tasks["msg_queue_shield"] = asyncio.shield(main_tasks["message_sender"])
         main_tasks["database_updates_shield"] = asyncio.shield(main_tasks["database_updates"])
         await asyncio.gather(main_tasks["message_sender"], main_tasks["database_updates"])

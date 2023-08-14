@@ -32,6 +32,12 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		self.connection.buffer_class.errors = "replace"  # Ignore encoding errors
 		self.connection_details = None
 
+	def __str__(self):
+		return self.__repr__()
+
+	def __repr__(self):
+		return f"<updated_wikis={self.updated_wikis}, updated_discussions={self.updated_discussions}>"
+
 	def on_welcome(self, connection, event):  # Join IRC channels
 		logger.debug("Logged into IRC for {domain_name}".format(domain_name=self.domain.name))
 		for channel in self.targets.values():

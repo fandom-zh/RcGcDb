@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Callable
 from urllib.parse import urlparse, urlunparse
 import logging
 import asyncpg
-
+import asyncio
 from src.exceptions import NoDomain
 from src.config import settings
 from src.domain import Domain
@@ -46,8 +46,11 @@ class DomainManager:
         elif split_payload[0] == "DEBUG":
             logger.info(self.domains)
             for name, domain in self.domains.items():
-                logger.info("{name} - Status: {status}, exception: {exception}".format(name=name, status=domain.task.done(),
-                                                                                       exception=domain.task.print_stack()))
+                logger.info("{name} - Status: {status}, exception: {exception}, irc: {irc}".format(name=name, status=domain.task.done(),
+                                                                                       exception=domain.task.print_stack(), irc=str(domain.irc)))
+            for item in asyncio.all_tasks():  # Get discussions task
+                if item.get_name() == "discussions":
+                    logger.info(item)
             if self.check_for_domain(self.get_domain(split_payload[1])):
                 logger.info(str(self.return_domain(self.get_domain(split_payload[1])).get_wiki(split_payload[1])))
         else:
