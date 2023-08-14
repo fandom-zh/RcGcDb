@@ -55,6 +55,14 @@ class Wiki:
 		self.session_requests = requests.Session()
 		self.session_requests.headers.update(settings["header"])
 
+	def __str__(self):
+		return self.__repr__()
+
+	def __repr__(self):
+		return (
+			f"<statistics={self.statistics} tags={self.tags} first_fetch_done={self.first_fetch_done}, rc_targets={self.rc_targets}, discussion_targets={self.discussion_targets},"
+			f"recache_requested={self.recache_requested}>")
+
 	@property
 	def rc_id(self):
 		return self.statistics.last_action

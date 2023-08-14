@@ -13,6 +13,7 @@
     "pg_pass": "secret_password",
     "pg_port": "5432",
     "redis_host": "localhost",
+     "ignored": [],
     "irc_servers": {
         "your custom name for the farm": {
             "domains": ["wikipedia.org", "otherwikipedia.org"],
@@ -21,6 +22,15 @@
             "irc_nickname": "BotIRCNickname",
             "irc_name": "BotIRCName",
             "irc_channel_mapping": {"rc": "#rcchannel", "discussion": "#discussionchannel"}
+        }
+    },
+    "appearance":{
+        "mode": "whatever",
+        "embed": {
+            "show_edit_changes": true,
+            "show_footer": true,
+            "embed_images": true,
+            "show_no_description_provided": true
         }
     },
     "logging": {

@@ -54,6 +54,9 @@ class Statistics:
         self.last_post: Optional[str] = discussion_id
         self.logs: LimitedList[Log] = LimitedList()
 
+    def __str__(self):
+        return f"<last_request={self.last_request}, last_checked_rc={self.last_checked_rc}, last_action={last_action}, last_checked_discussion={self.last_checked_discussion}, last_post={last_post}, logs={self.logs}>"
+
     def update(self, *args: Log, **kwargs: Union[float, int, str]):
         for key, value in kwargs.items():
             self.__setattr__(key, value)

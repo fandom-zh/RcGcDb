@@ -56,7 +56,7 @@ class Domain:
         if self.task:
             self.task.cancel()
 
-    def get_wiki(self, item, default=None) -> Optional[src.wiki.Wiki]:
+    def get_wiki(self, item: str, default=None) -> Optional[src.wiki.Wiki]:
         """Return a wiki with given domain name"""
         return self.wikis.get(item, default)
 

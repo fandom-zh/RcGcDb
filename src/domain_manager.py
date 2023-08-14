@@ -48,6 +48,8 @@ class DomainManager:
             for name, domain in self.domains.items():
                 logger.info("{name} - Status: {status}, exception: {exception}".format(name=name, status=domain.task.done(),
                                                                                        exception=domain.task.print_stack()))
+            if self.check_for_domain(self.get_domain(split_payload[1])):
+                logger.info(str(self.return_domain(self.get_domain(split_payload[1])).get_wiki(split_payload[1])))
         else:
             raise ValueError("Unknown pub/sub command! Payload: {}".format(payload))
 
