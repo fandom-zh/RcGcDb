@@ -49,7 +49,7 @@ class Discussions:
                 if (int(time.time()) - (wiki.statistics.last_checked_discussion or 0)) > settings.get("irc_overtime", 3600):
                     await self.run_discussion_scan(wiki)
                 else:
-                    return  # Recently scanned wikis will get at the end of the self.wikis, so we assume what is first hasn't been checked for a while
+                    break  # Recently scanned wikis will get at the end of the self.wikis, so we assume what is first hasn't been checked for a while
             await asyncio.sleep(5.0)
 
     def filter_and_sort(self) -> list[Wiki]:
