@@ -45,6 +45,7 @@ class LimitedList(list):
     def __repr__(self):
         return "\n".join(self)
 
+
 class Statistics:
     def __init__(self, rc_id: Optional[int], discussion_id: Optional[str]):
         self.last_request: Optional[aiohttp.web_request.Request] = None
@@ -55,7 +56,8 @@ class Statistics:
         self.logs: LimitedList[Log] = LimitedList()
 
     def __str__(self):
-        return f"<last_request={self.last_request}, last_checked_rc={self.last_checked_rc}, last_action={last_action}, last_checked_discussion={self.last_checked_discussion}, last_post={last_post}, logs={self.logs}>"
+        return (f"<last_request={self.last_request}, last_checked_rc={self.last_checked_rc}, last_action={self.last_action},"
+                f" last_checked_discussion={self.last_checked_discussion}, last_post={self.last_post}, logs={self.logs}>")
 
     def update(self, *args: Log, **kwargs: Union[float, int, str]):
         for key, value in kwargs.items():
