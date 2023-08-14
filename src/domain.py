@@ -164,7 +164,7 @@ class Domain:
         discord_message = DiscordMessage("embed", "generic", [""])
         discord_message["title"] = "Domain scheduler exception for {} (recovered)".format(self.name)
         discord_message["content"] = str(ex)[0:1995]
-        discord_message.add_field("Failure count", self.failures)
+        discord_message.add_field("Failure count", str(self.failures))
         discord_message.finish_embed_message()
         header = settings["header"]
         header['Content-Type'] = 'application/json'
