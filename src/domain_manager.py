@@ -45,6 +45,9 @@ class DomainManager:
             await self.return_domain(self.get_domain(split_payload[1])).get_wiki(split_payload[1]).update_targets()
         elif split_payload[0] == "DEBUG":
             logger.info(self.domains)
+            for name, domain in self.domains.items():
+                logger.info("{name} - Status: {status}, exception: {exception}".format(name=name, status=domain.task.done(),
+                                                                                       exception=domain.task.get_stack()))
         else:
             raise ValueError("Unknown pub/sub command! Payload: {}".format(payload))
 
@@ -60,6 +63,7 @@ class DomainManager:
             await new_domain.add_wiki(wiki)
 
     def remove_domain(self, domain: Domain):
+        logger.debug("Destroying domain and removing it from domain directory")
         domain.destroy()
         del self.domains[domain.name]
 

@@ -33,6 +33,7 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		self.connection_details = None
 
 	def on_welcome(self, connection, event):  # Join IRC channels
+		logger.debug("Logged into IRC for {domain_name}".format(domain_name=self.domain.name))
 		for channel in self.targets.values():
 			connection.join(channel)
 
@@ -69,10 +70,10 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		try:
 			post = json.loads(message)
 		except json.JSONDecodeError:
-			logger.warning("Seems like we have invalid JSON in Discussions part, message: {}".format(message))
+			#logger.warning("Seems like we have invalid JSON in Discussions part, message: {}".format(message))
 			return
 		if post.get('action', 'unknown') != "deleted":  # ignore deletion events
-			if isinstance(post.get('url'), bytes):
+			if isinstance(post.get('url'), bytes) or post.get('url') == "":
 				return
 			url = urlparse(post.get('url'))
 			full_url ="https://"+ url.netloc + recognize_langs(url.path)
@@ -80,8 +81,6 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 			if wiki and wiki.discussion_id != -1:
 				self.updated_discussions.add(full_url)
 				logger.debug("New discussion wiki appended to the list! {}".format(full_url))
-			# if full_url in self.domain:
-			# 	self.discussion_callback(full_url)
 
 
 def recognize_langs(path):

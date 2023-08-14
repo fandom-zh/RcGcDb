@@ -48,9 +48,10 @@ class Domain:
     def destroy(self):
         """Destroy the domain – do all of the tasks that should make sure there is no leftovers before being collected by GC"""
         if self.irc:
+            logger.debug("Leaving IRC due to destroy() for domain {}".format(self.name))
             self.irc.connection.die("Leaving")
-        if self.discussions_handler:
-            self.discussions_handler.close()
+        # if self.discussions_handler:
+        #     self.discussions_handler.close()
         if self.task:
             self.task.cancel()
 
