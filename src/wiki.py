@@ -232,6 +232,7 @@ class Wiki:
 			raise ServerError
 		# Catching HTTP errors
 		if 499 < request.status < 600:
+			logger.warning(f"A request to {self.script_url} {params} resulted in {request.status}")
 			raise ServerError
 		elif request.status == 302:
 			logger.critical(
@@ -273,6 +274,7 @@ class Wiki:
 																					url=self.client.WIKI_API_PATH + str(params)))
 			raise ServerError
 		if 499 < request.status_code < 600:
+			logger.warning(f"A request to {self.script_url} {params} resulted in {request.status}")
 			raise ServerError
 		elif request.status_code == 302:
 			logger.critical(

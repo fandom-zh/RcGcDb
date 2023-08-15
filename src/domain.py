@@ -35,7 +35,9 @@ class Domain:
         return iter(self.wikis)
 
     def __str__(self) -> str:
-        return f"<Domain name='{self.name}' task='{self.task}' wikis='{self.wikis}' irc='{self.irc.connection.connected if self.irc else False}' failures={self.failures}>"
+        return (f"<Domain name='{self.name}' task='{self.task}' wikis='{self.wikis}' "
+                f"irc='{self.irc.connection.connected if self.irc else False}' failures={self.failures} "
+                f"calculated_delay={self.calculate_sleep_time(len(self)) if not self.irc else 'handled by IRC scheduler'}>")
 
     def __repr__(self):
         return self.__str__()
@@ -133,7 +135,7 @@ class Domain:
                 await self.run_wiki_scan(next(iter(self.wikis.values())))
         except Exception as e:
             if command_line_args.debug:
-                logger.exception("IRC task for domain {} failed!".format(self.name))
+                logger.exception("Regular scheduler task for domain {} failed!".format(self.name))
             else:
                 await self.send_exception_to_monitoring(e)
                 self.failures += 1
@@ -165,7 +167,7 @@ class Domain:
     async def send_exception_to_monitoring(self, ex: Exception):
         discord_message = DiscordMessage("embed", "generic", [""])
         discord_message["title"] = "Domain scheduler exception for {} (recovered)".format(self.name)
-        discord_message["content"] = traceback.format_exc(ex)[0:1995]
+        discord_message["content"] = "".join(traceback.format_exception(ex))[0:1995]
         discord_message.add_field("Failure count", str(self.failures))
         discord_message.finish_embed_message()
         header = settings["header"]
