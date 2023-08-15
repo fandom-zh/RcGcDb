@@ -35,7 +35,7 @@ class Domain:
         return iter(self.wikis)
 
     def __str__(self) -> str:
-        return f"<Domain name='{self.name}' task='{self.task}' wikis='{self.wikis}' irc='{self.irc.connection.connected}' failures={self.failures}>"
+        return f"<Domain name='{self.name}' task='{self.task}' wikis='{self.wikis}' irc='{self.irc.connection.connected if self.irc else False}' failures={self.failures}>"
 
     def __repr__(self):
         return self.__str__()

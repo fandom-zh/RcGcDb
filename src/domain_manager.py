@@ -96,6 +96,7 @@ class DomainManager:
         return self.domains[domain]
 
     async def new_domain(self, name: str) -> Domain:
+        logger.debug("Creating new domain object for {}".format(name))
         domain_object = Domain(name)
         for irc_server in settings["irc_servers"].keys():
             if name in settings["irc_servers"][irc_server]["domains"]:

@@ -54,6 +54,7 @@ class Wiki:
 		self.recache_requested: bool = False
 		self.session_requests = requests.Session()
 		self.session_requests.headers.update(settings["header"])
+		logger.debug("Creating new wiki object for {}".format(script_url))
 
 	def __str__(self):
 		return self.__repr__()
