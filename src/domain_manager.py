@@ -15,7 +15,7 @@ logger = logging.getLogger("rcgcdb.domain_manager")
 
 
 def safe_type_for_id(unsafe_id: str, target: Callable):
-    if unsafe_id == "null":  # TODO Verify if correct
+    if unsafe_id == "null" or unsafe_id == "":  # TODO Verify if correct
         return None
     return target(unsafe_id)
 
