@@ -403,6 +403,8 @@ async def message_sender():
 
 async def discussion_handler():
 	await asyncio.sleep(3.0)  # Make some time before IRC code is executed, happens only once and saves if inside
+	if not settings.get("discussions_enabled", False):
+		raise asyncio.CancelledError
 	try:
 		while True:
 			async with db.pool().acquire() as connection:
