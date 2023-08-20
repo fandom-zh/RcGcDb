@@ -136,21 +136,21 @@ class Wiki:
 			else:
 				messagequeue.add_message(QueueEntry(stacked_message, [stacked_message.webhook], self, method="PATCH"))
 
-	def redact_messages(self, ids: list[int], mode: str, censored_properties: dict):
+	def redact_messages(self, context: Context, ids: list[int], mode: str, censored_properties: dict):
 		# ids can refer to multiple events, and search does not support additive mode, so we have to loop it for all ids
 		for revlogid in ids:
 			for stacked_message, ids in self.search_message_history({mode: revlogid}):  # This might not work depending on how Python handles it, but hey, learning experience
 				for message in [message for num, message in enumerate(stacked_message.message_list) if num in ids]:
 					if "user" in censored_properties and "url" in message["author"]:
-						message["author"]["name"] = _("hidden")
+						message["author"]["name"] = context._("hidden")
 						message["author"].pop("url")
 					if "action" in censored_properties and "url" in message:
-						message["title"] = _("~~hidden~~")
+						message["title"] = context._("~~hidden~~")
 						message["embed"].pop("url")
 					if "content" in censored_properties and "fields" in message:
 						message["embed"].pop("fields")
 					if "comment" in censored_properties:
-						message["description"] = _("~~hidden~~")
+						message["description"] = context._("~~hidden~~")
 				messagequeue.add_message(QueueEntry(stacked_message, [stacked_message.webhook], self, method="PATCH"))
 
 	# async def downtime_controller(self, down, reason=None):
@@ -501,14 +501,14 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 		elif identification_string == "delete/event":
 			logparams = change.get('logparams', {"ids": []})
 			if settings["appearance"]["mode"] == "embed":
-				wiki.redact_messages(logparams.get("ids", []), "rev_id", logparams.get("new", {}))
+				wiki.redact_messages(context, logparams.get("ids", []), "rev_id", logparams.get("new", {}))
 			else:
 				for logid in logparams.get("ids", []):
 					wiki.delete_messages(dict(logid=logid))
 		elif identification_string == "delete/revision":
 			logparams = change.get('logparams', {"ids": []})
 			if settings["appearance"]["mode"] == "embed":
-				wiki.redact_messages(logparams.get("ids", []), "log_id", logparams.get("new", {}))
+				wiki.redact_messages(context, logparams.get("ids", []), "log_id", logparams.get("new", {}))
 			else:
 				for revid in logparams.get("ids", []):
 					wiki.delete_messages(dict(revid=revid))
