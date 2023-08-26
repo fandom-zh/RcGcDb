@@ -121,6 +121,7 @@ class MessageQueue:
 													 message.wiki)
 			else:
 				yield message.discord_message, index, message.method
+				continue
 			discord_message = message.discord_message
 			try:
 				current_pack.add_message(discord_message)
@@ -133,6 +134,8 @@ class MessageQueue:
 	async def send_msg_set(self, msg_set: tuple[str, list[QueueEntry]]):
 		webhook_url, messages = msg_set  # str("daosdkosakda/adkahfwegr34", list(DiscordMessage, DiscordMessage, DiscordMessage)
 		async for msg, index, method in self.pack_massages(messages):
+			if msg is None:  # Msg can be None if last message was not POST
+				continue
 			client_error = False
 			if self.global_rate_limit:
 				return  # if we are globally rate limited just wait for first gblocked request to finish
