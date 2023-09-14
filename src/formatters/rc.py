@@ -325,6 +325,8 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		content = _("Account [{author}]({author_url}) was created").format(author=author, author_url=author_url)
 	elif action == "newusers/reclaim":
 		content = _("Account [{author}]({author_url}) was reclaimed").format(author=author, author_url=author_url)
+	elif action == "newusers/migrated":
+		content = _("Account [{author}]({author_url}) was migrated").format(author=author, author_url=author_url)
 	elif action == "interwiki/iw_add":
 		link = link_formatter(create_article_path("Special:Interwiki", WIKI_ARTICLE_PATH))
 		content = _("[{author}]({author_url}) added an entry to the [interwiki table]({table_url}) pointing to {website} with {prefix} prefix").format(author=author, author_url=author_url, desc=parsed_comment,
@@ -983,6 +985,9 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 	elif action == "newusers/reclaim":
 		link = author_url
 		embed["title"] = _("Reclaimed account")
+	elif action == "newusers/migrated":
+		link = author_url
+		embed["title"] = _("Migrated account")
 	elif action == "interwiki/iw_add":
 		link = create_article_path("Special:Interwiki", WIKI_ARTICLE_PATH)
 		embed["title"] = _("Added an entry to the interwiki table")
