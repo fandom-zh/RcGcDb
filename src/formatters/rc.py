@@ -224,19 +224,19 @@ async def compact_formatter(action, change, parsed_comment, categories, recent_c
 		target_user = change["title"].split(':', 1)[1]
 		link = link_formatter(create_article_path("UserProfile:{user}".format(user=target_user), WIKI_ARTICLE_PATH))
 		if target_user != author:
-			content = _("[{author}]({author_url}) edited the {field} on [{target}]({target_url})'s profile. *({desc})*").format(author=author,
+			content = _("[{author}]({author_url}) edited the {field} on [{target}]({target_url})'s profile.{comment}").format(author=author,
 				                                                                author_url=author_url,
 				                                                                target=target_user,
 				                                                                target_url=link,
 				                                                                field=profile_field_name(change["logparams"]['4:section'], False, message_target[0][0]),
-				                                                                desc=BeautifulSoup(change["parsedcomment"], "lxml").get_text())
+				                                                                comment=parsed_comment)
 		else:
-			content = _("[{author}]({author_url}) edited the {field} on [their own]({target_url}) profile. *({desc})*").format(
+			content = _("[{author}]({author_url}) edited the {field} on [their own]({target_url}) profile.{comment}").format(
 				author=author,
 				author_url=author_url,
 				target_url=link,
 				field=profile_field_name(change["logparams"]['4:section'], False, message_target[0][0]),
-				desc=BeautifulSoup(change["parsedcomment"], "lxml").get_text())
+				comment=parsed_comment)
 	elif action in ("rights/rights", "rights/autopromote"):
 		link = link_formatter(create_article_path("User:{user}".format(user=change["title"].split(":")[1]), WIKI_ARTICLE_PATH))
 		old_groups = []
@@ -875,7 +875,7 @@ async def embed_formatter(action, change, parsed_comment, categories, recent_cha
 		if not change["parsedcomment"]:  # If the field is empty
 			parsed_comment = _("Cleared the {field} field").format(field=profile_field_name(change["logparams"]['4:section'], True, message_target[0][0]))
 		else:
-			parsed_comment = _("{field} field changed to: {desc}").format(field=profile_field_name(change["logparams"]['4:section'], True, message_target[0][0]), desc=BeautifulSoup(change["parsedcomment"], "lxml").get_text())
+			parsed_comment = _("{field} field changed to: {comment}").format(field=profile_field_name(change["logparams"]['4:section'], True, message_target[0][0]), comment=parsed_comment)
 	elif action == "curseprofile/comment-purged":
 		link = create_article_path(change["title"], WIKI_ARTICLE_PATH)
 		target_user = change["title"].split(':', 1)[1]
