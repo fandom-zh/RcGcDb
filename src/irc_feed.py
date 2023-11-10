@@ -80,8 +80,12 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		if post.get('action', 'unknown') != "deleted":  # ignore deletion events
 			if isinstance(post.get('url'), bytes) or post.get('url') == "":
 				return
-			url = urlparse(post.get('url'))
-			full_url ="https://"+ url.netloc + recognize_langs(url.path)
+			try:
+				url = urlparse(post.get('url'))
+			except KeyError:
+				return
+			lang = recognize_langs(url.path)
+			full_url = "https://" + url.netloc + lang
 			wiki = self.domain.get_wiki(full_url)
 			if wiki and wiki.discussion_id != -1:
 				self.updated_discussions.add(full_url)
