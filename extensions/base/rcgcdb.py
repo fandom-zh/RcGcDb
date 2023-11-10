@@ -12,7 +12,7 @@ def embed_generic(ctx: Context, change: dict):
     embed["title"] = ctx._("Unknown event `{event}`").format(
         event="{type}/{action}".format(type=change.get("type", ""), action=change.get("action", "")))
     embed["url"] = ctx.client.create_article_path("Special:RecentChanges")
-    change_params = "[```json\n{params}\n```]({support})".format(params=json.dumps(change, indent=2),
+    change_params = "{support}\n```json\n{params}\n```".format(params=json.dumps(change, indent=2),
                                                                  support=ctx.settings["support"])
     if len(change_params) > 1000:
         embed.add_field(_("Report this on the support server"), ctx.settings["support"])
