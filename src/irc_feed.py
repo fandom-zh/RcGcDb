@@ -84,6 +84,8 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 				url = urlparse(post.get('url'))
 			except KeyError:
 				return
+			if isinstance(url.path, bytes):
+				return
 			lang = recognize_langs(url.path)
 			full_url = "https://" + url.netloc + lang
 			wiki = self.domain.get_wiki(full_url)
