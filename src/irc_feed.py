@@ -31,6 +31,8 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		self.domain = domain_object
 		self.connection.buffer_class.errors = "replace"  # Ignore encoding errors
 		self.connection_details = None
+		self.active = True
+		self.activity_tester = asyncio.get_event_loop().create_task(self.testactivity())
 
 	def __str__(self):
 		return self.__repr__()
@@ -44,6 +46,7 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 			connection.join(channel)
 
 	def on_pubmsg(self, connection, event):
+		self.active = True
 		if event.target == self.targets["rc"]:
 			self.parse_fandom_message(' '.join(event.arguments))
 		elif event.target == self.targets["discussion"]:
@@ -53,7 +56,7 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 		c.nick(c.get_nickname() + "_")
 
 	def on_disconnect(self, connection, event):
-		# self.connect(*self.connection_details[0], **self.connection_details[1])  # attempt to reconnect
+		self.connect(*self.connection_details[0], **self.connection_details[1])
 		pass
 
 	def parse_fandom_message(self, message: str):
@@ -93,6 +96,13 @@ class AioIRCCat(irc.client_aio.AioSimpleIRCClient):
 				self.updated_discussions.add(full_url)
 				logger.debug("New discussion wiki appended to the list! {}".format(full_url))
 
+	async def testactivity(self):
+		while True:
+			await asyncio.sleep(100.0)
+			if not self.active:
+				logger.error("There were no new messages in the feed!")
+				self.on_disconnect(None, None)
+			self.active = False
 
 def recognize_langs(path):
 	lang = ""
