@@ -47,15 +47,19 @@ class DomainManager:
             if split_payload[1] == "INFO":
                 logger.info(self.domains)
                 for name, domain in self.domains.items():
-                    logger.info("{name} - Status: {status}, exception: {exception}, irc: {irc}".format(name=name, status=domain.task.done(),
+                    logger.info("RCGCDBDEBUG {name} - Status: {status}, exception: {exception}, irc: {irc}".format(name=name, status=domain.task.done(),
                                                                                            exception=domain.task.print_stack(), irc=str(domain.irc)))
                 for item in asyncio.all_tasks():  # Get discussions task
                     if item.get_name() == "discussions":
                         logger.info(item)
                 if self.check_for_domain(self.get_domain(split_payload[1])):
                     logger.info(str(self.return_domain(self.get_domain(split_payload[1])).get_wiki(split_payload[1])))
-            if split_payload[1] == "EXEC":
+            elif split_payload[1] == "EXEC":
                 logger.debug(exec(" ".join(split_payload[2:])))
+            elif split_payload[1] == "WIKI" and len(split_payload) > 2:
+                domain = self.return_domain(self.get_domain(split_payload[2]))
+                logger.debug("RCGCDBDEBUG Domain information for {}: {}".format(domain.name, str(domain)))
+                logger.debug("RCGCDBDEBUG Wiki information for {}: {}".format(split_payload[2], domain.get_wiki(split_payload[2])))
         else:
             raise ValueError("Unknown pub/sub command! Payload: {}".format(payload))
 

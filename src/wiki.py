@@ -23,7 +23,7 @@ from src.config import settings
 # noinspection PyPackageRequirements
 from bs4 import BeautifulSoup
 from collections import OrderedDict, defaultdict, namedtuple
-from typing import Union, Optional, TYPE_CHECKING
+from typing import Union, Optional, TYPE_CHECKING, List
 
 Settings = namedtuple("Settings", ["lang", "display"])
 logger = logging.getLogger("rcgcdb.wiki")
@@ -96,28 +96,37 @@ class Wiki:
 	def set_domain(self, domain: Domain):
 		self.domain = domain
 
-	# def find_middle_next(ids: List[str], pageid: int) -> set:  # TODO Properly re-implement for RcGcDb
-	# 	"""To address #235 RcGcDw should now remove diffs in next revs relative to redacted revs to protect information in revs that revert revdeleted information.
-	#
-	# 	:arg ids - list
-	# 	:arg pageid - int
-	#
-	# 	:return list"""
-	# 	ids = [int(x) for x in ids]
-	# 	result = set()
-	# 	ids.sort()  # Just to be sure, sort the list to make sure it's always sorted
-	# 	messages = db_cursor.execute("SELECT revid FROM event WHERE pageid = ? AND revid >= ? ORDER BY revid",
-	# 								 (pageid, ids[0],))
-	# 	all_in_page = [x[0] for x in messages.fetchall()]
-	# 	for id in ids:
-	# 		try:
-	# 			result.add(all_in_page[all_in_page.index(id) + 1])
-	# 		except (KeyError, ValueError):
-	# 			logger.debug(f"Value {id} not in {all_in_page} or no value after that.")
-	# 	return result - set(ids)
+	def find_middle_next(self, ids: List[str], pageid: int) -> list:
+		"""To address #235 RcGcDw should now remove diffs in next revs relative to redacted revs to protect information in revs that revert revdeleted information.
+		What this function does, is it fetches all messages for given page and finds revids of the messages that come next after ids
+		:arg ids - list
+		:arg pageid - int
+
+		:return list"""
+		def extract_revid(item: tuple[StackedDiscordMessage, list[int]]):
+			rev_ids = set()
+			for message_id in sorted(item[1], reverse=True):
+				rev_ids.add(item[0].message_list[message_id].metadata.rev_id)
+			return rev_ids
+		ids = [int(x) for x in ids]
+		result = set()
+		ids.sort()  # Just to be sure, sort the list to make sure it's always sorted
+		search = self.search_message_history({"message_display": 3, "page_id": pageid})
+		# messages = db_cursor.execute("SELECT revid FROM event WHERE pageid = ? AND revid >= ? ORDER BY revid",
+		# 							 (pageid, ids[0],))
+		all_in_page = sorted(set([x for row in map(extract_revid, search) for x in row]))  # Flatten the result
+		for ID in ids:
+			try:
+				result.add(all_in_page[all_in_page.index(ID) + 1])
+			except (KeyError, ValueError):
+				logger.debug(f"Value {ID} not in {all_in_page} or no value after that.")
+		return list(result - set(ids))
 
 	def search_message_history(self, params: dict) -> list[tuple[StackedDiscordMessage, list[int]]]:
-		"""Search self.message_history for messages which match all properties in params and return them in a list"""
+		"""Search self.message_history for messages which match all properties in params and return them in a list
+		:param params is a dictionary of which messages are compared against. All name and values must be equal for match to return true
+		Matches metadata from discord.message.DiscordMessageMetadata
+		:returns [(StackedDiscordMessage, [index ids of matching messages in that StackedMessage])]"""
 		output = []
 		for message in self.message_history:
 			returned_matches_for_stacked = message.filter(params)
@@ -447,7 +456,7 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 	from src.misc import LinkParser
 	LinkParser = LinkParser(wiki.client.WIKI_ARTICLE_PATH)
 	metadata = DiscordMessageMetadata("POST", rev_id=change.get("revid", None), log_id=change.get("logid", None),
-													  page_id=change.get("pageid", None))
+													page_id=change.get("pageid", None), message_display=display_options.display)
 	context = Context("embed" if display_options.display > 0 else "compact", "recentchanges", webhooks, wiki.client, langs[display_options.lang]["formatters"], prepare_settings(display_options.display))
 	if ("actionhidden" in change or "suppressed" in change) and "suppressed" not in settings["ignored"]:  # if event is hidden using suppression
 		context.event = "suppressed"
@@ -501,14 +510,17 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 		elif identification_string == "delete/event":
 			logparams = change.get('logparams', {"ids": []})
 			if settings["appearance"]["mode"] == "embed":
-				wiki.redact_messages(context, logparams.get("ids", []), "rev_id", logparams.get("new", {}))
+				wiki.redact_messages(context, logparams.get("ids", []), "log_id", logparams.get("new", {}))
 			else:
 				for logid in logparams.get("ids", []):
 					wiki.delete_messages(dict(logid=logid))
 		elif identification_string == "delete/revision":
 			logparams = change.get('logparams', {"ids": []})
 			if settings["appearance"]["mode"] == "embed":
-				wiki.redact_messages(context, logparams.get("ids", []), "log_id", logparams.get("new", {}))
+				wiki.redact_messages(context, logparams.get("ids", []), "rev_id", logparams.get("new", {}))
+				if display_options.display == 3:
+					wiki.redact_messages(context, wiki.find_middle_next(logparams.get("ids", []), change.get("pageid", -1)), "rev_id",
+									{"content": ""})
 			else:
 				for revid in logparams.get("ids", []):
 					wiki.delete_messages(dict(revid=revid))

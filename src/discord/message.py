@@ -30,12 +30,13 @@ with open("src/api/template_settings.json", "r") as template_json:
 
 
 class DiscordMessageMetadata:
-	def __init__(self, method, log_id = None, page_id = None, rev_id = None, webhook_url = None):
+	def __init__(self, method, log_id = None, page_id = None, rev_id = None, webhook_url = None, message_display = None):
 		self.method = method  # unused, remains for compatibility reasons
 		self.page_id = page_id
 		self.log_id = log_id
 		self.rev_id = rev_id
 		self.webhook_url = webhook_url
+		self.message_display = message_display
 
 	def matches(self, other: dict):
 		for key, value in other.items():
@@ -43,8 +44,8 @@ class DiscordMessageMetadata:
 				return False
 			return True
 
-	def dump_ids(self) -> (int, int, int):
-		return self.page_id, self.rev_id, self.log_id
+	def dump_ids(self) -> (int, int, int, int):
+		return self.page_id, self.rev_id, self.log_id, self.message_display
 
 
 class DiscordMessage:
