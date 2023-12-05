@@ -454,7 +454,7 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 	"""This function takes more vital information, communicates with a formatter and constructs DiscordMessage with it.
 	It creates DiscordMessageMetadata object, LinkParser and Context. Prepares a comment """
 	from src.misc import LinkParser
-	LinkParser = LinkParser(wiki.client.WIKI_ARTICLE_PATH)
+	LinkParser = LinkParser(wiki.client.WIKI_JUST_DOMAIN)
 	metadata = DiscordMessageMetadata("POST", rev_id=change.get("revid", None), log_id=change.get("logid", None),
 													page_id=change.get("pageid", None), message_display=display_options.display)
 	context = Context("embed" if display_options.display > 0 else "compact", "recentchanges", webhooks, wiki.client, langs[display_options.lang]["formatters"], prepare_settings(display_options.display))
