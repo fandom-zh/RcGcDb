@@ -115,6 +115,15 @@ class MessageQueue:
 	async def pack_massages(self, messages: list[QueueEntry], current_pack=None) -> AsyncGenerator[tuple[StackedDiscordMessage, int, str], None]:
 		"""Pack messages into StackedDiscordMessage. It's an async generator"""
 		for index, message in enumerate(messages):
+			if "components" in message.discord_message.webhook_object:  # In case of messages with Discord components bypass the stacking logic
+				separate_pack = StackedDiscordMessage(0 if message.discord_message.message_type == "compact" else 1,
+													 message.wiki)  # next messages
+				separate_pack.add_message(message.discord_message)
+				if current_pack and current_pack.message_list:  # If we have stacked messages in the queue flush them and send them to preserve order
+					yield current_pack, index - 1, "POST"
+					current_pack = None
+				yield separate_pack, index, message.method
+				continue
 			if message.method == "POST":
 				if current_pack is None:
 					current_pack = StackedDiscordMessage(0 if message.discord_message.message_type == "compact" else 1,

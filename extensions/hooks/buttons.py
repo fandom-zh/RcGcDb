@@ -50,7 +50,7 @@ def buttons_hook(message: DiscordMessage, metadata: DiscordMessageMetadata, cont
     action_buttons = context.buttons or ""
     if not len(action_buttons) or context.feed_type == "discussion":
         return
-    BUTTON_PREFIX = context.client.WIKI_SCRIPT_PATH[len(context.client.WIKI_JUST_DOMAIN):]
+    BUTTON_PREFIX = "rc_" + context.client.WIKI_SCRIPT_PATH[len(context.client.WIKI_JUST_DOMAIN):]
     if "block" in action_buttons and context.event != "suppressed":
         add_button(message,
                    BUTTON_PREFIX + " block " + ("#" + str(change["userid"]) if change["userid"] else change["user"]),
