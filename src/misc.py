@@ -8,6 +8,7 @@ import base64, re
 import logging
 from typing import Callable
 from urllib.parse import urlparse, urlunparse
+from src.config import settings
 
 logger = logging.getLogger("rcgcdw.misc")
 
@@ -26,6 +27,17 @@ def get_domain(url: str) -> str:
 	"""Get domain of given URL"""
 	parsed_url = urlparse(url)
 	return ".".join(urlunparse((*parsed_url[0:2], "", "", "", "")).split(".")[-2:])  # something like gamepedia.com, fandom.com
+
+
+def run_hooks(hooks, *arguments):
+	for hook in hooks:
+		try:
+			hook(*arguments)
+		except:
+			if settings.get("error_tolerance", 1) > 0:
+				logger.exception("On running a pre hook, ignoring pre-hook")
+			else:
+				raise
 
 
 class LinkParser(HTMLParser):

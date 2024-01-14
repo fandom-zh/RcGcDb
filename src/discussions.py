@@ -143,7 +143,7 @@ async def essential_feeds(change: dict, comment_pages: dict, wiki: Wiki, target:
             comment_page["fullUrl"] = "/".join(wiki.script_url.split("/", 3)[:3]) + comment_page["relativeUrl"]
     metadata = DiscordMessageMetadata("POST", rev_id=None, log_id=None, page_id=None)
     context = Context("embed" if target[0].display > 0 else "compact", "recentchanges", target[1], wiki.client,
-                      langs[target[0].lang]["formatters"], prepare_settings(target[0].display))
+                      langs[target[0].lang]["formatters"], prepare_settings(target[0].display), "")
     context.set_comment_page(comment_page)
     discord_message: Optional[DiscordMessage] = None
     try:

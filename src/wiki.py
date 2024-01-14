@@ -8,12 +8,12 @@ import asyncio
 import requests
 
 from src.api.util import default_message
-from src.misc import prepare_settings
+from src.misc import prepare_settings, run_hooks
 from src.discord.queue import messagequeue, QueueEntry
 from src.mw_messages import MWMessages
 from src.exceptions import *
 from src.queue_handler import dbmanager
-from src.api.hooks import formatter_hooks
+from src.api.hooks import formatter_hooks, pre_hooks, post_hooks
 from src.api.client import Client
 from src.api.context import Context
 from src.discord.message import DiscordMessage, DiscordMessageMetadata, StackedDiscordMessage
@@ -25,7 +25,7 @@ from bs4 import BeautifulSoup
 from collections import OrderedDict, defaultdict, namedtuple
 from typing import Union, Optional, TYPE_CHECKING, List
 
-Settings = namedtuple("Settings", ["lang", "display"])
+Settings = namedtuple("Settings", ["lang", "display", "buttons"])
 logger = logging.getLogger("rcgcdb.wiki")
 
 # wiki_reamoval_reasons = {410: _("wiki deleted"), 404: _("wiki deleted"), 401: _("wiki inaccessible"),
@@ -174,16 +174,15 @@ class Wiki:
 		"""This function generates all possible varations of outputs that we need to generate messages for.
 
 		:returns defaultdict[namedtuple, list[str]] - where namedtuple is a named tuple with settings for given webhooks in list"""
-		Settings = namedtuple("Settings", ["lang", "display"])
 		target_settings: defaultdict[Settings, list[str]] = defaultdict(list)
 		discussion_targets: defaultdict[Settings, list[str]] = defaultdict(list)
-		async for webhook in dbmanager.fetch_rows("SELECT webhook, lang, display, rcid, postid FROM rcgcdb WHERE wiki = $1", self.script_url):
+		async for webhook in dbmanager.fetch_rows("SELECT webhook, lang, display, rcid, postid, buttons FROM rcgcdb WHERE wiki = $1", self.script_url):
 			if webhook['rcid'] == -1 and webhook['postid'] == '-1':
 				await self.remove_wiki_from_db(4)
 			if webhook['rcid'] != -1:
-				target_settings[Settings(webhook["lang"], webhook["display"])].append(webhook["webhook"])
+				target_settings[Settings(webhook["lang"], webhook["display"], webhook["buttons"])].append(webhook["webhook"])
 			if webhook['postid'] != '-1':
-				discussion_targets[Settings(webhook["lang"], webhook["display"])].append(webhook["webhook"])
+				discussion_targets[Settings(webhook["lang"], webhook["display"], webhook["buttons"])].append(webhook["webhook"])
 		self.rc_targets = target_settings
 		self.discussion_targets = discussion_targets
 
@@ -314,14 +313,14 @@ class Wiki:
 			params = OrderedDict({"action": "query", "format": "json", "uselang": "content", "list": "tags|recentchanges",
 					  "meta": "allmessages|siteinfo",
 					  "utf8": 1, "tglimit": "max", "tgprop": "displayname",
-					  "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user",
+					  "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user|userid",
 					  "rclimit": amount, "rcshow": "!bot", "rctype": "edit|new|log|categorize",
 					  "ammessages": "recentchanges-page-added-to-category|recentchanges-page-removed-from-category|recentchanges-page-added-to-category-bundled|recentchanges-page-removed-from-category-bundled",
 					  "amenableparser": 1, "amincludelocal": 1, "siprop": "namespaces|general"})
 		else:
 			params = OrderedDict({"action": "query", "format": "json", "uselang": "content", "list": "tags|recentchanges",
 					  "meta": "siteinfo", "utf8": 1, "rcshow": "!bot",
-					  "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user",
+					  "rcprop": "title|redirect|timestamp|ids|loginfo|parsedcomment|sizes|flags|tags|user|userid",
 					  "rclimit": amount, "rctype": "edit|new|log|categorize", "siprop": "namespaces|general"})
 		try:
 			response = await self.api_request(params=params)
@@ -450,16 +449,18 @@ def process_cachable(response: dict, wiki_object: Wiki) -> None:
 	wiki_object.recache_requested = False
 
 
-async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, display_options: namedtuple("Settings", ["lang", "display"]), webhooks: list) -> Optional[DiscordMessage]:
+async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, display_options: namedtuple("Settings", ["lang", "display", "buttons"]), webhooks: list) -> Optional[DiscordMessage]:
 	"""This function takes more vital information, communicates with a formatter and constructs DiscordMessage with it.
 	It creates DiscordMessageMetadata object, LinkParser and Context. Prepares a comment """
 	from src.misc import LinkParser
 	LinkParser = LinkParser(wiki.client.WIKI_JUST_DOMAIN)
 	metadata = DiscordMessageMetadata("POST", rev_id=change.get("revid", None), log_id=change.get("logid", None),
 													page_id=change.get("pageid", None), message_display=display_options.display)
-	context = Context("embed" if display_options.display > 0 else "compact", "recentchanges", webhooks, wiki.client, langs[display_options.lang]["formatters"], prepare_settings(display_options.display))
+	context = Context("embed" if display_options.display > 0 else "compact", "recentchanges", webhooks, wiki.client,
+					  langs[display_options.lang]["formatters"], prepare_settings(display_options.display), display_options.buttons)
 	if ("actionhidden" in change or "suppressed" in change) and "suppressed" not in settings["ignored"]:  # if event is hidden using suppression
 		context.event = "suppressed"
+		run_hooks(pre_hooks, context, change)
 		try:
 			discord_message: Optional[DiscordMessage] = await asyncio.get_event_loop().run_in_executor(
 				None, functools.partial(default_message("suppressed", context.message_type, formatter_hooks), context, change))
@@ -509,14 +510,14 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 			wiki.delete_messages(dict(page_id=change.get("pageid")))
 		elif identification_string == "delete/event":
 			logparams = change.get('logparams', {"ids": []})
-			if settings["appearance"]["mode"] == "embed":
+			if context.message_type == "embed":
 				wiki.redact_messages(context, logparams.get("ids", []), "log_id", logparams.get("new", {}))
 			else:
 				for logid in logparams.get("ids", []):
 					wiki.delete_messages(dict(logid=logid))
 		elif identification_string == "delete/revision":
 			logparams = change.get('logparams', {"ids": []})
-			if settings["appearance"]["mode"] == "embed":
+			if context.message_type == "embed":
 				wiki.redact_messages(context, logparams.get("ids", []), "rev_id", logparams.get("new", {}))
 				if display_options.display == 3:
 					wiki.redact_messages(context, wiki.find_middle_next(logparams.get("ids", []), change.get("pageid", -1)), "rev_id",
@@ -524,6 +525,7 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 			else:
 				for revid in logparams.get("ids", []):
 					wiki.delete_messages(dict(revid=revid))
+	run_hooks(post_hooks, discord_message, metadata, context, change)
 	if discord_message:  # TODO How to react when none? (crash in formatter), probably bad handling atm
 		discord_message.finish_embed()
 		discord_message.metadata = metadata

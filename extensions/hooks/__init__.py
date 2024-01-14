@@ -16,3 +16,4 @@
 #import extensions.hooks.example_hook
 #import extensions.hooks.usertalk
 #import extensions.hooks.edit_alerts
+import extensions.hooks.buttons

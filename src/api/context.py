@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import gettext
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
 	from src.api.client import Client
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 class Context:
 	"""Context object containing client and some metadata regarding specific formatter call,
 	they are mainly used as a bridge between part that fetches the changes and API's formatters"""
-	def __init__(self, message_type: str, feed_type: str, webhook_urls: list[str], client: Client, language: gettext.GNUTranslations, settings: dict):
+	def __init__(self, message_type: str, feed_type: str, webhook_urls: list[str], client: Client, language: gettext.GNUTranslations, settings: dict, buttons: Optional[str]):
 		self.client = client
 		self.webhook_url = webhook_urls
 		self.message_type = message_type
@@ -39,6 +39,7 @@ class Context:
 		self.pgettext = language.pgettext  # Translation with context (ex. ctx.pgettext("From mediawiki module", "Blocked {} user"))
 		self.npgettext = language.npgettext  # Plural translation with context (ex. ctx.npgettext("From mediawiki module", "Edited {} time", "Edited {} times", edit_amoint)
 		self.settings = settings
+		self.buttons = buttons
 
 	def set_categories(self, cats):
 		self.categories = cats
