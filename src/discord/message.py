@@ -182,6 +182,8 @@ class StackedDiscordMessage():
 			message_structure["content"] = "\n".join([message.return_content() for message in self.message_list])
 		elif self.message_type == 1:
 			message_structure["embeds"] = [message.embed for message in self.message_list]
+		if "components" in self.message_list[0].webhook_object:
+			message_structure["components"] = self.message_list[0].webhook_object["components"]
 		return json.dumps(message_structure)
 
 	def check_for_length(self, message_length: int):
