@@ -474,13 +474,13 @@ async def rc_processor(wiki: Wiki, change: dict, changed_categories: dict, displ
 			LinkParser.feed(change.get("parsedcomment", ""))
 			parsed_comment = LinkParser.new_string
 		else:
-			parsed_comment = context._("~~hidden~~")
+			parsed_comment = langs[display_options.lang]["wiki"].gettext("~~hidden~~")
 		if not parsed_comment and context.message_type == "embed" and settings["appearance"].get("embed", {}).get(
 				"show_no_description_provided", True):
-			parsed_comment = context._("No description provided")
+			parsed_comment = langs[display_options.lang]["wiki"].gettext("No description provided")
 		context.set_parsedcomment(parsed_comment)
 		if "userhidden" in change:
-			change["user"] = context._("hidden")
+			change["user"] = langs[display_options.lang]["wiki"].gettext("hidden")
 		if change.get("ns", -1) in settings.get("ignored_namespaces", ()):
 			return
 		if change["type"] in ["edit", "new"]:

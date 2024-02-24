@@ -160,19 +160,19 @@ class ContentParser(HTMLParser):
 		if self.current_tag == "ins" and self.ins_length <= 1000:
 			self.ins_length += len("**" + data + "**")
 			if self.ins_length <= 1000:
-				self.last_ins = self.last_ins + "**" + data + "**"
+				self.last_ins = self.last_ins or "" + "**" + data + "**"
 		if self.current_tag == "del" and self.del_length <= 1000:
 			self.del_length += len("~~" + data + "~~")
 			if self.del_length <= 1000:
-				self.last_del = self.last_del + "~~" + data + "~~"
+				self.last_del = self.last_del or "" + "~~" + data + "~~"
 		if self.current_tag == "tda" and self.ins_length <= 1000:
 			self.ins_length += len(data)
 			if self.ins_length <= 1000:
-				self.last_ins = self.last_ins + data
+				self.last_ins = self.last_ins or "" + data
 		if self.current_tag == "tdd" and self.del_length <= 1000:
 			self.del_length += len(data)
 			if self.del_length <= 1000:
-				self.last_del = self.last_del + data
+				self.last_del = self.last_del or "" + data
 
 	def handle_endtag(self, tagname):
 		self.current_tag = ""
