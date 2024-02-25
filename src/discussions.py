@@ -85,7 +85,9 @@ class Discussions:
                     wiki.script_url)))
                 wiki.statistics.update(last_post=discussion_feed[-1]["id"])
             else:
-                dbmanager.add(wiki.script_url, "0", True)
+                dbmanager.add(("UPDATE rcgcdb SET postid = $1 WHERE wiki = $2 AND ( postid != '-1' OR postid IS NULL )", (
+                    "0",
+                    wiki.script_url)))
                 wiki.statistics.update(last_post="0")
             return
         comment_events = []
