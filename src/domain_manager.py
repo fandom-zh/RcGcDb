@@ -37,10 +37,11 @@ class DomainManager:
                 results = await connection.fetch("SELECT * FROM rcgcdb WHERE wiki = $1;", split_payload[1])
                 if len(results) > 0:  # If there are still webhooks for this wiki - just update its targets
                     await self.return_domain(self.get_domain(split_payload[1])).get_wiki(split_payload[1]).update_targets()
+                else:
+                    self.remove_wiki(split_payload[1])
             except asyncpg.IdleSessionTimeoutError:
                 logger.error("Couldn't check amount of webhooks with {} wiki!".format(split_payload[1]))
                 return
-            self.remove_wiki(split_payload[1])
         elif split_payload[0] == "UPDATE":
             await self.return_domain(self.get_domain(split_payload[1])).get_wiki(split_payload[1]).update_targets()
             logger.info("Successfully force updated information about {}".format(split_payload[1]))
