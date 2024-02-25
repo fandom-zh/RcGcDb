@@ -93,8 +93,9 @@ class Domain:
             await wiki.update_targets()
         if first:
             self.wikis.move_to_end(wiki.script_url, last=False)
+        logger.debug(f"Added new wiki {wiki.script_url} to domain {self.name}")
 
-    async def run_wiki_scan(self, wiki: src.wiki.Wiki, reason: Optional[int] = None):
+    async def run_wiki_scan(self, wiki: src.wiki.Wiki, reason: Optional[str] = None):
         await wiki.scan()
         wiki.statistics.update(Log(type=LogType.SCAN_REASON, title=str(reason)))
         self.wikis.move_to_end(wiki.script_url)
@@ -111,11 +112,11 @@ class Domain:
                 except KeyError:
                     logger.error(f"Could not find a wiki with URL {wiki_url} in the domain group!")
                     continue
-                await self.run_wiki_scan(wiki)
+                await self.run_wiki_scan(wiki, "IRC feed event")
             while True:  # Iterate until hitting return, we don't have to iterate using for since we are sending wiki to the end anyways
                 wiki: src.wiki.Wiki = next(iter(self.wikis.values()))
                 if (int(time.time()) - (wiki.statistics.last_checked_rc or 0)) > settings.get("irc_overtime", 3600):
-                    await self.run_wiki_scan(wiki)
+                    await self.run_wiki_scan(wiki, "IRC backup check")
                 else:
                     return  # Recently scanned wikis will get at the end of the self.wikis, so we assume what is first hasn't been checked for a while
         except Exception as e:
@@ -132,7 +133,7 @@ class Domain:
         try:
             while True:
                 await asyncio.sleep(self.calculate_sleep_time(len(self)))  # To make sure that we don't spam domains with one wiki every second we calculate a sane timeout for domains with few wikis
-                await self.run_wiki_scan(next(iter(self.wikis.values())))
+                await self.run_wiki_scan(next(iter(self.wikis.values())), "regular check")
         except Exception as e:
             if command_line_args.debug:
                 logger.exception("Regular scheduler task for domain {} failed!".format(self.name))

@@ -43,6 +43,7 @@ class DomainManager:
             self.remove_wiki(split_payload[1])
         elif split_payload[0] == "UPDATE":
             await self.return_domain(self.get_domain(split_payload[1])).get_wiki(split_payload[1]).update_targets()
+            logger.info("Successfully force updated information about {}".format(split_payload[1]))
         elif split_payload[0] == "DEBUG":
             if split_payload[1] == "INFO":
                 logger.info(self.domains)
@@ -87,8 +88,10 @@ class DomainManager:
             raise NoDomain
         else:
             domain.remove_wiki(script_url)
+            logger.debug(f"Removed a wiki {script_url} from {domain.name}")
             if len(domain) == 0:
                 self.remove_domain(domain)
+                logger.debug(f"Removed domain {domain.name} due to removal of last queued wiki in its dictionary")
 
     @staticmethod
     def get_domain(url: str) -> str:

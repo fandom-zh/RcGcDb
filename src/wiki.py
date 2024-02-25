@@ -364,7 +364,8 @@ class Wiki:
 			categorize_events = {}
 			new_events = 0
 			self.statistics.last_checked_rc = int(time.time())
-			highest_id = self.rc_id  # Pretty sure that will be faster
+			highest_id = self.rc_id
+			old_highest_id = self.rc_id
 			for change in recent_changes:
 				if change["rcid"] > highest_id and amount != 450:
 					new_events += 1
@@ -387,8 +388,9 @@ class Wiki:
 							message.wiki = self
 							message_list.append(QueueEntry(message, webhooks, self))
 				messagequeue.add_messages(message_list)
-				self.statistics.update(last_action=highest_id)
-				dbmanager.add(("UPDATE rcgcdb SET rcid = $1 WHERE wiki = $2 AND ( rcid != -1 OR rcid IS NULL )", (highest_id, self.script_url)))  # If this is not enough for the future, save rcid in message sending function to make sure we always send all of the changes
+				if old_highest_id != highest_id:  # update only when differs
+					self.statistics.update(last_action=highest_id)
+					dbmanager.add(("UPDATE rcgcdb SET rcid = $1 WHERE wiki = $2 AND ( rcid != -1 OR rcid IS NULL )", (highest_id, self.script_url)))  # If this is not enough for the future, save rcid in message sending function to make sure we always send all of the changes
 				return
 
 	async def remove_webhook_from_db(self, reason: str):
