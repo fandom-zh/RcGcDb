@@ -6,6 +6,7 @@ import traceback
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Optional
 from functools import cache
+import sys
 
 import aiohttp
 
@@ -168,7 +169,7 @@ class Domain:
     async def send_exception_to_monitoring(self, ex: Exception):
         discord_message = DiscordMessage("embed", "generic", [""])
         discord_message["title"] = "Domain scheduler exception for {} (recovered)".format(self.name)
-        discord_message["content"] = "".join(traceback.format_exception_only(ex))[0:1995]
+        discord_message["content"] = "".join(traceback.format_exception_only(ex, sys.last_type))[0:1995]  # not compatbile with Python 3.10+
         discord_message.add_field("Failure count", str(self.failures))
         discord_message.finish_embed_message()
         header = settings["header"]
