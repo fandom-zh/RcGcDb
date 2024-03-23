@@ -8,7 +8,8 @@ from src.exceptions import NoDomain
 from src.config import settings
 from src.domain import Domain
 from src.irc_feed import AioIRCCat
-
+from io import StringIO
+from contextlib import redirect_stdout
 from src.wiki import Wiki
 
 logger = logging.getLogger("rcgcdb.domain_manager")
@@ -57,11 +58,14 @@ class DomainManager:
                 if self.check_for_domain(self.get_domain(split_payload[1])):
                     logger.info(str(self.return_domain(self.get_domain(split_payload[1])).get_wiki(split_payload[1])))
             elif split_payload[1] == "EXEC":
-                logger.debug(exec(" ".join(split_payload[2:])))
+                f = StringIO()
+                with redirect_stdout(f):
+                    exec(" ".join(split_payload[2:]))
+                logger.info(f.getvalue())
             elif split_payload[1] == "WIKI" and len(split_payload) > 2:
                 domain = self.return_domain(self.get_domain(split_payload[2]))
-                logger.debug("RCGCDBDEBUG Domain information for {}: {}".format(domain.name, str(domain)))
-                logger.debug("RCGCDBDEBUG Wiki information for {}: {}".format(split_payload[2], domain.get_wiki(split_payload[2])))
+                logger.info("RCGCDBDEBUG Domain information for {}: {}".format(domain.name, str(domain)))
+                logger.info("RCGCDBDEBUG Wiki information for {}: {}".format(split_payload[2], domain.get_wiki(split_payload[2])))
         else:
             raise ValueError("Unknown pub/sub command! Payload: {}".format(payload))
 

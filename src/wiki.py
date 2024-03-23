@@ -341,7 +341,7 @@ class Wiki:
 			except WikiServerError as e:
 				# If WikiServerError comes up 2 times in recent 2 minutes, this will reraise the exception, otherwise waits 2 seconds and retries
 				self.statistics.update(Log(type=LogType.CONNECTION_ERROR, title=str(e.exception)))
-				if self.statistics.recent_connection_errors() > 1:
+				if self.statistics.recent_connection_errors() > 9:
 					raise
 				await asyncio.sleep(2.0)
 				continue

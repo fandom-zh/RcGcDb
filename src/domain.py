@@ -127,7 +127,7 @@ class Domain:
                 self.failures += 1
                 traceback.print_exc()
                 await self.send_exception_to_monitoring(e)
-                if self.failures > 2:
+                if self.failures > 5:
                     raise asyncio.exceptions.CancelledError
 
     async def regular_scheduler(self):
@@ -139,9 +139,10 @@ class Domain:
             if command_line_args.debug:
                 logger.exception("Regular scheduler task for domain {} failed!".format(self.name))
             else:
-                await self.send_exception_to_monitoring(e)
                 self.failures += 1
-                if self.failures > 2:
+                await self.send_exception_to_monitoring(e)
+                traceback.print_exc()
+                if self.failures > 5:
                     raise asyncio.exceptions.CancelledError
 
     @cache
@@ -159,12 +160,15 @@ class Domain:
                 for wiki in self.wikis.values():
                     await wiki.session.close()
                     self.irc.connection.disconnect()
+                raise
         else:
             try:
-                await self.regular_scheduler()
+                while True:
+                    await self.regular_scheduler()
             except asyncio.exceptions.CancelledError:
                 for wiki in self.wikis.values():
                     await wiki.session.close()
+                raise
 
     async def send_exception_to_monitoring(self, ex: Exception):
         discord_message = DiscordMessage("embed", "generic", [""])
