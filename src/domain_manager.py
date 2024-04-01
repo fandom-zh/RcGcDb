@@ -78,6 +78,7 @@ class DomainManager:
             await self.domains[wiki_domain].add_wiki(wiki)
         except KeyError:
             new_domain = await self.new_domain(wiki_domain)
+            new_domain.run_domain()
             await new_domain.add_wiki(wiki)
 
     def remove_domain(self, domain: Domain):
