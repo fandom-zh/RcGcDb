@@ -44,7 +44,7 @@ class ClientError(Exception):
 	"""Exception for when a request failes because of Client error"""
 
 	def __init__(self, request):
-		self.message = f"Client have made wrong request! {request.status_code}: {request.reason}. {request.text}"
+		self.message = f"Client have made wrong request! {request.status}: {request.reason}."
 		super().__init__(self.message)
 
 

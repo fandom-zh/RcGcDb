@@ -154,8 +154,9 @@ class MessageQueue:
 				status = await send_to_discord_webhook(msg, webhook_url, method)
 			except aiohttp.ClientError:
 				client_error = True
-			except (aiohttp.ServerConnectionError, aiohttp.ServerTimeoutError):
+			except (aiohttp.ServerConnectionError, aiohttp.ServerTimeoutError, asyncio.TimeoutError):
 				# Retry on next Discord message sent attempt
+				logger.debug(f"Received timeout or connection error when sending a Discord message for {msg.wiki.script_url}.")
 				return
 			except ExhaustedDiscordBucket as e:
 				if e.is_global:
